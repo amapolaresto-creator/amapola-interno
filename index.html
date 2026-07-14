@@ -193,6 +193,12 @@ function App(){
   const[errMsg,setErrMsg]=useState("");
   const[tab,setTab]=useState(()=>localStorage.getItem("amapola_cocina")==="1"?"stock":"boletas");
   const[toastMsg,setToastMsg]=useState("");
+  const[isDesktop,setIsDesktop]=useState(()=>typeof window!=="undefined"&&window.innerWidth>=900);
+  useEffect(()=>{
+    const onResize=()=>setIsDesktop(window.innerWidth>=900);
+    window.addEventListener("resize",onResize);
+    return()=>window.removeEventListener("resize",onResize);
+  },[]);
   const[lightbox,setLightbox]=useState(null);
   const[passModal,setPassModal]=useState(null);
   const[syncMsg,setSyncMsg]=useState("Conectando…");
@@ -465,105 +471,142 @@ function App(){
   ];
   const TABS=cocinaMode?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
-  return(
-    <div style={{background:"#F6F6F7",minHeight:"100dvh",color:"#16181D"}}>
-      {SaveErrorBanner}
-      {cocinaLoginOpen&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-            <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>🍳 Acceso Cocina</p>
-            <input type="password" placeholder="Contraseña" value={cocinaPassInput} autoFocus
-              onChange={e=>{setCocinaPassInput(e.target.value);setCocinaPassErr(false);}}
-              onKeyDown={e=>{if(e.key==="Enter"){if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}}}
-              style={{...iS,border:`1.5px solid ${cocinaPassErr?"#E5484D":"#ECECEE"}`,marginBottom:8}}/>
-            {cocinaPassErr&&<p style={{color:"#E5484D",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
-            <div style={{display:"flex",gap:10,marginTop:8}}>
-              <button onClick={()=>{setCocinaLoginOpen(false);setCocinaPassInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={()=>{if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#16181D",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
-            </div>
+  const content=(
+    <>
+      {tab==="admin-lock"&&(
+        <div style={{padding:"20px 0"}}>
+          <p style={{fontFamily:"inherit",fontSize:"1.3rem",marginBottom:4}}>Administración</p>
+          <p style={{fontSize:".82rem",color:"#6B6D76",marginBottom:20}}>Ingresá la contraseña para acceder a Resumen, Admin y Gastos.</p>
+          <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)"}}>
+            <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#16181D",marginBottom:5}}>Contraseña</label>
+            <input type="password" value={adminPassInput} autoFocus
+              onChange={e=>{setAdminPassInput(e.target.value);setAdminPassErr(false);}}
+              onKeyDown={e=>{if(e.key==="Enter"){if(adminPassInput==="Barcala716*"){setAdminUnlocked(true);setAdminPassInput("");setTab("dashboard");}else{setAdminPassErr(true);setAdminPassInput("");}}} }
+              placeholder="Contraseña de administrador"
+              style={{width:"100%",border:`1.5px solid ${adminPassErr?"#E5484D":"#ECECEE"}`,borderRadius:8,padding:"10px 12px",fontFamily:"inherit",fontSize:".92rem",color:"#16181D",background:"#F6F6F7",outline:"none",boxSizing:"border-box",marginBottom:8}}/>
+            {adminPassErr&&<p style={{color:"#E5484D",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
+            <button onClick={()=>{if(adminPassInput==="Barcala716*"){setAdminUnlocked(true);setAdminPassInput("");setTab("dashboard");}else{setAdminPassErr(true);setAdminPassInput("");}}}
+              style={{display:"block",width:"100%",padding:13,marginTop:8,border:"none",borderRadius:10,background:"#16181D",color:"#fff",fontFamily:"inherit",fontSize:".95rem",fontWeight:600,cursor:"pointer"}}>
+              Ingresar
+            </button>
           </div>
         </div>
       )}
-      <div style={{background:"#16181D",padding:"14px 16px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
-        <div>
-          <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.4rem",color:"#ECECEE",lineHeight:1.1}}>
-            Amapola <span style={{color:"#E5484D",fontStyle:"normal"}}>·</span> Interno
+      {tab==="dashboard"&&adminUnlocked&&<TabDashboard
+        boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos}
+        sueldos={sueldos} gastos={gastos} proveedores={proveedores}
+        calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
+        cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
+      {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
+      {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos}/>}
+      {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
+      {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
+      {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
+      {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
+      {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente}/>}
+      {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
+      {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
+      {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
+      {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo}/>}
+      {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
+      {tab==="fichajes"&&<TabFichajes/>}
+      {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial={cocinaMode?cocinaSubInicial:"inventario"}/>}
+      {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
+    </>
+  );
+
+  return(
+    <>
+    {isDesktop?(
+      <div style={{display:"grid",gridTemplateColumns:"240px 1fr",minHeight:"100dvh",background:"#F6F6F7"}}>
+        <div style={{background:"#16181D",padding:"20px 14px",display:"flex",flexDirection:"column",gap:2,position:"sticky",top:0,height:"100dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,padding:"0 6px"}}>
+            <div style={{width:34,height:34,borderRadius:8,background:"#B42318",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",fontWeight:700,color:"#fff"}}>A</div>
+            <div>
+              <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.05rem",color:"#ECECEE",lineHeight:1.1}}>Amapola</div>
+              <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
+            </div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
-            {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
-            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
-            {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>🍳 Cocina</button>}
+          {!cocinaMode&&(
+            <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:14,cursor:"pointer"}}>
+              <div style={{opacity:.7,fontSize:".62rem"}}>EFECTIVO</div>
+              <div style={{fontSize:"1.1rem",fontWeight:700}}>{fmt(saldo)}</div>
+            </div>
+          )}
+          {TABS.map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:10,background:tab===t.id?"rgba(255,255,255,.1)":"none",border:"none",color:tab===t.id?"#ECECEE":"#6B6D76",fontSize:".82rem",fontWeight:tab===t.id?600:500,padding:"9px 10px",borderRadius:8,cursor:"pointer",textAlign:"left"}}>{t.label}</button>
+          ))}
+          <div style={{marginTop:"auto",paddingTop:14}}>
+            {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>Salir admin</button>}
+            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>Salir modo cocina</button>}
+            {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>🍳 Cocina</button>}
           </div>
         </div>
-        {!cocinaMode&&(
-          <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
-            <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-              <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
-              <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
-            </div>
-            <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
-              <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>EFECTIVO</span>
-              <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
-            </div>
-          </div>
-        )}
+        <div style={{padding:"28px 36px",maxWidth:1100,width:"100%",margin:"0 auto",boxSizing:"border-box"}}>
+          {SaveErrorBanner}
+          {content}
+        </div>
       </div>
-      <div style={{display:"flex",background:"#16181D",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
-        {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E5484D":"3px solid transparent",color:tab===t.id?"#ECECEE":"#6B6D76",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
-        ))}
-      </div>
-      <div style={{padding:"20px 16px 100px",maxWidth:500,margin:"0 auto"}}>
-        {tab==="admin-lock"&&(
-          <div style={{padding:"20px 0"}}>
-            <p style={{fontFamily:"inherit",fontSize:"1.3rem",marginBottom:4}}>Administración</p>
-            <p style={{fontSize:".82rem",color:"#6B6D76",marginBottom:20}}>Ingresá la contraseña para acceder a Resumen, Admin y Gastos.</p>
-            <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)"}}>
-              <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#16181D",marginBottom:5}}>Contraseña</label>
-              <input type="password" value={adminPassInput} autoFocus
-                onChange={e=>{setAdminPassInput(e.target.value);setAdminPassErr(false);}}
-                onKeyDown={e=>{if(e.key==="Enter"){if(adminPassInput==="Barcala716*"){setAdminUnlocked(true);setAdminPassInput("");setTab("dashboard");}else{setAdminPassErr(true);setAdminPassInput("");}}} }
-                placeholder="Contraseña de administrador"
-                style={{width:"100%",border:`1.5px solid ${adminPassErr?"#E5484D":"#ECECEE"}`,borderRadius:8,padding:"10px 12px",fontFamily:"inherit",fontSize:".92rem",color:"#16181D",background:"#F6F6F7",outline:"none",boxSizing:"border-box",marginBottom:8}}/>
-              {adminPassErr&&<p style={{color:"#E5484D",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
-              <button onClick={()=>{if(adminPassInput==="Barcala716*"){setAdminUnlocked(true);setAdminPassInput("");setTab("dashboard");}else{setAdminPassErr(true);setAdminPassInput("");}}}
-                style={{display:"block",width:"100%",padding:13,marginTop:8,border:"none",borderRadius:10,background:"#16181D",color:"#fff",fontFamily:"inherit",fontSize:".95rem",fontWeight:600,cursor:"pointer"}}>
-                Ingresar
-              </button>
+    ):(
+      <div style={{background:"#F6F6F7",minHeight:"100dvh",color:"#16181D"}}>
+        {SaveErrorBanner}
+        <div style={{background:"#16181D",padding:"14px 16px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+          <div>
+            <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.4rem",color:"#ECECEE",lineHeight:1.1}}>
+              Amapola <span style={{color:"#E5484D",fontStyle:"normal"}}>·</span> Interno
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
+              {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
+              {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
+              {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>🍳 Cocina</button>}
             </div>
           </div>
-        )}
-        {tab==="dashboard"&&adminUnlocked&&<TabDashboard
-          boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos}
-          sueldos={sueldos} gastos={gastos} proveedores={proveedores}
-          calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
-          cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
-        {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
-        {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos}/>}
-        {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
-        {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
-        {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
-        {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
-        {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente}/>}
-        {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
-        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
-        {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
-        {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo}/>}
-        {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
-        {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial={cocinaMode?cocinaSubInicial:"inventario"}/>}
-        {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
+          {!cocinaMode&&(
+            <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
+              <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+                <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
+                <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
+              </div>
+              <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
+                <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>EFECTIVO</span>
+                <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{display:"flex",background:"#16181D",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
+          {TABS.map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E5484D":"3px solid transparent",color:tab===t.id?"#ECECEE":"#6B6D76",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
+          ))}
+        </div>
+        <div style={{padding:"20px 16px 100px",maxWidth:500,margin:"0 auto"}}>
+          {content}
+        </div>
       </div>
-      {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
-      {lightbox&&<Lightbox src={lightbox} onClose={()=>setLightbox(null)}/>}
-      {toastMsg&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#16181D",color:"#ECECEE",padding:"10px 22px",borderRadius:20,fontSize:".84rem",fontWeight:600,zIndex:700,whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>{toastMsg}</div>}
-    </div>
+    )}
+    {cocinaLoginOpen&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>🍳 Acceso Cocina</p>
+          <input type="password" placeholder="Contraseña" value={cocinaPassInput} autoFocus
+            onChange={e=>{setCocinaPassInput(e.target.value);setCocinaPassErr(false);}}
+            onKeyDown={e=>{if(e.key==="Enter"){if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}}}
+            style={{...iS,border:`1.5px solid ${cocinaPassErr?"#E5484D":"#ECECEE"}`,marginBottom:8}}/>
+          {cocinaPassErr&&<p style={{color:"#E5484D",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
+          <div style={{display:"flex",gap:10,marginTop:8}}>
+            <button onClick={()=>{setCocinaLoginOpen(false);setCocinaPassInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>{if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#16181D",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
+          </div>
+        </div>
+      </div>
+    )}
+    {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
+    {lightbox&&<Lightbox src={lightbox} onClose={()=>setLightbox(null)}/>}
+    {toastMsg&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#16181D",color:"#ECECEE",padding:"10px 22px",borderRadius:20,fontSize:".84rem",fontWeight:600,zIndex:700,whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>{toastMsg}</div>}
+    </>
   );
 }
-
-
-
 function TabResumen({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,proveedores,calcDeuda}){
   const hoy=new Date().toDateString();
   const mismaFecha=(iso,d)=>new Date(iso).toDateString()===d;
