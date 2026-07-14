@@ -2713,7 +2713,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   // Cruce global (desde siempre)
-  const totalIngresosGlobal=cierresCaja.reduce((s,c)=>s+Number(c.totalDigital||0),0);
+  const totalIngresosGlobal=(cierresCaja||[]).reduce((s,c)=>s+Number(c.totalDigital||0),0);
   const totalEgresosGlobal=[...pagosTr,...sueldosTr,...gastosTr].reduce((s,m)=>s+Number(m.monto||0),0);
   const diferenciaGlobal=totalIngresosGlobal-totalEgresosGlobal;
 
