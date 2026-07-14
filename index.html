@@ -199,6 +199,7 @@ function App(){
     window.addEventListener("resize",onResize);
     return()=>window.removeEventListener("resize",onResize);
   },[]);
+  const[sidebarOpen,setSidebarOpen]=useState(false);
   const[lightbox,setLightbox]=useState(null);
   const[passModal,setPassModal]=useState(null);
   const[syncMsg,setSyncMsg]=useState("Conectando…");
@@ -516,75 +517,51 @@ function App(){
   );
 
   return(
-    <>
-    {isDesktop?(
-      <div style={{display:"grid",gridTemplateColumns:"240px 1fr",minHeight:"100dvh",background:"#F6F6F7"}}>
-        <div style={{background:"#16181D",padding:"20px 14px",display:"flex",flexDirection:"column",gap:2,position:"sticky",top:0,height:"100dvh",overflowY:"auto"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,padding:"0 6px"}}>
+    <div style={{minHeight:"100dvh",background:"#F6F6F7",color:"#16181D"}}>
+    {SaveErrorBanner}
+    {!isDesktop&&(
+      <div style={{background:"#16181D",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+        <button onClick={()=>setSidebarOpen(true)} aria-label="Abrir menú" style={{background:"none",border:"none",color:"#ECECEE",fontSize:"1.4rem",padding:"2px 6px",cursor:"pointer"}}>☰</button>
+        <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.15rem",color:"#ECECEE"}}>Amapola <span style={{color:"#E5484D",fontStyle:"normal"}}>·</span> Interno</div>
+        {!cocinaMode?(
+          <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:16,padding:"4px 10px",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>{fmt(saldo)}</div>
+        ):<div style={{width:24}}/>}
+      </div>
+    )}
+    <div style={{display:"flex",alignItems:"flex-start"}}>
+      <div style={{background:"#16181D",padding:"20px 14px",display:"flex",flexDirection:"column",gap:2,width:240,minWidth:240,boxSizing:"border-box",position:isDesktop?"sticky":"fixed",top:0,left:0,height:"100dvh",overflowY:"auto",zIndex:600,transform:isDesktop?"none":(sidebarOpen?"translateX(0)":"translateX(-100%)"),transition:"transform .25s ease"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,padding:"0 6px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:34,height:34,borderRadius:8,background:"#B42318",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",fontWeight:700,color:"#fff"}}>A</div>
             <div>
               <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.05rem",color:"#ECECEE",lineHeight:1.1}}>Amapola</div>
               <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
             </div>
           </div>
-          {!cocinaMode&&(
-            <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:14,cursor:"pointer"}}>
-              <div style={{opacity:.7,fontSize:".62rem"}}>EFECTIVO</div>
-              <div style={{fontSize:"1.1rem",fontWeight:700}}>{fmt(saldo)}</div>
-            </div>
-          )}
-          {TABS.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:10,background:tab===t.id?"rgba(255,255,255,.1)":"none",border:"none",color:tab===t.id?"#ECECEE":"#6B6D76",fontSize:".82rem",fontWeight:tab===t.id?600:500,padding:"9px 10px",borderRadius:8,cursor:"pointer",textAlign:"left"}}>{t.label}</button>
-          ))}
-          <div style={{marginTop:"auto",paddingTop:14}}>
-            {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>Salir admin</button>}
-            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>Salir modo cocina</button>}
-            {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>🍳 Cocina</button>}
-          </div>
+          {!isDesktop&&<button onClick={()=>setSidebarOpen(false)} aria-label="Cerrar menú" style={{background:"none",border:"none",color:"#ECECEE",fontSize:"1.2rem",cursor:"pointer",padding:"2px 6px"}}>✕</button>}
         </div>
-        <div style={{padding:"28px 36px",maxWidth:1100,width:"100%",margin:"0 auto",boxSizing:"border-box"}}>
-          {SaveErrorBanner}
-          {content}
+        {!cocinaMode&&(
+          <div onClick={()=>{setTab("caja");if(!isDesktop)setSidebarOpen(false);}} style={{background:"#0F6E56",color:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:14,cursor:"pointer"}}>
+            <div style={{opacity:.7,fontSize:".62rem"}}>EFECTIVO</div>
+            <div style={{fontSize:"1.1rem",fontWeight:700}}>{fmt(saldo)}</div>
+          </div>
+        )}
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>{setTab(t.id);if(!isDesktop)setSidebarOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,background:tab===t.id?"rgba(255,255,255,.1)":"none",border:"none",color:tab===t.id?"#ECECEE":"#6B6D76",fontSize:".82rem",fontWeight:tab===t.id?600:500,padding:"9px 10px",borderRadius:8,cursor:"pointer",textAlign:"left"}}>{t.label}</button>
+        ))}
+        <div style={{marginTop:"auto",paddingTop:14}}>
+          {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>Salir admin</button>}
+          {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>Salir modo cocina</button>}
+          {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".68rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"5px 9px",cursor:"pointer",width:"100%"}}>🍳 Cocina</button>}
         </div>
       </div>
-    ):(
-      <div style={{background:"#F6F6F7",minHeight:"100dvh",color:"#16181D"}}>
-        {SaveErrorBanner}
-        <div style={{background:"#16181D",padding:"14px 16px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
-          <div>
-            <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.4rem",color:"#ECECEE",lineHeight:1.1}}>
-              Amapola <span style={{color:"#E5484D",fontStyle:"normal"}}>·</span> Interno
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
-              {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
-              {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
-              {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>🍳 Cocina</button>}
-            </div>
-          </div>
-          {!cocinaMode&&(
-            <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
-              <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-                <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
-                <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
-              </div>
-              <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
-                <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>EFECTIVO</span>
-                <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
-              </div>
-            </div>
-          )}
-        </div>
-        <div style={{display:"flex",background:"#16181D",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
-          {TABS.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E5484D":"3px solid transparent",color:tab===t.id?"#ECECEE":"#6B6D76",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
-          ))}
-        </div>
-        <div style={{padding:"20px 16px 100px",maxWidth:500,margin:"0 auto"}}>
-          {content}
-        </div>
+      {!isDesktop&&sidebarOpen&&(
+        <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:500}}/>
+      )}
+      <div style={{padding:isDesktop?"28px 36px":"16px 16px 100px",maxWidth:isDesktop?1100:640,width:"100%",margin:"0 auto",boxSizing:"border-box"}}>
+        {content}
       </div>
-    )}
+    </div>
     {cocinaLoginOpen&&(
       <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
@@ -604,7 +581,7 @@ function App(){
     {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
     {lightbox&&<Lightbox src={lightbox} onClose={()=>setLightbox(null)}/>}
     {toastMsg&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#16181D",color:"#ECECEE",padding:"10px 22px",borderRadius:20,fontSize:".84rem",fontWeight:600,zIndex:700,whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>{toastMsg}</div>}
-    </>
+    </div>
   );
 }
 function TabResumen({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,proveedores,calcDeuda}){
