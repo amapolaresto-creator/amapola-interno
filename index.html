@@ -373,8 +373,6 @@ function App(){
   };
   const calcDigital=()=>{
     const ini=Number(cajaDigitalSaldo)||0;
-    // Solo contamos movimientos posteriores al último ajuste/corte de banco.
-    // Los movimientos anteriores ya están reflejados en el saldo "ini" cargado manualmente.
     const ultimoAjuste=(cajaDigitalAjustes&&cajaDigitalAjustes.length>0)?cajaDigitalAjustes[0].fecha:null;
     const esPosterior=f=>!ultimoAjuste||new Date(f)>new Date(ultimoAjuste);
     const ingresos=cierresCaja.filter(c=>esPosterior(c.fecha)).reduce((s,c)=>s+Number(c.totalDigital||0),0);
@@ -382,8 +380,9 @@ function App(){
     const egSueldosT=sueldos.filter(s=>s.forma==="Transferencia"&&esPosterior(s.fecha)).reduce((s2,s)=>s2+Number(s.monto||0),0);
     const egGastosT=gastos.filter(g=>g.forma==="Transferencia"&&esPosterior(g.fecha)).reduce((s,g)=>s+Number(g.monto||0),0);
     const egTotal=egTransf+egSueldosT+egGastosT;
-    const saldoReal=ini+ingresos-egTotal;
-    const deducciones=0; // ya no se calcula así
+    // saldoReal = exactamente el saldo real ingresado manualmente (no se suman/restan movimientos)
+    const saldoReal=ini;
+    const deducciones=0;
     return{ini,ingresos,egTransf:egTotal,saldoReal,deducciones};
   };
   // Pares de proveedores que comparten crédito (excedente de A → B y viceversa)
@@ -2713,28 +2712,23 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     toast("Eliminado ✓");
   };
 
+  // Cruce global (desde siempre)
+  const totalIngresosGlobal=cierresCaja.reduce((s,c)=>s+Number(c.totalDigital||0),0);
+  const totalEgresosGlobal=[...pagosTr,...sueldosTr,...gastosTr].reduce((s,m)=>s+Number(m.monto||0),0);
+  const diferenciaGlobal=totalIngresosGlobal-totalEgresosGlobal;
+
   return(<>
-    <ST help={"La Caja Digital estima el saldo disponible en el banco/digital a partir de los ingresos registrados en los cierres de caja (MP, FUDO, tarjetas, etc.) menos los egresos por transferencia.\n\n• Saldo inicial banco: ingresá el saldo real que ves en el banco cuando hacés conciliación. A partir de ese punto el sistema recalcula desde cero.\n• Motivo del ajuste: opcional, para dejar registro de por qué actualizaste (ej: liquidación FUDO acreditada).\n• El botón 'Usar ajuste calculado' te propone el valor estimado por el sistema para que lo uses como nuevo punto de corte.\n\nEn Gerencia podés ver el consolidado Caja fuerte + Caja digital."}>Caja Digital</ST><SS>Movimientos en transferencia y saldo banco.</SS>
+    <ST help={"Caja Digital muestra el saldo real del banco que actualizás manualmente, más un cruce de todos los ingresos digitales registrados vs los egresos por transferencia.\n\n• Actualizá el saldo cada vez que revisés el banco.\n• El cruce te muestra el flujo total acumulado desde el inicio."}>Caja Digital</ST><SS>Saldo real del banco y cruce de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"20px",marginBottom:16,border:"2px solid #B7860B"}}>
+    <div style={{background:"#2C1A0E",borderRadius:14,padding:"20px",marginBottom:12,border:"2px solid #B7860B"}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2.2rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(saldoReal)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginBottom:14}}>Saldo inicial + ingresos digitales − egresos en transferencia</div>
-      <div style={{display:"flex",gap:8}}>
-        <input type="number" value={saldoBanco} onChange={e=>setSaldoBanco(e.target.value)}
-          placeholder="Ingresar saldo inicial banco"
-          style={{flex:1,background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".85rem",outline:"none",fontFamily:"inherit"}}/>
-        <button onClick={actualizarBanco} disabled={savingBanco}
-          style={{padding:"9px 16px",border:"none",borderRadius:8,background:"#B7860B",color:"#fff",fontWeight:600,fontSize:".82rem",cursor:"pointer",flexShrink:0}}>
-          {savingBanco?"…":"Actualizar"}
-        </button>
-      </div>
-      <input type="text" value={notaBanco} onChange={e=>setNotaBanco(e.target.value)}
-        placeholder="Motivo del ajuste (opcional, ej: liquidación vieja acreditada)"
-        style={{width:"100%",marginTop:8,background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".8rem",outline:"none",fontFamily:"inherit"}}/>
-      <button onClick={()=>setSaldoBanco("67434420.48")} style={{display:"block",width:"100%",marginTop:10,padding:9,borderRadius:8,border:"1.5px solid #E8DCC8",background:"rgba(255,255,255,.08)",color:"#E8DCC8",fontWeight:600,fontSize:".78rem",cursor:"pointer"}}>
-        ⚡ Usar ajuste calculado: $67.434.420,48
+      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginBottom:14}}>Saldo real del banco actualizado manualmente</div>
+      <input value={saldoBanco} onChange={e=>setSaldoBanco(e.target.value)} placeholder="Ingresar saldo real del banco" style={{...iS,background:"rgba(255,255,255,.08)",color:"#E8DCC8",border:"1px solid rgba(255,255,255,.2)",marginBottom:8}}/>
+      <input value={notaBanco} onChange={e=>setNotaBanco(e.target.value)} placeholder="Motivo del ajuste (opcional, ej: liquidación vieja acreditada)" style={{...iS,background:"rgba(255,255,255,.08)",color:"#E8DCC8",border:"1px solid rgba(255,255,255,.2)",marginBottom:10}}/>
+      <button onClick={actualizarBanco} disabled={savingBanco} style={{width:"100%",padding:11,borderRadius:10,border:"1.5px solid #B7860B",background:"#B7860B",color:"#fff",fontWeight:700,fontSize:".84rem",cursor:"pointer"}}>
+        {savingBanco?"Guardando…":"Actualizar"}
       </button>
       {cajaDigitalAjustes&&cajaDigitalAjustes.length>0&&(
         <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(255,255,255,.15)"}}>
@@ -2753,6 +2747,27 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
           </div>
         </div>
       )}
+    </div>
+
+    {/* CRUCE GLOBAL */}
+    <div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:16,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📊 Cruce de movimientos digitales (desde siempre)</div>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1,background:"#EAF5F0",borderRadius:10,padding:"12px 14px"}}>
+          <div style={{fontSize:".62rem",color:"#2D6A4F",fontWeight:700,textTransform:"uppercase",letterSpacing:".05em",marginBottom:4}}>📥 Ingresos digitales</div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#2D6A4F"}}>{fmt(totalIngresosGlobal)}</div>
+          <div style={{fontSize:".62rem",color:"#7B7063",marginTop:2}}>Suma de cierres de caja</div>
+        </div>
+        <div style={{flex:1,background:"#FFF0EF",borderRadius:10,padding:"12px 14px"}}>
+          <div style={{fontSize:".62rem",color:"#C0392B",fontWeight:700,textTransform:"uppercase",letterSpacing:".05em",marginBottom:4}}>📤 Egresos transferencia</div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#C0392B"}}>{fmt(totalEgresosGlobal)}</div>
+          <div style={{fontSize:".62rem",color:"#7B7063",marginTop:2}}>Pagos + sueldos + gastos</div>
+        </div>
+      </div>
+      <div style={{marginTop:10,padding:"10px 14px",background:diferenciaGlobal>=0?"#EAF5F0":"#FFF0EF",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:".78rem",fontWeight:600,color:"#2C1A0E"}}>Diferencia neta</span>
+        <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:diferenciaGlobal>=0?"#2D6A4F":"#C0392B"}}>{diferenciaGlobal>=0?"+":""}{fmt(diferenciaGlobal)}</span>
+      </div>
     </div>
 
     {/* LIBRO DIGITAL */}
@@ -2924,7 +2939,7 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,saveCajaDigi
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"20px",marginBottom:16,border:"2px solid #B7860B"}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Caja digital · Banco</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(saldoReal)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginBottom:12}}>Saldo inicial + ingresos digitales − egresos transferencia</div>
+      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginBottom:12}}>Saldo real del banco actualizado manualmente</div>
       <div style={{display:"flex",gap:8,marginBottom:14}}>
         {[["Inicial",fmt(ini||0),"#E8DCC8"],["Ingresos dig.",fmt(ingresos),"#a9dfbf"],["Egresos transf.",fmt(egTransf),"#f5b7b1"]].map(([l,v,c])=>(
           <div key={l} style={{flex:1,background:"rgba(255,255,255,.07)",borderRadius:10,padding:"8px 10px"}}>
