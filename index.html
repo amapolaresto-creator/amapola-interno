@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:system-ui,sans-serif;background:#F9F6F1;color:#2C1A0E;}
+body{font-family:system-ui,sans-serif;background:#F6F6F7;color:#16181D;}
 input,select,textarea,button{font-family:inherit;}
 </style>
 </head>
@@ -94,18 +94,18 @@ async function compress(b64,maxW=900,q=0.72){
   });
 }
 
-const iS={width:"100%",border:"1.5px solid #E8DCC8",borderRadius:8,padding:"10px 12px",fontSize:".92rem",color:"#2C1A0E",background:"#F9F6F1",outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+const iS={width:"100%",border:"1.5px solid #ECECEE",borderRadius:8,padding:"10px 12px",fontSize:".92rem",color:"#16181D",background:"#F6F6F7",outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
 const sS={...iS,appearance:"none",WebkitAppearance:"none"};
 
 const Card=({title,children})=>(
-  <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
-    {title&&<div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>{title}</div>}
+  <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginBottom:16}}>
+    {title&&<div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:14}}>{title}</div>}
     {children}
   </div>
 );
 const Field=({label,children})=>(
   <div style={{marginTop:14}}>
-    <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>{label}</label>
+    <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#16181D",marginBottom:5}}>{label}</label>
     {children}
   </div>
 );
@@ -115,29 +115,29 @@ const Inp=({value,onChange,placeholder,type="text"})=>(
 const TA=({value,onChange,placeholder})=>(
   <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{...iS,resize:"none",height:58}}/>
 );
-const Btn=({children,onClick,bg="#2C1A0E",disabled})=>(
+const Btn=({children,onClick,bg="#16181D",disabled})=>(
   <button onClick={onClick} disabled={disabled} style={{display:"block",width:"100%",padding:13,marginTop:18,border:"none",borderRadius:10,background:disabled?"#bbb":bg,color:"#fff",fontSize:".95rem",fontWeight:600,cursor:disabled?"default":"pointer"}}>{children}</button>
 );
 const SmBtn=({children,onClick,color})=>(
-  <button onClick={onClick} style={{padding:"6px 14px",border:"none",borderRadius:8,background:"#E8DCC8",color:color||"#2C1A0E",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>{children}</button>
+  <button onClick={onClick} style={{padding:"6px 14px",border:"none",borderRadius:8,background:"#ECECEE",color:color||"#16181D",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>{children}</button>
 );
 const Thumb=({children,size=48})=>(
-  <div style={{width:size,height:size,background:"#E8DCC8",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.3rem",flexShrink:0}}>{children}</div>
+  <div style={{width:size,height:size,background:"#ECECEE",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.3rem",flexShrink:0}}>{children}</div>
 );
 const Empty=({icon,children})=>(
-  <div style={{textAlign:"center",padding:"28px 10px",color:"#7B7063",fontSize:".85rem"}}>
+  <div style={{textAlign:"center",padding:"28px 10px",color:"#6B6D76",fontSize:".85rem"}}>
     <div style={{fontSize:"2rem",marginBottom:8}}>{icon}</div>{children}
   </div>
 );
 function HelpModal({texto,onClose}){
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={onClose}>
+    <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={onClose}>
       <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 48px",width:"100%",maxWidth:460}} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <span style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>❓ Ayuda</span>
-          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+          <span style={{fontFamily:"inherit",fontSize:"1.1rem"}}>❓ Ayuda</span>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#6B6D76"}}>✕</button>
         </div>
-        <div style={{fontSize:".85rem",color:"#2C1A0E",lineHeight:1.65,whiteSpace:"pre-line"}}>{texto}</div>
+        <div style={{fontSize:".85rem",color:"#16181D",lineHeight:1.65,whiteSpace:"pre-line"}}>{texto}</div>
       </div>
     </div>
   );
@@ -146,13 +146,13 @@ function ST({children,help}){
   const[open,setOpen]=useState(false);
   return(<>
     {open&&<HelpModal texto={help} onClose={()=>setOpen(false)}/>}
-    <p style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
+    <p style={{fontFamily:"inherit",fontSize:"1.3rem",marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
       {children}
-      {help&&<button onClick={()=>setOpen(true)} style={{background:"none",border:"1px solid #E8DCC8",borderRadius:"50%",width:20,height:20,fontSize:".65rem",cursor:"pointer",color:"#7B7063",padding:0,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>?</button>}
+      {help&&<button onClick={()=>setOpen(true)} style={{background:"none",border:"1px solid #ECECEE",borderRadius:"50%",width:20,height:20,fontSize:".65rem",cursor:"pointer",color:"#6B6D76",padding:0,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>?</button>}
     </p>
   </>);
 }
-const SS=({children})=><p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{children}</p>;
+const SS=({children})=><p style={{fontSize:".82rem",color:"#6B6D76",marginBottom:20}}>{children}</p>;
 
 let _toast=null;
 const toast=msg=>_toast?.(msg);
@@ -161,17 +161,17 @@ function PassModal({onConfirm,onCancel}){
   const[pass,setPass]=useState("");const[err,setErr]=useState(false);
   const check=()=>pass===PASS?onConfirm():(setErr(true),setPass(""));
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
       <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-        <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>🔒 Acción de administrador</p>
+        <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>🔒 Acción de administrador</p>
         <input type="password" placeholder="Contraseña" value={pass} autoFocus
           onChange={e=>{setPass(e.target.value);setErr(false);}}
           onKeyDown={e=>e.key==="Enter"&&check()}
-          style={{...iS,border:`1.5px solid ${err?"#E74C3C":"#E8DCC8"}`,marginBottom:8}}/>
-        {err&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
+          style={{...iS,border:`1.5px solid ${err?"#E5484D":"#ECECEE"}`,marginBottom:8}}/>
+        {err&&<p style={{color:"#E5484D",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
         <div style={{display:"flex",gap:10,marginTop:8}}>
-          <button onClick={onCancel} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-          <button onClick={check} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Confirmar</button>
+          <button onClick={onCancel} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+          <button onClick={check} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#B42318",color:"#fff",fontWeight:600,cursor:"pointer"}}>Confirmar</button>
         </div>
       </div>
     </div>
@@ -196,7 +196,7 @@ function App(){
   const[lightbox,setLightbox]=useState(null);
   const[passModal,setPassModal]=useState(null);
   const[syncMsg,setSyncMsg]=useState("Conectando…");
-  const[syncColor,setSyncColor]=useState("#B7860B");
+  const[syncColor,setSyncColor]=useState("#B45309");
   const[adminUnlocked,setAdminUnlocked]=useState(false);
   const[adminPassInput,setAdminPassInput]=useState("");
   const[adminPassErr,setAdminPassErr]=useState(false);
@@ -230,9 +230,9 @@ function App(){
   ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo};
 
   _toast=msg=>{setToastMsg(msg);setTimeout(()=>setToastMsg(""),2800);};
-  const online=()=>{setSyncMsg("● Online");setSyncColor("#40916C");};
-  const saving=()=>{setSyncMsg("◌ Guardando…");setSyncColor("#B7860B");};
-  const offline=()=>{setSyncMsg("● Sin conexión");setSyncColor("#E74C3C");};
+  const online=()=>{setSyncMsg("● Online");setSyncColor("#1D9E75");};
+  const saving=()=>{setSyncMsg("◌ Guardando…");setSyncColor("#B45309");};
+  const offline=()=>{setSyncMsg("● Sin conexión");setSyncColor("#E5484D");};
 
   const cargar=async()=>{
     try{
@@ -349,13 +349,13 @@ function App(){
   };
 
   const SaveErrorBanner=saveError?(
-    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:1000,background:"#C0392B",color:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>
+    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:1000,background:"#B42318",color:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>
       <span style={{fontSize:"1.2rem"}}>❌</span>
       <div style={{flex:1}}>
         <div style={{fontWeight:700,fontSize:".85rem"}}>Error al guardar — dato NO registrado</div>
         <div style={{fontSize:".75rem",opacity:.9}}>{saveError.msg}</div>
       </div>
-      <button onClick={reintentarSave} style={{background:"#fff",color:"#C0392B",border:"none",borderRadius:8,padding:"8px 14px",fontWeight:700,fontSize:".82rem",cursor:"pointer",flexShrink:0}}>Reintentar</button>
+      <button onClick={reintentarSave} style={{background:"#fff",color:"#B42318",border:"none",borderRadius:8,padding:"8px 14px",fontWeight:700,fontSize:".82rem",cursor:"pointer",flexShrink:0}}>Reintentar</button>
       <button onClick={()=>setSaveError(null)} style={{background:"none",border:"none",color:"#fff",fontSize:"1.2rem",cursor:"pointer",padding:"0 4px",flexShrink:0}}>✕</button>
     </div>
   ):null;
@@ -601,9 +601,9 @@ function TabResumen({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicia
   const mesNombre=now.toLocaleDateString("es-AR",{month:"long",year:"numeric"});
 
   const Row=({label,value,color})=>(
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid #F9F6F1"}}>
-      <span style={{fontSize:".85rem",color:"#7B7063"}}>{label}</span>
-      <span style={{fontWeight:700,fontSize:".9rem",color:color||"#2C1A0E"}}>{fmt(value)}</span>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid #F6F6F7"}}>
+      <span style={{fontSize:".85rem",color:"#6B6D76"}}>{label}</span>
+      <span style={{fontWeight:700,fontSize:".9rem",color:color||"#16181D"}}>{fmt(value)}</span>
     </div>
   );
 
@@ -612,34 +612,34 @@ function TabResumen({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicia
 
     {/* HOY */}
     <Card title={`Hoy · ${new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}`}>
-      <Row label="💵 Cierres de caja" value={totalCierresHoy} color="#2D6A4F"/>
+      <Row label="💵 Cierres de caja" value={totalCierresHoy} color="#0F6E56"/>
       <Row label="🧾 Boletas recibidas" value={boletasHoy.reduce((s,b)=>s+Number(b.monto||0),0)}/>
-      <Row label="💸 Pagos a proveedores" value={totalPagosHoy} color="#C0392B"/>
-      <Row label="👥 Sueldos pagados" value={totalSueldosHoy} color="#C0392B"/>
-      <Row label="🏠 Gastos fijos" value={totalGastosHoy} color="#C0392B"/>
+      <Row label="💸 Pagos a proveedores" value={totalPagosHoy} color="#B42318"/>
+      <Row label="👥 Sueldos pagados" value={totalSueldosHoy} color="#B42318"/>
+      <Row label="🏠 Gastos fijos" value={totalGastosHoy} color="#B42318"/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0 0",marginTop:4}}>
         <span style={{fontWeight:700,fontSize:".9rem"}}>Neto del día</span>
-        <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:netoHoy>=0?"#2D6A4F":"#C0392B"}}>{fmt(netoHoy)}</span>
+        <span style={{fontFamily:"inherit",fontSize:"1.3rem",fontWeight:700,color:netoHoy>=0?"#0F6E56":"#B42318"}}>{fmt(netoHoy)}</span>
       </div>
     </Card>
 
     {/* MES */}
     <Card title={`Mes · ${mesNombre}`}>
-      <Row label="💵 Total cierres" value={totalCierresMes} color="#2D6A4F"/>
-      <Row label="💸 Pagos a proveedores" value={totalPagosMes} color="#C0392B"/>
-      <Row label="👥 Sueldos" value={totalSueldosMes} color="#C0392B"/>
-      <Row label="🏠 Gastos fijos" value={totalGastosMes} color="#C0392B"/>
-      <Row label="📦 Total egresos" value={totalEgresosMes} color="#C0392B"/>
+      <Row label="💵 Total cierres" value={totalCierresMes} color="#0F6E56"/>
+      <Row label="💸 Pagos a proveedores" value={totalPagosMes} color="#B42318"/>
+      <Row label="👥 Sueldos" value={totalSueldosMes} color="#B42318"/>
+      <Row label="🏠 Gastos fijos" value={totalGastosMes} color="#B42318"/>
+      <Row label="📦 Total egresos" value={totalEgresosMes} color="#B42318"/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0 0",marginTop:4}}>
         <span style={{fontWeight:700,fontSize:".9rem"}}>Neto del mes</span>
-        <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:netoMes>=0?"#2D6A4F":"#C0392B"}}>{fmt(netoMes)}</span>
+        <span style={{fontFamily:"inherit",fontSize:"1.3rem",fontWeight:700,color:netoMes>=0?"#0F6E56":"#B42318"}}>{fmt(netoMes)}</span>
       </div>
     </Card>
 
     {/* DEUDA PROVEEDORES */}
     <Card title="🏪 Deuda total a proveedores">
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#C0392B",margin:"4px 0 2px"}}>{fmt(deudaTotal)}</div>
-      <div style={{fontSize:".78rem",color:"#7B7063"}}>Suma de deuda pendiente con todos los proveedores</div>
+      <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#B42318",margin:"4px 0 2px"}}>{fmt(deudaTotal)}</div>
+      <div style={{fontSize:".78rem",color:"#6B6D76"}}>Suma de deuda pendiente con todos los proveedores</div>
     </Card>
   </>);
 }
@@ -664,17 +664,17 @@ function NotasTurno({cierres}){
 
   return(
     <Card title="📝 Notas del turno">
-      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:10}}>Dejá avisos para el turno siguiente.</p>
+      <p style={{fontSize:".78rem",color:"#6B6D76",marginBottom:10}}>Dejá avisos para el turno siguiente.</p>
       <TA value={nota} onChange={setNota} placeholder="Ej: falta papel de cocina, llamó el proveedor de carnes..."/>
-      <Btn bg="#2C1A0E" onClick={guardar}>Agregar nota</Btn>
+      <Btn bg="#16181D" onClick={guardar}>Agregar nota</Btn>
       {notas.length>0&&<div style={{marginTop:16}}>
         {notas.map(n=>(
-          <div key={n.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid #F9F6F1"}}>
+          <div key={n.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid #F6F6F7"}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:".88rem",color:"#2C1A0E",lineHeight:1.4}}>{n.texto}</div>
-              <div style={{fontSize:".7rem",color:"#7B7063",marginTop:3}}>{fmtFL(n.fecha)} · {fmtH(n.fecha)}</div>
+              <div style={{fontSize:".88rem",color:"#16181D",lineHeight:1.4}}>{n.texto}</div>
+              <div style={{fontSize:".7rem",color:"#6B6D76",marginTop:3}}>{fmtFL(n.fecha)} · {fmtH(n.fecha)}</div>
             </div>
-            <button onClick={()=>eliminar(n.id)} style={{background:"none",border:"none",color:"#E74C3C",fontSize:"1.1rem",cursor:"pointer",flexShrink:0,padding:"0 4px"}}>✕</button>
+            <button onClick={()=>eliminar(n.id)} style={{background:"none",border:"none",color:"#E5484D",fontSize:"1.1rem",cursor:"pointer",flexShrink:0,padding:"0 4px"}}>✕</button>
           </div>
         ))}
       </div>}
@@ -777,26 +777,26 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
   return(<>
     <ST help={"Registrá acá cada boleta que llega de un proveedor.\n\n• Elegí el proveedor del desplegable (usá + si no existe).\n• 'Empleado que recibe' es quien firmó o recibió la boleta físicamente.\n• El monto suma a la deuda del proveedor y descuenta del disponible cuando lo pagás.\n• Podés adjuntar una foto como respaldo.\n• Desde el listado podés registrar un pago directo al proveedor."}>Boletas de proveedores</ST><SS>Registrá cada boleta ni bien llega el proveedor.</SS>
     {crearModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nuevo proveedor</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>Nuevo proveedor</p>
           <input value={nuevoNombre} onChange={e=>setNuevoNombre(e.target.value)} placeholder="Nombre del proveedor" autoFocus onKeyDown={e=>e.key==="Enter"&&crearProveedor()} style={{...iS,marginBottom:8}}/>
-          <p style={{fontSize:".75rem",color:"#7B7063",marginBottom:16}}>Podés agregar la deuda inicial desde la pestana Proveedores.</p>
+          <p style={{fontSize:".75rem",color:"#6B6D76",marginBottom:16}}>Podés agregar la deuda inicial desde la pestana Proveedores.</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setCrearModal(false);setNuevoNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={crearProveedor} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+            <button onClick={()=>{setCrearModal(false);setNuevoNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={crearProveedor} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#B42318",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
           </div>
         </div>
       </div>
     )}
     {crearEmpModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
           <input value={nuevoEmpNombre} onChange={e=>setNuevoEmpNombre(e.target.value)} placeholder="Nombre" autoFocus onKeyDown={e=>e.key==="Enter"&&crearEmpleado()} style={{...iS,marginBottom:16}}/>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setCrearEmpModal(false);setNuevoEmpNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={crearEmpleado} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
+            <button onClick={()=>{setCrearEmpModal(false);setNuevoEmpNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={crearEmpleado} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#16181D",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
           </div>
         </div>
       </div>
@@ -808,7 +808,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
             <option value="">— Elegí un proveedor —</option>
             {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
           </select>
-          <button onClick={()=>setCrearModal(true)} title="Crear proveedor" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+          <button onClick={()=>setCrearModal(true)} title="Crear proveedor" style={{padding:"10px 14px",border:"1.5px solid #ECECEE",borderRadius:8,background:"#F6F6F7",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
       </Field>
       <Field label="Empleado que recibe">
@@ -817,7 +817,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
             <option value="">— Elegí —</option>
             {empleados.filter(e=>e.estado==="Activo").map(e=><option key={e.id} value={e.nombre}>{e.nombre}</option>)}
           </select>
-          <button onClick={()=>setCrearEmpModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+          <button onClick={()=>setCrearEmpModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #ECECEE",borderRadius:8,background:"#F6F6F7",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
       </Field>
       <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
@@ -826,7 +826,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
 
       {/* DETALLE DE PRODUCTOS */}
       <div style={{marginTop:16,borderTop:"1px solid #F2EAE0",paddingTop:16}}>
-        <div style={{fontSize:".78rem",fontWeight:700,color:"#2C1A0E",marginBottom:10}}>📦 Productos comprados <span style={{fontWeight:400,color:"#7B7063"}}>(opcional — suman al stock automáticamente)</span></div>
+        <div style={{fontSize:".78rem",fontWeight:700,color:"#16181D",marginBottom:10}}>📦 Productos comprados <span style={{fontWeight:400,color:"#6B6D76"}}>(opcional — suman al stock automáticamente)</span></div>
         <div style={{display:"flex",gap:6,alignItems:"flex-end",marginBottom:10}}>
           <div style={{flex:1}}>
             <select value={lineaProdId} onChange={e=>setLineaProdId(e.target.value)} style={{...sS,fontSize:".78rem"}}>
@@ -838,32 +838,32 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
           <div style={{width:72}}>
             <input type="number" min="0" value={lineaCant} onChange={e=>setLineaCant(e.target.value)} placeholder="Cant." style={{...iS,fontSize:".82rem",textAlign:"center"}}/>
           </div>
-          <button onClick={agregarLinea} style={{padding:"10px 12px",border:"none",borderRadius:8,background:"#2C1A0E",color:"#fff",fontWeight:700,fontSize:"1rem",cursor:"pointer",flexShrink:0}}>+</button>
+          <button onClick={agregarLinea} style={{padding:"10px 12px",border:"none",borderRadius:8,background:"#16181D",color:"#fff",fontWeight:700,fontSize:"1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
         {lineas.length>0&&(
-          <div style={{background:"#F9F6F1",borderRadius:10,overflow:"hidden"}}>
+          <div style={{background:"#F6F6F7",borderRadius:10,overflow:"hidden"}}>
             {lineas.map(l=>(
               <div key={l.catalogoId} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:"1px solid #F2EAE0"}}>
-                <span style={{flex:1,fontSize:".82rem",color:"#2C1A0E"}}>{l.nombre}</span>
-                <span style={{fontSize:".82rem",fontWeight:700,color:"#2D6A4F"}}>{l.cantidad} {l.unidad}</span>
-                <button onClick={()=>quitarLinea(l.catalogoId)} style={{background:"none",border:"none",color:"#C0392B",fontSize:".8rem",cursor:"pointer",padding:"0 4px"}}>✕</button>
+                <span style={{flex:1,fontSize:".82rem",color:"#16181D"}}>{l.nombre}</span>
+                <span style={{fontSize:".82rem",fontWeight:700,color:"#0F6E56"}}>{l.cantidad} {l.unidad}</span>
+                <button onClick={()=>quitarLinea(l.catalogoId)} style={{background:"none",border:"none",color:"#B42318",fontSize:".8rem",cursor:"pointer",padding:"0 4px"}}>✕</button>
               </div>
             ))}
-            <div style={{padding:"8px 12px",fontSize:".72rem",color:"#7B7063"}}>
+            <div style={{padding:"8px 12px",fontSize:".72rem",color:"#6B6D76"}}>
               {lineas.length} producto{lineas.length!==1?"s":""} · suman al stock al guardar
             </div>
           </div>
         )}
       </div>
 
-      <Btn bg="#C0392B" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar boleta"}</Btn>
-      {prov&&<button onClick={()=>setPagoModal(true)} style={{display:"block",width:"100%",padding:12,marginTop:10,border:"1.5px solid #B7860B",borderRadius:10,background:"#FEF9E7",color:"#B7860B",fontFamily:"inherit",fontSize:".9rem",fontWeight:600,cursor:"pointer"}}>💸 Registrar pago a este proveedor</button>}
+      <Btn bg="#B42318" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar boleta"}</Btn>
+      {prov&&<button onClick={()=>setPagoModal(true)} style={{display:"block",width:"100%",padding:12,marginTop:10,border:"1.5px solid #B45309",borderRadius:10,background:"#FEF9E7",color:"#B45309",fontFamily:"inherit",fontSize:".9rem",fontWeight:600,cursor:"pointer"}}>💸 Registrar pago a este proveedor</button>}
     </Card>
     {pagoModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>💸 Pago a {prov}</p>
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Disponible en efectivo: <strong>{fmt(saldo)}</strong></p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:4}}>💸 Pago a {prov}</p>
+          <p style={{fontSize:".78rem",color:"#6B6D76",marginBottom:16}}>Disponible en efectivo: <strong>{fmt(saldo)}</strong></p>
           <Field label="Monto ($)"><Inp type="number" value={pagoMonto} onChange={setPagoMonto} placeholder="0"/></Field>
           <Field label="Forma de pago">
             <select value={pagoForma} onChange={e=>setPagoForma(e.target.value)} style={sS}>
@@ -872,12 +872,12 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
               <option value="Cheque">Cheque</option>
             </select>
           </Field>
-          {pagoForma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Descontará del efectivo disponible.</div>}
+          {pagoForma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#0F6E56",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Descontará del efectivo disponible.</div>}
           <Field label="Observaciones"><TA value={pagoObs} onChange={setPagoObs} placeholder="Ej: pago parcial, boleta #..."/></Field>
           <Field label="Fecha"><Inp type="date" value={pagoFecha} onChange={setPagoFecha}/></Field>
           <div style={{display:"flex",gap:10,marginTop:18}}>
-            <button onClick={()=>setPagoModal(false)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={guardarPago} disabled={pagoBusy} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#B7860B",color:"#fff",fontWeight:600,cursor:"pointer"}}>{pagoBusy?"Guardando…":"Confirmar pago"}</button>
+            <button onClick={()=>setPagoModal(false)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={guardarPago} disabled={pagoBusy} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#B45309",color:"#fff",fontWeight:600,cursor:"pointer"}}>{pagoBusy?"Guardando…":"Confirmar pago"}</button>
           </div>
         </div>
       </div>
@@ -895,18 +895,18 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
         .sort((a,b2)=>new Date(b2.fecha)-new Date(a.fecha));
       const total=filtradas.reduce((s,b)=>s+Number(b.monto||0),0);
       return(
-        <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
-          <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📄 Registro de boletas</div>
+        <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginTop:16}}>
+          <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:14}}>📄 Registro de boletas</div>
           <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
             {[["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
               <button key={v} onClick={()=>{setFiltroBoletas(v);if(v==="mes"){setDesdeBol(iso(inicioMes));setHastaBol(iso(hoy2));}if(v==="hoy"){setDesdeBol(iso(hoy2));setHastaBol(iso(hoy2));}}}
-                style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroBoletas===v?"#2C1A0E":"#E8DCC8",color:filtroBoletas===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+                style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroBoletas===v?"#16181D":"#ECECEE",color:filtroBoletas===v?"#ECECEE":"#16181D"}}>{l}</button>
             ))}
           </div>
           {filtroBoletas==="custom"&&(
             <div style={{display:"flex",gap:8,marginBottom:10}}>
-              <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label><input type="date" value={desdeBol} onChange={e=>setDesdeBol(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
-              <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label><input type="date" value={hastaBol} onChange={e=>setHastaBol(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
+              <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Desde</label><input type="date" value={desdeBol} onChange={e=>setDesdeBol(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
+              <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Hasta</label><input type="date" value={hastaBol} onChange={e=>setHastaBol(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
             </div>
           )}
           {/* FILTRO PROVEEDOR */}
@@ -921,29 +921,29 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
               </div>
             ):null;
           })()}
-          {filtradas.length>0&&<div style={{fontSize:".78rem",color:"#7B7063",marginBottom:10}}>{filtradas.length} boleta{filtradas.length!==1?"s":""}{filtroProvBol?` · ${filtroProvBol}`:""} · Total: <strong style={{color:"#C0392B"}}>{fmt(total)}</strong></div>}
+          {filtradas.length>0&&<div style={{fontSize:".78rem",color:"#6B6D76",marginBottom:10}}>{filtradas.length} boleta{filtradas.length!==1?"s":""}{filtroProvBol?` · ${filtroProvBol}`:""} · Total: <strong style={{color:"#B42318"}}>{fmt(total)}</strong></div>}
           {!filtradas.length?<Empty icon="📄">Sin boletas en el período</Empty>:(
             <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:380}}>
                 <thead>
-                  <tr style={{background:"#F9F6F1"}}>
+                  <tr style={{background:"#F6F6F7"}}>
                     {["Fecha","Proveedor","Recibió","Monto"].map(h=>(
-                      <th key={h} style={{padding:"7px 8px",textAlign:h==="Monto"?"right":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                      <th key={h} style={{padding:"7px 8px",textAlign:h==="Monto"?"right":"left",fontWeight:700,color:"#6B6D76",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #ECECEE",whiteSpace:"nowrap"}}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtradas.map((b,i)=>(
-                    <tr key={b.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                      <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>
+                    <tr key={b.id} style={{background:i%2===0?"#fff":"#F6F6F7"}}>
+                      <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#6B6D76",fontSize:".72rem"}}>
                         {fmtF(b.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(b.fecha)}</span>
                       </td>
                       <td style={{padding:"6px 8px"}}>
                         <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{b.proveedor||"—"}</div>
-                        {b.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{b.obs}</div>}
+                        {b.obs&&<div style={{fontSize:".63rem",color:"#6B6D76",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{b.obs}</div>}
                       </td>
-                      <td style={{padding:"6px 8px",fontSize:".72rem",color:"#7B7063",whiteSpace:"nowrap"}}>{b.empleado||"—"}</td>
-                      <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>{b.monto>0?fmt(b.monto):"—"}</td>
+                      <td style={{padding:"6px 8px",fontSize:".72rem",color:"#6B6D76",whiteSpace:"nowrap"}}>{b.empleado||"—"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#B42318",fontWeight:700,whiteSpace:"nowrap"}}>{b.monto>0?fmt(b.monto):"—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -990,27 +990,27 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
     <ST help={"Acá se registran los cierres de turno: el dinero en efectivo que se deposita en la caja fuerte al final de cada turno.\n\n• Cada cierre suma al saldo de efectivo disponible.\n• Los pagos a proveedores en efectivo restan de ese saldo.\n• El saldo inicial es el monto con el que arrancó la caja (protegido por contraseña).\n• El disponible final = Inicial + Cierres − Pagos en efectivo."}>Caja fuerte</ST><SS>Cierres de turno y efectivo disponible.</SS>
 
     {nuevoModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
           <input value={nuevoNombre} onChange={e=>setNuevoNombre(e.target.value)} placeholder="Nombre" autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCajero()} style={{...iS,marginBottom:16}}/>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setNuevoModal(false);setNuevoNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={agregarCajero} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
+            <button onClick={()=>{setNuevoModal(false);setNuevoNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={agregarCajero} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#16181D",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
           </div>
         </div>
       </div>
     )}
 
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2.4rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(saldo)}</div>
-      <div style={{fontSize:".74rem",color:"#E8DCC8",opacity:.6}}>Saldo inicial + cierres − pagos en efectivo</div>
+    <div style={{background:"#16181D",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#ECECEE",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontFamily:"inherit",fontSize:"2.4rem",color:"#ECECEE",margin:"4px 0 2px"}}>{fmt(saldo)}</div>
+      <div style={{fontSize:".74rem",color:"#ECECEE",opacity:.6}}>Saldo inicial + cierres − pagos en efectivo</div>
       <div style={{display:"flex",gap:10,marginTop:14}}>
         {[["Inicial",fmt(ini)],["Cierres",fmt(tot)],["Pagado",fmt(eg)]].map(([l,v])=>(
           <div key={l} style={{flex:1,background:"rgba(255,255,255,.07)",borderRadius:10,padding:"10px 12px"}}>
-            <div style={{fontSize:".62rem",color:"#E8DCC8",opacity:.6,textTransform:"uppercase",letterSpacing:".05em"}}>{l}</div>
-            <div style={{fontSize:".95rem",fontWeight:700,color:"#E8DCC8",marginTop:2}}>{v}</div>
+            <div style={{fontSize:".62rem",color:"#ECECEE",opacity:.6,textTransform:"uppercase",letterSpacing:".05em"}}>{l}</div>
+            <div style={{fontSize:".95rem",fontWeight:700,color:"#ECECEE",marginTop:2}}>{v}</div>
           </div>
         ))}
       </div>
@@ -1023,14 +1023,14 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
             <option value="">— Elegí —</option>
             {cajeros.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
-          <button onClick={()=>setNuevoModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+          <button onClick={()=>setNuevoModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #ECECEE",borderRadius:8,background:"#F6F6F7",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
       </Field>
       <Field label="Caja"><select value={turno} onChange={e=>setTurno(e.target.value)} style={sS}>{["Mostrador Día","Mostrador Noche","Post FUDO 1","Post FUDO 2"].map(t=><option key={t}>{t}</option>)}</select></Field>
       <Field label="Monto a depositar ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: faltaron $500..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#2D6A4F" onClick={guardarCierre} disabled={busy}>{busy?"Guardando…":"Confirmar cierre de turno"}</Btn>
+      <Btn bg="#0F6E56" onClick={guardarCierre} disabled={busy}>{busy?"Guardando…":"Confirmar cierre de turno"}</Btn>
     </Card>
     <NotasTurno cierres={cierres}/>
   </>);
@@ -1066,22 +1066,22 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
     <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta del disponible en caja fuerte Y de la deuda del proveedor.\n• Transferencia / Cheque: solo descuenta la deuda del proveedor, no toca la caja.\n• Si pagás de más a Avenida Efectivo o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
 
     {nuevoRegModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
           <input value={nuevoRegNombre} onChange={e=>setNuevoRegNombre(e.target.value)} placeholder="Nombre" autoFocus onKeyDown={e=>e.key==="Enter"&&agregarRegistrador()} style={{...iS,marginBottom:16}}/>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setNuevoRegModal(false);setNuevoRegNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={agregarRegistrador} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
+            <button onClick={()=>{setNuevoRegModal(false);setNuevoRegNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={agregarRegistrador} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#16181D",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
           </div>
         </div>
       </div>
     )}
 
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6}}>Solo aplica a pagos en efectivo</div>
+    <div style={{background:"#16181D",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#ECECEE",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#ECECEE",margin:"4px 0 0"}}>{fmt(saldo)}</div>
+      <div style={{fontSize:".72rem",color:"#ECECEE",opacity:.6}}>Solo aplica a pagos en efectivo</div>
     </div>
     <Card title="Nuevo pago">
       <Field label="Proveedor">
@@ -1096,7 +1096,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
             <option value="">— Elegí —</option>
             {registradores.map(r=><option key={r} value={r}>{r}</option>)}
           </select>
-          <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+          <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #ECECEE",borderRadius:8,background:"#F6F6F7",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
       </Field>
       <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
@@ -1107,10 +1107,10 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
           <option value="Cheque">Cheque</option>
         </select>
       </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
+      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#0F6E56",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: pago parcial, boleta #..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#B7860B" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
+      <Btn bg="#B45309" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
     </Card>
     {/* REGISTRO DE PAGOS */}
     <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos}/>
@@ -1176,23 +1176,23 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
   const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":"💸";
 
   return(
-    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📒 Libro diario · Efectivo</div>
+    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginTop:16}}>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:14}}>📒 Libro diario · Efectivo</div>
 
       {/* FILTROS FECHA */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
-          <button key={v} onClick={()=>{setFiltroFecha(v);if(v==="mes"){setDesde(iso(inicioMes));setHasta(iso(hoy));}if(v==="hoy"){setDesde(iso(hoy));setHasta(iso(hoy));}}} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#2C1A0E":"#E8DCC8",color:filtroFecha===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+          <button key={v} onClick={()=>{setFiltroFecha(v);if(v==="mes"){setDesde(iso(inicioMes));setHasta(iso(hoy));}if(v==="hoy"){setDesde(iso(hoy));setHasta(iso(hoy));}}} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#16181D":"#ECECEE",color:filtroFecha===v?"#ECECEE":"#16181D"}}>{l}</button>
         ))}
       </div>
       {filtroFecha==="custom"&&(
         <div style={{display:"flex",gap:8,marginBottom:10}}>
           <div style={{flex:1}}>
-            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Desde</label>
             <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
           </div>
           <div style={{flex:1}}>
-            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Hasta</label>
             <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
           </div>
         </div>
@@ -1202,8 +1202,8 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {[["todos","Todos"],["debe","💸 Solo Debe"],["haber","💵 Solo Haber"]].map(([v,l])=>(
           <button key={v} onClick={()=>setFiltroTipo(v)} style={{flex:1,padding:"5px 8px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,
-            background:filtroTipo===v?(v==="debe"?"#C0392B":v==="haber"?"#2D6A4F":"#2C1A0E"):"#E8DCC8",
-            color:filtroTipo===v?"#fff":"#2C1A0E"}}>{l}</button>
+            background:filtroTipo===v?(v==="debe"?"#B42318":v==="haber"?"#0F6E56":"#16181D"):"#ECECEE",
+            color:filtroTipo===v?"#fff":"#16181D"}}>{l}</button>
         ))}
       </div>
 
@@ -1214,17 +1214,17 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:380}}>
             <thead>
-              <tr style={{background:"#F9F6F1"}}>
+              <tr style={{background:"#F6F6F7"}}>
                 {["Fecha","Concepto","Debe","Haber","Saldo"].map(h=>(
-                  <th key={h} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Concepto"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                  <th key={h} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Concepto"?"left":"right",fontWeight:700,color:"#6B6D76",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #ECECEE",whiteSpace:"nowrap"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
 
               {filas.map((f,i)=>(
-                <tr key={f.id+i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                  <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>
+                <tr key={f.id+i} style={{background:i%2===0?"#fff":"#F6F6F7"}}>
+                  <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#6B6D76",fontSize:".72rem"}}>
                     {fmtF(f.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(f.fecha)}</span>
                   </td>
                   <td style={{padding:"6px 8px"}}>
@@ -1232,21 +1232,21 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
                       <span style={{flexShrink:0}}>{iconoCat(f._cat)}</span>
                       <div style={{minWidth:0}}>
                         <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
-                        {f.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.obs}</div>}
+                        {f.obs&&<div style={{fontSize:".63rem",color:"#6B6D76",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.obs}</div>}
                       </div>
                     </div>
                   </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#B42318",fontWeight:700,whiteSpace:"nowrap"}}>
                     {f._signo<0?fmt(Math.abs(f._delta)):""}
                   </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#0F6E56",fontWeight:700,whiteSpace:"nowrap"}}>
                     {f._signo>0?fmt(f._delta):""}
                   </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:f._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(f._saldo)}</td>
+                  <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:f._saldo>=0?"#16181D":"#B42318"}}>{fmt(f._saldo)}</td>
                 </tr>
               ))}
-              <tr style={{background:"#2C1A0E"}}>
-                <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
+              <tr style={{background:"#16181D"}}>
+                <td colSpan={2} style={{padding:"8px 10px",color:"#ECECEE",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
                 <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalEgresos)}</td>
                 <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalIngresos)}</td>
                 <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:neto>=0?"#a9dfbf":"#f5b7b1"}}>{fmt(saldoBase+neto)}</td>
@@ -1449,7 +1449,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
 
 function TabFichajes(){
   return(
-    <div style={{display:"flex",flexDirection:"column",height:"calc(100dvh - 120px)",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"calc(100dvh - 120px)",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(22,24,29,.08)"}}>
       <iframe
         src="https://laureanoalonso.github.io/amapolahorarios/"
         style={{width:"100%",height:"100%",border:"none",borderRadius:14}}
@@ -1491,22 +1491,22 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
   return(<>
     <ST help={"Registrá acá los pagos de sueldos, anticipos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Anticipo, Horas extra y Vacaciones.\n• Cada pago descuenta del efectivo disponible si se paga en efectivo.\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
     {crearModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nuevo empleado</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>Nuevo empleado</p>
           <input value={nuevoEmp} onChange={e=>setNuevoEmp(e.target.value)} placeholder="Nombre del empleado" autoFocus
             onKeyDown={e=>e.key==="Enter"&&crearEmp()} style={{...iS,marginBottom:16}}/>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setCrearModal(false);setNuevoEmp("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={crearEmp} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+            <button onClick={()=>{setCrearModal(false);setNuevoEmp("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={crearEmp} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#0F6E56",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
           </div>
         </div>
       </div>
     )}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
+    <div style={{background:"#16181D",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#ECECEE",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#ECECEE",margin:"4px 0 0"}}>{fmt(saldo)}</div>
+      <div style={{fontSize:".72rem",color:"#ECECEE",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
     </div>
     <Card title="Registrar pago de sueldo">
       <Field label="Empleado">
@@ -1515,7 +1515,7 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
             <option value="">— Elegí un empleado —</option>
             {listaEmps.map(e=><option key={e} value={e}>{e}</option>)}
           </select>
-          <button onClick={()=>setCrearModal(true)} title="Agregar empleado" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+          <button onClick={()=>setCrearModal(true)} title="Agregar empleado" style={{padding:"10px 14px",border:"1.5px solid #ECECEE",borderRadius:8,background:"#F6F6F7",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
       </Field>
       <Field label="Concepto">
@@ -1535,21 +1535,21 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
           <option value="Transferencia">Transferencia (solo registro)</option>
         </select>
       </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
+      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#0F6E56",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: quincena, adelanto..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#2D6A4F" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar sueldo"}</Btn>
+      <Btn bg="#0F6E56" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar sueldo"}</Btn>
     </Card>
     <Card title={`Pagos de hoy (${hoyItems.length})`}>
       {!hoyItems.length?<Empty icon="👥">Sin pagos registrados hoy</Empty>:hoyItems.map(s=>(
-        <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
+        <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F6F6F7"}}>
           <Thumb size={44}>👤</Thumb>
           <div style={{flex:1}}>
             <div style={{fontWeight:600,fontSize:".9rem"}}>{s.empleado}</div>
-            <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
-            {s.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{s.obs}</div>}
+            <div style={{fontSize:".73rem",color:"#6B6D76",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
+            {s.obs&&<div style={{fontSize:".73rem",color:"#6B6D76"}}>{s.obs}</div>}
           </div>
-          <div style={{fontWeight:700,fontSize:".9rem",color:s.forma==="Efectivo"?"#C0392B":"#B7860B"}}>{fmt(s.monto)}</div>
+          <div style={{fontWeight:700,fontSize:".9rem",color:s.forma==="Efectivo"?"#B42318":"#B45309"}}>{fmt(s.monto)}</div>
         </div>
       ))}
     </Card>
@@ -1592,22 +1592,22 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
 
   return(<>
     <ST>Gastos fijos</ST><SS>Registrá pagos de gastos fijos del negocio.</SS>
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
+    <div style={{background:"#16181D",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#ECECEE",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#ECECEE",margin:"4px 0 0"}}>{fmt(saldo)}</div>
+      <div style={{fontSize:".72rem",color:"#ECECEE",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
     </div>
     <Card title="Registrar gasto fijo">
       {nuevaCatModal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
+            <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
             <input value={nuevaCat} onChange={e=>setNuevaCat(e.target.value)} placeholder="Ej: Seguro, Contador, ..."
               autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCategoria()}
               style={{...iS,marginBottom:16}}/>
             <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={agregarCategoria} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#7B7063",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+              <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={agregarCategoria} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#6B6D76",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
             </div>
           </div>
         </div>
@@ -1619,7 +1619,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
             {cats.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
           <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
-            style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+            style={{padding:"10px 14px",border:"1.5px solid #ECECEE",borderRadius:8,background:"#F6F6F7",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
       </Field>
       <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
@@ -1629,21 +1629,21 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
           <option value="Transferencia">Transferencia (solo registro)</option>
         </select>
       </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
+      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#0F6E56",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: mes de junio, cuota..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#7B7063" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar gasto"}</Btn>
+      <Btn bg="#6B6D76" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar gasto"}</Btn>
     </Card>
     <Card title={`Gastos de hoy (${hoyItems.length})`}>
       {!hoyItems.length?<Empty icon="🏠">Sin gastos registrados hoy</Empty>:hoyItems.map(g=>(
-        <div key={g.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
+        <div key={g.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F6F6F7"}}>
           <Thumb size={44}>📋</Thumb>
           <div style={{flex:1}}>
             <div style={{fontWeight:600,fontSize:".9rem"}}>{g.categoria}</div>
-            <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{g.forma} · {fmtH(g.fecha)}</div>
-            {g.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{g.obs}</div>}
+            <div style={{fontSize:".73rem",color:"#6B6D76",marginTop:2}}>{g.forma} · {fmtH(g.fecha)}</div>
+            {g.obs&&<div style={{fontSize:".73rem",color:"#6B6D76"}}>{g.obs}</div>}
           </div>
-          <div style={{fontWeight:700,fontSize:".9rem",color:g.forma==="Efectivo"?"#C0392B":"#B7860B"}}>{fmt(g.monto)}</div>
+          <div style={{fontWeight:700,fontSize:".9rem",color:g.forma==="Efectivo"?"#B42318":"#B45309"}}>{fmt(g.monto)}</div>
         </div>
       ))}
     </Card>
@@ -1684,24 +1684,24 @@ function LibroDiarioGastos({gastos}){
   const totalGen=totalEf+totalTr;
 
   return(
-    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📒 Libro diario · Gastos</div>
+    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginTop:16}}>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:14}}>📒 Libro diario · Gastos</div>
 
       {/* FILTROS FECHA */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
           <button key={v} onClick={()=>{setFiltroFecha(v);if(v==="mes"){setDesde(iso(inicioMes));setHasta(iso(hoy));}if(v==="hoy"){setDesde(iso(hoy));setHasta(iso(hoy));}}}
-            style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#2C1A0E":"#E8DCC8",color:filtroFecha===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+            style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#16181D":"#ECECEE",color:filtroFecha===v?"#ECECEE":"#16181D"}}>{l}</button>
         ))}
       </div>
       {filtroFecha==="custom"&&(
         <div style={{display:"flex",gap:8,marginBottom:10}}>
           <div style={{flex:1}}>
-            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Desde</label>
             <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
           </div>
           <div style={{flex:1}}>
-            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Hasta</label>
             <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
           </div>
         </div>
@@ -1711,16 +1711,16 @@ function LibroDiarioGastos({gastos}){
       <div style={{display:"flex",gap:6,marginBottom:12}}>
         {[["todo","Todo"],["Efectivo","Efectivo"],["Transferencia","Transferencia"]].map(([v,l])=>(
           <button key={v} onClick={()=>setFiltroForma(v)}
-            style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroForma===v?"#2C1A0E":"transparent",color:filtroForma===v?"#E8DCC8":"#7B7063"}}>{l}</button>
+            style={{padding:"4px 10px",borderRadius:20,border:"1px solid #ECECEE",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroForma===v?"#16181D":"transparent",color:filtroForma===v?"#ECECEE":"#6B6D76"}}>{l}</button>
         ))}
       </div>
 
       {/* RESUMEN */}
       {filas.length>0&&(
         <div style={{display:"flex",gap:8,marginBottom:12}}>
-          {[["💵 Efectivo",fmt(totalEf),"#C0392B"],["🏦 Transferencia",fmt(totalTr),"#B7860B"],["Total",fmt(totalGen),"#2C1A0E"]].map(([l,v,c])=>(
-            <div key={l} style={{flex:1,background:"#F9F6F1",borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
-              <div style={{fontSize:".6rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
+          {[["💵 Efectivo",fmt(totalEf),"#B42318"],["🏦 Transferencia",fmt(totalTr),"#B45309"],["Total",fmt(totalGen),"#16181D"]].map(([l,v,c])=>(
+            <div key={l} style={{flex:1,background:"#F6F6F7",borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
+              <div style={{fontSize:".6rem",color:"#6B6D76",textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
               <div style={{fontWeight:700,fontSize:".85rem",color:c,marginTop:2}}>{v}</div>
             </div>
           ))}
@@ -1732,32 +1732,32 @@ function LibroDiarioGastos({gastos}){
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:360}}>
             <thead>
-              <tr style={{background:"#F9F6F1"}}>
+              <tr style={{background:"#F6F6F7"}}>
                 {["Fecha","Categoría","Forma","Monto"].map(h=>(
-                  <th key={h} style={{padding:"7px 8px",textAlign:h==="Monto"?"right":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                  <th key={h} style={{padding:"7px 8px",textAlign:h==="Monto"?"right":"left",fontWeight:700,color:"#6B6D76",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #ECECEE",whiteSpace:"nowrap"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filas.map((g,i)=>(
-                <tr key={g.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                  <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>
+                <tr key={g.id} style={{background:i%2===0?"#fff":"#F6F6F7"}}>
+                  <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#6B6D76",fontSize:".72rem"}}>
                     {fmtF(g.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(g.fecha)}</span>
                   </td>
                   <td style={{padding:"6px 8px"}}>
                     <div style={{fontWeight:600,fontSize:".78rem"}}>{g.categoria}</div>
-                    {g.obs&&<div style={{fontSize:".65rem",color:"#7B7063"}}>{g.obs}</div>}
+                    {g.obs&&<div style={{fontSize:".65rem",color:"#6B6D76"}}>{g.obs}</div>}
                   </td>
                   <td style={{padding:"6px 8px"}}>
-                    <span style={{background:g.forma==="Efectivo"?"#EAF5F0":"#FEF9E7",color:g.forma==="Efectivo"?"#2D6A4F":"#B7860B",borderRadius:6,padding:"2px 8px",fontSize:".68rem",fontWeight:600}}>
+                    <span style={{background:g.forma==="Efectivo"?"#EAF5F0":"#FEF9E7",color:g.forma==="Efectivo"?"#0F6E56":"#B45309",borderRadius:6,padding:"2px 8px",fontSize:".68rem",fontWeight:600}}>
                       {g.forma==="Efectivo"?"💵 Ef.":"🏦 Transf."}
                     </span>
                   </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#C0392B",whiteSpace:"nowrap"}}>{fmt(g.monto)}</td>
+                  <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#B42318",whiteSpace:"nowrap"}}>{fmt(g.monto)}</td>
                 </tr>
               ))}
-              <tr style={{background:"#2C1A0E"}}>
-                <td colSpan={3} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTAL</td>
+              <tr style={{background:"#16181D"}}>
+                <td colSpan={3} style={{padding:"8px 10px",color:"#ECECEE",fontWeight:700,fontSize:".76rem"}}>TOTAL</td>
                 <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalGen)}</td>
               </tr>
             </tbody>
@@ -1777,7 +1777,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     <ST help={"El módulo de Stock tiene cuatro secciones:\n\n📋 Inventario: listado de productos con cantidad actual, mínimo y alertas de stock bajo.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     <div style={{display:"flex",gap:6,marginBottom:18,flexWrap:"wrap"}}>
       {SUBS.map(s=>(
-        <button key={s.id} onClick={()=>setSub(s.id)} style={{flex:"1 1 auto",padding:"9px 8px",borderRadius:10,border:"none",background:sub===s.id?"#2C1A0E":"#E8DCC8",color:sub===s.id?"#fff":"#2C1A0E",fontSize:".74rem",fontWeight:600,cursor:"pointer"}}>{s.label}</button>
+        <button key={s.id} onClick={()=>setSub(s.id)} style={{flex:"1 1 auto",padding:"9px 8px",borderRadius:10,border:"none",background:sub===s.id?"#16181D":"#ECECEE",color:sub===s.id?"#fff":"#16181D",fontSize:".74rem",fontWeight:600,cursor:"pointer"}}>{s.label}</button>
       ))}
     </div>
     {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat}/>}
@@ -1848,9 +1848,9 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
   return(<>
     {conAlerta.length>0&&(
       <div style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"12px 16px",marginBottom:16}}>
-        <div style={{fontWeight:700,fontSize:".82rem",color:"#C0392B",marginBottom:6}}>⚠️ Stock bajo en {conAlerta.length} producto{conAlerta.length!==1?"s":""}</div>
+        <div style={{fontWeight:700,fontSize:".82rem",color:"#B42318",marginBottom:6}}>⚠️ Stock bajo en {conAlerta.length} producto{conAlerta.length!==1?"s":""}</div>
         {conAlerta.map(s=>(
-          <div key={s.id} style={{fontSize:".78rem",color:"#C0392B",padding:"2px 0"}}>
+          <div key={s.id} style={{fontSize:".78rem",color:"#B42318",padding:"2px 0"}}>
             · {s.nombre}: {s.cantidad} {s.unidad} (mín: {s.minimo})
           </div>
         ))}
@@ -1858,13 +1858,13 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
     )}
 
     {movModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>{movModal.nombre}</p>
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Stock actual: <strong>{movModal.cantidad} {movModal.unidad}</strong></p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:4}}>{movModal.nombre}</p>
+          <p style={{fontSize:".78rem",color:"#6B6D76",marginBottom:16}}>Stock actual: <strong>{movModal.cantidad} {movModal.unidad}</strong></p>
           <div style={{display:"flex",gap:8,marginBottom:14}}>
             {["entrada","salida"].map(t=>(
-              <button key={t} onClick={()=>setMovTipo(t)} style={{flex:1,padding:10,borderRadius:10,border:"none",background:movTipo===t?(t==="entrada"?"#2D6A4F":"#C0392B"):"#E8DCC8",color:movTipo===t?"#fff":"#2C1A0E",fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>
+              <button key={t} onClick={()=>setMovTipo(t)} style={{flex:1,padding:10,borderRadius:10,border:"none",background:movTipo===t?(t==="entrada"?"#0F6E56":"#B42318"):"#ECECEE",color:movTipo===t?"#fff":"#16181D",fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>
                 {t==="entrada"?"📥 Entrada":"📤 Salida"}
               </button>
             ))}
@@ -1872,8 +1872,8 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
           <Field label={`Cantidad (${movModal.unidad})`}><Inp type="number" value={movCant} onChange={setMovCant} placeholder="0"/></Field>
           <Field label="Observaciones"><TA value={movObs} onChange={setMovObs} placeholder="Ej: compra del día, venta..."/></Field>
           <div style={{display:"flex",gap:10,marginTop:18}}>
-            <button onClick={()=>{setMovModal(null);setMovCant("");setMovObs("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={registrarMovimiento} style={{flex:1,padding:12,borderRadius:10,border:"none",background:movTipo==="entrada"?"#2D6A4F":"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Confirmar</button>
+            <button onClick={()=>{setMovModal(null);setMovCant("");setMovObs("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={registrarMovimiento} style={{flex:1,padding:12,borderRadius:10,border:"none",background:movTipo==="entrada"?"#0F6E56":"#B42318",color:"#fff",fontWeight:600,cursor:"pointer"}}>Confirmar</button>
           </div>
         </div>
       </div>
@@ -1897,16 +1897,16 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
         </Field>
       )}
       {provSel&&!productosDelProv.length&&!editId&&(
-        <p style={{fontSize:".74rem",color:"#7B7063",marginTop:6}}>Este proveedor no tiene productos cargados. Agregalos desde la pestaña 🗂️ Catálogo.</p>
+        <p style={{fontSize:".74rem",color:"#6B6D76",marginTop:6}}>Este proveedor no tiene productos cargados. Agregalos desde la pestaña 🗂️ Catálogo.</p>
       )}
-      {editId&&<p style={{fontSize:".82rem",color:"#7B7063",marginTop:8}}>Editando: <strong>{stock.find(s=>s.id===editId)?.nombre}</strong></p>}
+      {editId&&<p style={{fontSize:".82rem",color:"#6B6D76",marginTop:8}}>Editando: <strong>{stock.find(s=>s.id===editId)?.nombre}</strong></p>}
       <div style={{display:"flex",gap:8,marginTop:14}}>
         <div style={{flex:1}}>
-          <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Cantidad actual</label>
+          <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#16181D",marginBottom:5}}>Cantidad actual</label>
           <Inp type="number" value={cantidad} onChange={setCantidad} placeholder="0"/>
         </div>
         <div style={{flex:1}}>
-          <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Stock mínimo</label>
+          <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#16181D",marginBottom:5}}>Stock mínimo</label>
           <Inp type="number" value={minimo} onChange={setMinimo} placeholder="0"/>
         </div>
       </div>
@@ -1916,8 +1916,8 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
         </select>
       </Field>
       <div style={{display:"flex",gap:8,marginTop:18}}>
-        {editId&&<button onClick={limpiar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>}
-        <Btn bg={editId?"#555":"#2C1A0E"} onClick={guardarProducto} disabled={busy}>{busy?"Guardando…":editId?"Actualizar":"Agregar al inventario"}</Btn>
+        {editId&&<button onClick={limpiar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>}
+        <Btn bg={editId?"#555":"#16181D"} onClick={guardarProducto} disabled={busy}>{busy?"Guardando…":editId?"Actualizar":"Agregar al inventario"}</Btn>
       </div>
     </Card>
 
@@ -1925,26 +1925,26 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
       const alerta=Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
       const pct=s.minimo>0?Math.min(100,(s.cantidad/s.minimo)*100):100;
       return(
-        <div key={s.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)",border:alerta?"1.5px solid #f5b7b1":"1.5px solid transparent"}}>
+        <div key={s.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(22,24,29,.07)",border:alerta?"1.5px solid #f5b7b1":"1.5px solid transparent"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 <div style={{fontWeight:700,fontSize:".95rem"}}>{s.nombre}</div>
-                {alerta&&<span style={{background:"#FFF0EF",color:"#C0392B",fontSize:".6rem",fontWeight:700,padding:"2px 6px",borderRadius:20}}>⚠️ BAJO</span>}
+                {alerta&&<span style={{background:"#FFF0EF",color:"#B42318",fontSize:".6rem",fontWeight:700,padding:"2px 6px",borderRadius:20}}>⚠️ BAJO</span>}
               </div>
-              <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.proveedor?`${s.proveedor} · `:""}Mínimo: {s.minimo} {s.unidad}</div>
+              <div style={{fontSize:".73rem",color:"#6B6D76",marginTop:2}}>{s.proveedor?`${s.proveedor} · `:""}Mínimo: {s.minimo} {s.unidad}</div>
             </div>
             <div style={{textAlign:"right"}}>
-              <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:alerta?"#C0392B":"#2D6A4F"}}>{s.cantidad}</div>
-              <div style={{fontSize:".72rem",color:"#7B7063"}}>{s.unidad}</div>
+              <div style={{fontFamily:"inherit",fontSize:"1.4rem",color:alerta?"#B42318":"#0F6E56"}}>{s.cantidad}</div>
+              <div style={{fontSize:".72rem",color:"#6B6D76"}}>{s.unidad}</div>
             </div>
           </div>
-          {s.minimo>0&&<div style={{margin:"10px 0 0",background:"#F9F6F1",borderRadius:4,height:5,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,pct)+"%",background:alerta?"#C0392B":"#2D6A4F",borderRadius:4}}/></div>}
+          {s.minimo>0&&<div style={{margin:"10px 0 0",background:"#F6F6F7",borderRadius:4,height:5,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,pct)+"%",background:alerta?"#B42318":"#0F6E56",borderRadius:4}}/></div>}
           <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
-            <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{padding:"6px 12px",border:"none",borderRadius:8,background:"#EAF5F0",color:"#2D6A4F",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>📥 Entrada</button>
-            <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{padding:"6px 12px",border:"none",borderRadius:8,background:"#FFF0EF",color:"#C0392B",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>📤 Salida</button>
+            <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{padding:"6px 12px",border:"none",borderRadius:8,background:"#EAF5F0",color:"#0F6E56",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>📥 Entrada</button>
+            <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{padding:"6px 12px",border:"none",borderRadius:8,background:"#FFF0EF",color:"#B42318",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>📤 Salida</button>
             <SmBtn onClick={()=>editar(s)}>Editar</SmBtn>
-            <SmBtn color="#C0392B" onClick={()=>eliminar(s.id)}>Eliminar</SmBtn>
+            <SmBtn color="#B42318" onClick={()=>eliminar(s.id)}>Eliminar</SmBtn>
           </div>
         </div>
       );
@@ -1992,7 +1992,7 @@ function StockProduccion({stock,saveStock,catalogo}){
 
   return(<>
     <Card title="Registrar producción">
-      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Cargá cuánto se produjo hoy de cada producto interno. Suma automáticamente al stock.</p>
+      <p style={{fontSize:".78rem",color:"#6B6D76",marginBottom:14}}>Cargá cuánto se produjo hoy de cada producto interno. Suma automáticamente al stock.</p>
       <Field label="Producto">
         <select value={prodId} onChange={e=>setProdId(e.target.value)} style={sS}>
           <option value="">— Elegí un producto —</option>
@@ -2006,7 +2006,7 @@ function StockProduccion({stock,saveStock,catalogo}){
         <Inp value={obs} onChange={setObs} placeholder="Ej: tanda de la mañana"/>
       </Field>
       <Field label="Fecha"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#2D6A4F" onClick={registrar} disabled={busy}>{busy?"Guardando…":"Registrar producción"}</Btn>
+      <Btn bg="#0F6E56" onClick={registrar} disabled={busy}>{busy?"Guardando…":"Registrar producción"}</Btn>
     </Card>
 
     {prodHoy.length>0&&(
@@ -2018,11 +2018,11 @@ function StockProduccion({stock,saveStock,catalogo}){
             <div key={s.id} style={{padding:"10px 0",borderBottom:"1px solid #F2EAE0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontWeight:600,fontSize:".88rem"}}>{s.nombre}</div>
-                <div style={{fontSize:".72rem",color:"#7B7063"}}>{movsHoy.length} registro{movsHoy.length!==1?"s":""} hoy</div>
+                <div style={{fontSize:".72rem",color:"#6B6D76"}}>{movsHoy.length} registro{movsHoy.length!==1?"s":""} hoy</div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#2D6A4F"}}>+{totalHoy}</div>
-                <div style={{fontSize:".68rem",color:"#7B7063"}}>{s.unidad}</div>
+                <div style={{fontFamily:"inherit",fontSize:"1.2rem",color:"#0F6E56"}}>+{totalHoy}</div>
+                <div style={{fontSize:".68rem",color:"#6B6D76"}}>{s.unidad}</div>
               </div>
             </div>
           );
@@ -2082,7 +2082,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat}){
         )}
       </Field>
       <div style={{marginTop:6}}>
-        <button onClick={()=>{setMostrarNuevoProv(!mostrarNuevoProv);setProvSel("");setProvNuevo("");}} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".74rem",fontWeight:600,cursor:"pointer",padding:0}}>
+        <button onClick={()=>{setMostrarNuevoProv(!mostrarNuevoProv);setProvSel("");setProvNuevo("");}} style={{background:"none",border:"none",color:"#0F6E56",fontSize:".74rem",fontWeight:600,cursor:"pointer",padding:0}}>
           {mostrarNuevoProv?"← Elegir de la lista":"+ Es un proveedor nuevo"}
         </button>
       </div>
@@ -2116,22 +2116,22 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat}){
         g.items.push(c);
       });
       return(
-        <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden"}}>
+        <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(22,24,29,.08)",overflow:"hidden"}}>
           {grupos.map((g,gi)=>(
             <div key={g.proveedor}>
-              <div style={{background:"#F4EEE3",padding:"9px 16px",borderTop:gi>0?"1px solid #E8DCC8":"none",borderBottom:"1px solid #E8DCC8",display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
-                <span style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:".95rem",color:"#2C1A0E"}}>{g.proveedor}</span>
-                <span style={{fontSize:".65rem",color:"#7B7063"}}>{g.items.length} producto{g.items.length!==1?"s":""}</span>
+              <div style={{background:"#F4EEE3",padding:"9px 16px",borderTop:gi>0?"1px solid #ECECEE":"none",borderBottom:"1px solid #ECECEE",display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                <span style={{fontFamily:"inherit",fontStyle:"italic",fontSize:".95rem",color:"#16181D"}}>{g.proveedor}</span>
+                <span style={{fontSize:".65rem",color:"#6B6D76"}}>{g.items.length} producto{g.items.length!==1?"s":""}</span>
               </div>
               {g.items.map((c,i)=>(
                 <div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 16px",borderBottom:"1px solid #F2EAE0"}}>
                   <span style={{fontSize:".68rem",color:"#B7A98F",width:22,flexShrink:0,fontVariantNumeric:"tabular-nums"}}>{i+1}.</span>
-                  <span style={{flex:1,fontSize:".83rem",color:"#2C1A0E"}}>{c.producto}</span>
-                  <select value={c.unidad||"unidades"} onChange={e=>cambiarUnidad(c.id,e.target.value)} style={{fontSize:".66rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:20,padding:"2px 6px",background:"#fff",flexShrink:0}}>
+                  <span style={{flex:1,fontSize:".83rem",color:"#16181D"}}>{c.producto}</span>
+                  <select value={c.unidad||"unidades"} onChange={e=>cambiarUnidad(c.id,e.target.value)} style={{fontSize:".66rem",color:"#6B6D76",border:"1px solid #ECECEE",borderRadius:20,padding:"2px 6px",background:"#fff",flexShrink:0}}>
                     {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
                   </select>
-                  <span style={{fontSize:".62rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:20,padding:"2px 8px",flexShrink:0}}>{c.sector}</span>
-                  <button onClick={()=>eliminar(c.id)} style={{background:"none",border:"none",color:"#C0392B",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"2px 4px",flexShrink:0}}>Eliminar</button>
+                  <span style={{fontSize:".62rem",color:"#6B6D76",border:"1px solid #ECECEE",borderRadius:20,padding:"2px 8px",flexShrink:0}}>{c.sector}</span>
+                  <button onClick={()=>eliminar(c.id)} style={{background:"none",border:"none",color:"#B42318",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"2px 4px",flexShrink:0}}>Eliminar</button>
                 </div>
               ))}
             </div>
@@ -2171,7 +2171,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos}){
     await savePedidos(pedidos.filter(p=>p.id!==id));toast("Eliminado");
   };
 
-  const colorEstado={pendiente:"#B7860B",enviado:"#2980B9",recibido:"#2D6A4F"};
+  const colorEstado={pendiente:"#B45309",enviado:"#2980B9",recibido:"#0F6E56"};
 
   return(<>
     <Card title="Nuevo pedido a proveedor">
@@ -2182,11 +2182,11 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos}){
         </select>
       </Field>
       {provSel&&(
-        <div style={{marginTop:14,maxHeight:320,overflowY:"auto",border:"1px solid #E8DCC8",borderRadius:10,padding:10}}>
+        <div style={{marginTop:14,maxHeight:320,overflowY:"auto",border:"1px solid #ECECEE",borderRadius:10,padding:10}}>
           {productosDelProv.map(c=>(
             <div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 2px",borderBottom:"1px solid #F2EAE0"}}>
               <div style={{flex:1,fontSize:".8rem"}}>{c.producto}</div>
-              <input type="number" min="0" value={cants[c.id]||""} onChange={e=>setCants({...cants,[c.id]:e.target.value})} placeholder="0" style={{width:64,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
+              <input type="number" min="0" value={cants[c.id]||""} onChange={e=>setCants({...cants,[c.id]:e.target.value})} placeholder="0" style={{width:64,border:"1.5px solid #ECECEE",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
             </div>
           ))}
         </div>
@@ -2196,23 +2196,23 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos}){
     </Card>
 
     {!pedidos.length?<Empty icon="🧾">Todavía no creaste pedidos</Empty>:pedidos.map(p=>(
-      <div key={p.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)"}}>
+      <div key={p.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(22,24,29,.07)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <div style={{fontWeight:700,fontSize:".9rem"}}>{p.proveedor}</div>
-            <div style={{fontSize:".7rem",color:"#7B7063"}}>{fmtFL(p.fecha)}</div>
+            <div style={{fontSize:".7rem",color:"#6B6D76"}}>{fmtFL(p.fecha)}</div>
           </div>
           <span style={{background:colorEstado[p.estado]+"22",color:colorEstado[p.estado],fontSize:".66rem",fontWeight:700,padding:"3px 9px",borderRadius:20,textTransform:"uppercase"}}>{p.estado}</span>
         </div>
-        <div style={{marginTop:10,fontSize:".8rem",color:"#2C1A0E"}}>
+        <div style={{marginTop:10,fontSize:".8rem",color:"#16181D"}}>
           {p.items.map((it,i)=><div key={i} style={{padding:"2px 0"}}>· {it.producto} — <strong>{it.cantidad}</strong></div>)}
         </div>
-        {p.obs&&<div style={{marginTop:8,fontSize:".76rem",color:"#7B7063",fontStyle:"italic"}}>{p.obs}</div>}
+        {p.obs&&<div style={{marginTop:8,fontSize:".76rem",color:"#6B6D76",fontStyle:"italic"}}>{p.obs}</div>}
         <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
           {p.estado!=="pendiente"&&<SmBtn onClick={()=>cambiarEstado(p.id,"pendiente")}>Marcar pendiente</SmBtn>}
           {p.estado!=="enviado"&&<SmBtn onClick={()=>cambiarEstado(p.id,"enviado")}>Marcar enviado</SmBtn>}
           {p.estado!=="recibido"&&<SmBtn onClick={()=>cambiarEstado(p.id,"recibido")}>Marcar recibido</SmBtn>}
-          <SmBtn color="#C0392B" onClick={()=>eliminar(p.id)}>Eliminar</SmBtn>
+          <SmBtn color="#B42318" onClick={()=>eliminar(p.id)}>Eliminar</SmBtn>
         </div>
       </div>
     ))}
@@ -2493,9 +2493,9 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   return(<>
     <ST>Caja Efectivo</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
 
-    <div style={{background:"#2D6A4F",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+    <div style={{background:"#0F6E56",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Saldo final del período</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldoBase+totalIngresos-totalEgresos)}</div>
+      <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldoBase+totalIngresos-totalEgresos)}</div>
       <div style={{display:"flex",gap:8}}>
         {[["Saldo base",fmt(saldoBase)],["Ingresos",fmt(totalIngresos)],["Egresos",fmt(totalEgresos)]].map(([l,v])=>(
           <div key={l} style={{flex:1,background:"rgba(255,255,255,.12)",borderRadius:10,padding:"8px 10px"}}>
@@ -2508,18 +2508,18 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
 
     <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
       {[["todo","Todo"],["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
-        <button key={v} onClick={()=>setFiltroFecha(v)} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#2C1A0E":"#E8DCC8",color:filtroFecha===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+        <button key={v} onClick={()=>setFiltroFecha(v)} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#16181D":"#ECECEE",color:filtroFecha===v?"#ECECEE":"#16181D"}}>{l}</button>
       ))}
     </div>
     {filtroFecha==="custom"&&(
       <div style={{display:"flex",gap:8,marginBottom:10}}>
-        <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label><input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
-        <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label><input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
+        <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Desde</label><input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
+        <div style={{flex:1}}><label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Hasta</label><input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/></div>
       </div>
     )}
     <div style={{display:"flex",gap:6,marginBottom:10}}>
       {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"]].map(([v,l])=>(
-        <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#2C1A0E":"transparent",color:filtroTipo===v?"#E8DCC8":"#7B7063"}}>{l}</button>
+        <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #ECECEE",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#16181D":"transparent",color:filtroTipo===v?"#ECECEE":"#6B6D76"}}>{l}</button>
       ))}
     </div>
     <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar..." style={{...iS,marginBottom:14,fontSize:".82rem"}}/>
@@ -2528,43 +2528,43 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       <div style={{overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:420}}>
           <thead>
-            <tr style={{background:"#F9F6F1"}}>
+            <tr style={{background:"#F6F6F7"}}>
               {["Fecha","Concepto","Debe","Haber","Saldo",""].map(h=>(
-                <th key={h} style={{padding:"7px 8px",textAlign:["Fecha","Concepto",""].includes(h)?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                <th key={h} style={{padding:"7px 8px",textAlign:["Fecha","Concepto",""].includes(h)?"left":"right",fontWeight:700,color:"#6B6D76",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #ECECEE",whiteSpace:"nowrap"}}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filas.map((m,i)=>(
-              <tr key={m.id+i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>{fmtF(m.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(m.fecha)}</span></td>
+              <tr key={m.id+i} style={{background:i%2===0?"#fff":"#F6F6F7"}}>
+                <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#6B6D76",fontSize:".72rem"}}>{fmtF(m.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(m.fecha)}</span></td>
                 <td style={{padding:"6px 8px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5}}>
                     <span style={{flexShrink:0}}>{iconoCat(m._cat)}</span>
                     <div style={{minWidth:0}}>
                       <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{m._label}</div>
-                      {m.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.obs}</div>}
+                      {m.obs&&<div style={{fontSize:".63rem",color:"#6B6D76",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.obs}</div>}
                     </div>
                   </div>
                 </td>
-                <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo<0?fmt(Math.abs(m.monto)):""}</td>
-                <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo>0?fmt(m.monto):""}</td>
-                <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(m._saldo)}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",color:"#B42318",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo<0?fmt(Math.abs(m.monto)):""}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",color:"#0F6E56",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo>0?fmt(m.monto):""}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldo>=0?"#16181D":"#B42318"}}>{fmt(m._saldo)}</td>
                 <td style={{padding:"6px 8px"}}>
                   {m._cat!=="cierre"&&(
                     <div style={{display:"flex",gap:4}}>
-                      <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
-                      <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
+                      <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#0F6E56",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
+                      <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E5484D",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
                     </div>
                   )}
                 </td>
               </tr>
             ))}
-            <tr style={{background:"#2C1A0E"}}>
-              <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
+            <tr style={{background:"#16181D"}}>
+              <td colSpan={2} style={{padding:"8px 10px",color:"#ECECEE",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
               <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalEgresos)}</td>
               <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalIngresos)}</td>
-              <td colSpan={2} style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:"#E8DCC8"}}>{fmt(saldoBase+totalIngresos-totalEgresos)}</td>
+              <td colSpan={2} style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:"#ECECEE"}}>{fmt(saldoBase+totalIngresos-totalEgresos)}</td>
             </tr>
           </tbody>
         </table>
@@ -2572,41 +2572,41 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
     )}
 
     {editItem&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"88dvh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>✏️ Editar {editItem._cat}</p>
-            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            <p style={{fontFamily:"inherit",fontSize:"1.1rem"}}>✏️ Editar {editItem._cat}</p>
+            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#6B6D76"}}>✕</button>
           </div>
-          {editItem._cat==="pago"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Proveedor</label><input value={editForm.proveedor||""} onChange={e=>setEditForm(f=>({...f,proveedor:e.target.value}))} style={iS}/></div>}
-          {editItem._cat==="sueldo"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Empleado</label><input value={editForm.empleado||""} onChange={e=>setEditForm(f=>({...f,empleado:e.target.value}))} style={iS}/></div>}
-          {editItem._cat==="gasto"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Categoría</label><input value={editForm.categoria||""} onChange={e=>setEditForm(f=>({...f,categoria:e.target.value}))} style={iS}/></div>}
+          {editItem._cat==="pago"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Proveedor</label><input value={editForm.proveedor||""} onChange={e=>setEditForm(f=>({...f,proveedor:e.target.value}))} style={iS}/></div>}
+          {editItem._cat==="sueldo"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Empleado</label><input value={editForm.empleado||""} onChange={e=>setEditForm(f=>({...f,empleado:e.target.value}))} style={iS}/></div>}
+          {editItem._cat==="gasto"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Categoría</label><input value={editForm.categoria||""} onChange={e=>setEditForm(f=>({...f,categoria:e.target.value}))} style={iS}/></div>}
           {[["Monto ($)","monto","number"],["Observaciones","obs","text"]].map(([l,k,t])=>(
             <div key={k} style={{marginBottom:10}}>
-              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>{l}</label>
+              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>{l}</label>
               <input type={t} value={editForm[k]||""} onChange={e=>setEditForm(f=>({...f,[k]:e.target.value}))} style={iS}/>
             </div>
           ))}
           <div style={{marginBottom:16}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Fecha</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Fecha</label>
             <input type="date" value={editForm.fecha||""} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={iS}/>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={guardar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar</button>
+            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={guardar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#0F6E56",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar</button>
           </div>
         </div>
       </div>
     )}
 
     {confElim&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar</p>
-          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:16}}>{confElim._label} · {fmt(confElim.monto)} · {fmtF(confElim.fecha)}</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar</p>
+          <p style={{fontSize:".85rem",color:"#6B6D76",marginBottom:16}}>{confElim._label} · {fmt(confElim.monto)} · {fmtF(confElim.fecha)}</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={eliminar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={eliminar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#B42318",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
           </div>
         </div>
       </div>
@@ -2915,16 +2915,16 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,saveCajaDigi
     <ST help={"Vista consolidada para gerencia.\n\n• Total disponible: suma de Caja fuerte (efectivo) + Caja Digital (banco).\n• Caja fuerte: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia.\n\nPara actualizar el saldo banco de Caja Digital, ingresá el valor real desde la sección Caja Digital o directamente desde acá."}>Gerencia</ST><SS>Resumen de efectivo y caja digital disponible.</SS>
 
     {/* TOTAL CONSOLIDADO */}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total disponible consolidado</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2.6rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(totalDisponible)}</div>
-      <div style={{fontSize:".74rem",color:"#E8DCC8",opacity:.6}}>Caja fuerte + Caja digital</div>
+    <div style={{background:"#16181D",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#ECECEE",opacity:.7}}>Total disponible consolidado</div>
+      <div style={{fontFamily:"inherit",fontSize:"2.6rem",color:"#ECECEE",margin:"4px 0 2px"}}>{fmt(totalDisponible)}</div>
+      <div style={{fontSize:".74rem",color:"#ECECEE",opacity:.6}}>Caja fuerte + Caja digital</div>
     </div>
 
     {/* CAJA FUERTE */}
-    <div style={{background:"#2D6A4F",borderRadius:14,padding:"20px",marginBottom:12}}>
+    <div style={{background:"#0F6E56",borderRadius:14,padding:"20px",marginBottom:12}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>💵 Caja fuerte · Efectivo</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldo)}</div>
+      <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldo)}</div>
       <div style={{display:"flex",gap:8}}>
         {[["Inicial",fmt(ini)],["Cierres",fmt(tot)],["Pagado",fmt(eg)]].map(([l,v])=>(
           <div key={l} style={{flex:1,background:"rgba(255,255,255,.12)",borderRadius:10,padding:"8px 10px"}}>
@@ -2936,14 +2936,14 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,saveCajaDigi
     </div>
 
     {/* CAJA DIGITAL */}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"20px",marginBottom:16,border:"2px solid #B7860B"}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Caja digital · Banco</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(saldoReal)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginBottom:12}}>Saldo real del banco actualizado manualmente</div>
+    <div style={{background:"#16181D",borderRadius:14,padding:"20px",marginBottom:16,border:"2px solid #B45309"}}>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#ECECEE",opacity:.7}}>💳 Caja digital · Banco</div>
+      <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#ECECEE",margin:"4px 0 2px"}}>{fmt(saldoReal)}</div>
+      <div style={{fontSize:".72rem",color:"#ECECEE",opacity:.6,marginBottom:12}}>Saldo real del banco actualizado manualmente</div>
       <div style={{display:"flex",gap:8,marginBottom:14}}>
-        {[["Inicial",fmt(ini||0),"#E8DCC8"],["Ingresos dig.",fmt(ingresos),"#a9dfbf"],["Egresos transf.",fmt(egTransf),"#f5b7b1"]].map(([l,v,c])=>(
+        {[["Inicial",fmt(ini||0),"#ECECEE"],["Ingresos dig.",fmt(ingresos),"#a9dfbf"],["Egresos transf.",fmt(egTransf),"#f5b7b1"]].map(([l,v,c])=>(
           <div key={l} style={{flex:1,background:"rgba(255,255,255,.07)",borderRadius:10,padding:"8px 10px"}}>
-            <div style={{fontSize:".58rem",color:"#E8DCC8",opacity:.6,textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
+            <div style={{fontSize:".58rem",color:"#ECECEE",opacity:.6,textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
             <div style={{fontSize:".85rem",fontWeight:700,color:c,marginTop:2}}>{v}</div>
           </div>
         ))}
@@ -2953,7 +2953,7 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,saveCajaDigi
           placeholder="Ingresar saldo inicial banco"
           style={{flex:1,background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".85rem",outline:"none",fontFamily:"inherit"}}/>
         <button onClick={actualizarBanco} disabled={savingBanco}
-          style={{padding:"9px 16px",border:"none",borderRadius:8,background:"#B7860B",color:"#fff",fontWeight:600,fontSize:".82rem",cursor:"pointer",flexShrink:0}}>
+          style={{padding:"9px 16px",border:"none",borderRadius:8,background:"#B45309",color:"#fff",fontWeight:600,fontSize:".82rem",cursor:"pointer",flexShrink:0}}>
           {savingBanco?"…":"Actualizar"}
         </button>
       </div>
@@ -3230,29 +3230,29 @@ function PagosAdmin({pagos,savePagos,proveedores}){
     <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar por proveedor o fecha..."
       style={{...iS,marginBottom:10,fontSize:".82rem"}}/>
     {!sorted.length?<Empty icon="💸">Sin pagos</Empty>:sorted.map((p,i)=>(
-      <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F9F6F1"}}>
+      <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F6F6F7"}}>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:".82rem"}}>{p.proveedor}</div>
-          <div style={{fontSize:".7rem",color:"#7B7063"}}>{fmtF(p.fecha)} · {p.forma} · {p.empleado}</div>
-          {p.obs&&<div style={{fontSize:".7rem",color:"#7B7063"}}>{p.obs}</div>}
+          <div style={{fontSize:".7rem",color:"#6B6D76"}}>{fmtF(p.fecha)} · {p.forma} · {p.empleado}</div>
+          {p.obs&&<div style={{fontSize:".7rem",color:"#6B6D76"}}>{p.obs}</div>}
         </div>
-        <div style={{fontWeight:700,fontSize:".85rem",color:"#C0392B",flexShrink:0}}>{fmt(p.monto)}</div>
+        <div style={{fontWeight:700,fontSize:".85rem",color:"#B42318",flexShrink:0}}>{fmt(p.monto)}</div>
         <div style={{display:"flex",gap:4,flexShrink:0}}>
-          <button onClick={()=>abrirEditar(p)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✏️</button>
-          <button onClick={()=>setConfElim(p)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
+          <button onClick={()=>abrirEditar(p)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#0F6E56",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✏️</button>
+          <button onClick={()=>setConfElim(p)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E5484D",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
         </div>
       </div>
     ))}
 
     {editItem&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"88dvh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>✏️ Editar pago</p>
-            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            <p style={{fontFamily:"inherit",fontSize:"1.1rem"}}>✏️ Editar pago</p>
+            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#6B6D76"}}>✕</button>
           </div>
           <div style={{marginBottom:10}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Proveedor</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Proveedor</label>
             <select value={editForm.proveedor||""} onChange={e=>setEditForm(f=>({...f,proveedor:e.target.value}))} style={sS}>
               <option value="">— Elegí —</option>
               {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
@@ -3260,12 +3260,12 @@ function PagosAdmin({pagos,savePagos,proveedores}){
           </div>
           {[["Registrado por","empleado","text"],["Monto ($)","monto","number"],["Observaciones","obs","text"]].map(([l,k,t])=>(
             <div key={k} style={{marginBottom:10}}>
-              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>{l}</label>
+              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>{l}</label>
               <input type={t} value={editForm[k]||""} onChange={e=>setEditForm(f=>({...f,[k]:e.target.value}))} style={iS}/>
             </div>
           ))}
           <div style={{marginBottom:10}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Forma de pago</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Forma de pago</label>
             <select value={editForm.forma||"Efectivo"} onChange={e=>setEditForm(f=>({...f,forma:e.target.value}))} style={sS}>
               <option value="Efectivo">Efectivo</option>
               <option value="Transferencia">Transferencia</option>
@@ -3273,25 +3273,25 @@ function PagosAdmin({pagos,savePagos,proveedores}){
             </select>
           </div>
           <div style={{marginBottom:16}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Fecha</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Fecha</label>
             <input type="date" value={editForm.fecha||""} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={iS}/>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={guardar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar</button>
+            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={guardar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#0F6E56",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar</button>
           </div>
         </div>
       </div>
     )}
 
     {confElim&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar pago</p>
-          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:16}}>{confElim.proveedor} · {fmt(confElim.monto)} · {fmtF(confElim.fecha)}</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar pago</p>
+          <p style={{fontSize:".85rem",color:"#6B6D76",marginBottom:16}}>{confElim.proveedor} · {fmt(confElim.monto)} · {fmtF(confElim.fecha)}</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={eliminar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={eliminar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#B42318",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
           </div>
         </div>
       </div>
@@ -3332,78 +3332,78 @@ function SueldosAdmin({sueldos,saveSueldos}){
     <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar por empleado o fecha..."
       style={{...iS,marginBottom:10,fontSize:".82rem"}}/>
     {!sorted.length?<Empty icon="👥">Sin sueldos</Empty>:sorted.map((s,i)=>(
-      <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F9F6F1"}}>
+      <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F6F6F7"}}>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:".82rem"}}>{s.empleado}</div>
-          <div style={{fontSize:".7rem",color:"#7B7063"}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {fmtF(s.fecha)} · {s.forma}</div>
-          {s.obs&&<div style={{fontSize:".7rem",color:"#7B7063"}}>{s.obs}</div>}
+          <div style={{fontSize:".7rem",color:"#6B6D76"}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {fmtF(s.fecha)} · {s.forma}</div>
+          {s.obs&&<div style={{fontSize:".7rem",color:"#6B6D76"}}>{s.obs}</div>}
         </div>
-        <div style={{fontWeight:700,fontSize:".85rem",color:"#2D6A4F",flexShrink:0}}>{fmt(s.monto)}</div>
+        <div style={{fontWeight:700,fontSize:".85rem",color:"#0F6E56",flexShrink:0}}>{fmt(s.monto)}</div>
         <div style={{display:"flex",gap:4,flexShrink:0}}>
-          <button onClick={()=>abrirEditar(s)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✏️</button>
-          <button onClick={()=>setConfElim(s)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
+          <button onClick={()=>abrirEditar(s)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#0F6E56",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✏️</button>
+          <button onClick={()=>setConfElim(s)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E5484D",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
         </div>
       </div>
     ))}
 
     {editItem&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"88dvh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>✏️ Editar sueldo</p>
-            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            <p style={{fontFamily:"inherit",fontSize:"1.1rem"}}>✏️ Editar sueldo</p>
+            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#6B6D76"}}>✕</button>
           </div>
           <div style={{marginBottom:10}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Empleado</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Empleado</label>
             <select value={editForm.empleado||""} onChange={e=>setEditForm(f=>({...f,empleado:e.target.value}))} style={sS}>
               {EMPS.map(e=><option key={e}>{e}</option>)}
             </select>
           </div>
           <div style={{marginBottom:10}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Concepto</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Concepto</label>
             <select value={editForm.concepto||"Sueldo"} onChange={e=>setEditForm(f=>({...f,concepto:e.target.value}))} style={sS}>
               {CONCEPTOS.map(c=><option key={c}>{c}</option>)}
             </select>
           </div>
           {editForm.concepto==="HS Extras"&&(
             <div style={{marginBottom:10}}>
-              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Horas extras</label>
+              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Horas extras</label>
               <input type="number" value={editForm.hsExtras||""} onChange={e=>setEditForm(f=>({...f,hsExtras:e.target.value}))} style={iS}/>
             </div>
           )}
           {[["Monto ($)","monto","number"],["Observaciones","obs","text"]].map(([l,k,t])=>(
             <div key={k} style={{marginBottom:10}}>
-              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>{l}</label>
+              <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>{l}</label>
               <input type={t} value={editForm[k]||""} onChange={e=>setEditForm(f=>({...f,[k]:e.target.value}))} style={iS}/>
             </div>
           ))}
           <div style={{marginBottom:10}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Forma de pago</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Forma de pago</label>
             <select value={editForm.forma||"Efectivo"} onChange={e=>setEditForm(f=>({...f,forma:e.target.value}))} style={sS}>
               <option value="Efectivo">Efectivo</option>
               <option value="Transferencia">Transferencia</option>
             </select>
           </div>
           <div style={{marginBottom:16}}>
-            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#2C1A0E",marginBottom:4}}>Fecha</label>
+            <label style={{display:"block",fontSize:".76rem",fontWeight:600,color:"#16181D",marginBottom:4}}>Fecha</label>
             <input type="date" value={editForm.fecha||""} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={iS}/>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={guardar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar</button>
+            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={guardar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#0F6E56",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar</button>
           </div>
         </div>
       </div>
     )}
 
     {confElim&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar sueldo</p>
-          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:16}}>{confElim.empleado} · {confElim.concepto||"Sueldo"} · {fmt(confElim.monto)} · {fmtF(confElim.fecha)}</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar sueldo</p>
+          <p style={{fontSize:".85rem",color:"#6B6D76",marginBottom:16}}>{confElim.empleado} · {confElim.concepto||"Sueldo"} · {fmt(confElim.monto)} · {fmtF(confElim.fecha)}</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={eliminar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={eliminar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#B42318",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
           </div>
         </div>
       </div>
@@ -3497,7 +3497,7 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 
   const EF=({label,fkey,type="number"})=>(
     <div style={{marginBottom:10}}>
-      <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>{label}</label>
+      <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>{label}</label>
       <input type={type} value={editForm[fkey]||""} onChange={e=>setEditForm(f=>({...f,[fkey]:e.target.value}))}
         style={{...iS,padding:"8px 10px",fontSize:".85rem"}}/>
     </div>
@@ -3511,28 +3511,28 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
     <div style={{overflowX:"auto"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:480}}>
         <thead>
-          <tr style={{background:"#F9F6F1"}}>
+          <tr style={{background:"#F6F6F7"}}>
             {["Fecha","Turno","Persona","Efectivo","Fotos","Acciones"].map(h=>(
-              <th key={h} style={{padding:"6px 8px",textAlign:h==="Acciones"||h==="Efectivo"?"right":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+              <th key={h} style={{padding:"6px 8px",textAlign:h==="Acciones"||h==="Efectivo"?"right":"left",fontWeight:700,color:"#6B6D76",fontSize:".63rem",textTransform:"uppercase",borderBottom:"2px solid #ECECEE",whiteSpace:"nowrap"}}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {sorted.map((c,i)=>(
-            <tr key={c.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-              <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063"}}>{fmtF(c.fecha)}</td>
+            <tr key={c.id} style={{background:i%2===0?"#fff":"#F6F6F7"}}>
+              <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#6B6D76"}}>{fmtF(c.fecha)}</td>
               <td style={{padding:"6px 8px",whiteSpace:"nowrap"}}>{c.turno}</td>
               <td style={{padding:"6px 8px"}}>{c.persona}</td>
-              <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:600}}>{fmt(c.efectivo)}</td>
+              <td style={{padding:"6px 8px",textAlign:"right",color:"#0F6E56",fontWeight:600}}>{fmt(c.efectivo)}</td>
               <td style={{padding:"6px 8px"}}>
                 {c.fotos&&c.fotos.length>0
-                  ?<span style={{fontSize:".68rem",color:"#2D6A4F",fontWeight:600}}>📷 {c.fotos.length}</span>
-                  :<span style={{fontSize:".68rem",color:"#E74C3C"}}>Sin foto</span>}
+                  ?<span style={{fontSize:".68rem",color:"#0F6E56",fontWeight:600}}>📷 {c.fotos.length}</span>
+                  :<span style={{fontSize:".68rem",color:"#E5484D"}}>Sin foto</span>}
               </td>
               <td style={{padding:"6px 8px",textAlign:"right"}}>
                 <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
-                  <button onClick={()=>abrirEditar(c)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".65rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✏️ Editar</button>
-                  <button onClick={()=>setConfElim(c)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".65rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕ Borrar</button>
+                  <button onClick={()=>abrirEditar(c)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#0F6E56",fontSize:".65rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✏️ Editar</button>
+                  <button onClick={()=>setConfElim(c)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E5484D",fontSize:".65rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕ Borrar</button>
                 </div>
               </td>
             </tr>
@@ -3543,21 +3543,21 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 
     {/* MODAL EDITAR COMPLETO */}
     {editItem&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>✏️ Editar cierre</p>
-            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            <p style={{fontFamily:"inherit",fontSize:"1.1rem"}}>✏️ Editar cierre</p>
+            <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#6B6D76"}}>✕</button>
           </div>
 
           {/* FECHA Y TURNO */}
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
-              <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Fecha</label>
+              <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Fecha</label>
               <input type="date" value={editForm.fecha||""} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={{...iS,padding:"8px 10px"}}/>
             </div>
             <div style={{flex:1}}>
-              <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Turno</label>
+              <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Turno</label>
               <select value={editForm.turno||""} onChange={e=>setEditForm(f=>({...f,turno:e.target.value}))} style={{...sS,padding:"8px 10px"}}>
                 {TURNOS.map(t=><option key={t}>{t}</option>)}
               </select>
@@ -3567,18 +3567,18 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 
           {/* DIGITAL */}
           <div style={{background:"#FEF9E7",borderRadius:10,padding:"12px",marginBottom:10}}>
-            <div style={{fontSize:".68rem",fontWeight:700,color:"#B7860B",textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}}>💳 Digital</div>
+            <div style={{fontSize:".68rem",fontWeight:700,color:"#B45309",textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}}>💳 Digital</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {[["MP/FUDO","mp"],["FUDO Tarjetas","fudoTarjetas"],["PostNet","postnet"],["Digital","digital"],["Uber Eat","uber"]].map(([l,k])=>(
                 <div key={k}>
-                  <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>{l}</label>
+                  <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>{l}</label>
                   <input type="number" value={editForm[k]||""} onChange={e=>setEditForm(f=>({...f,[k]:e.target.value}))} style={{...iS,padding:"7px 8px",fontSize:".82rem"}}/>
                 </div>
               ))}
               <div style={{display:"flex",alignItems:"flex-end"}}>
-                <div style={{background:"#2C1A0E",borderRadius:8,padding:"7px 10px",width:"100%"}}>
-                  <div style={{fontSize:".6rem",color:"#E8DCC8",opacity:.6}}>Total digital</div>
-                  <div style={{fontWeight:700,color:"#E8DCC8",fontSize:".9rem",marginTop:1}}>{fmt(totalDigEdit)}</div>
+                <div style={{background:"#16181D",borderRadius:8,padding:"7px 10px",width:"100%"}}>
+                  <div style={{fontSize:".6rem",color:"#ECECEE",opacity:.6}}>Total digital</div>
+                  <div style={{fontWeight:700,color:"#ECECEE",fontSize:".9rem",marginTop:1}}>{fmt(totalDigEdit)}</div>
                 </div>
               </div>
             </div>
@@ -3586,24 +3586,24 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 
           {/* EFECTIVO */}
           <div style={{background:"#EAF5F0",borderRadius:10,padding:"12px",marginBottom:10}}>
-            <div style={{fontSize:".68rem",fontWeight:700,color:"#2D6A4F",textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}}>💵 Efectivo</div>
+            <div style={{fontSize:".68rem",fontWeight:700,color:"#0F6E56",textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}}>💵 Efectivo</div>
             <input type="number" value={editForm.efectivo||""} onChange={e=>setEditForm(f=>({...f,efectivo:e.target.value}))} style={{...iS,padding:"8px 10px"}}/>
           </div>
 
           {/* TOTALES */}
           <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <div style={{flex:1,background:"#F9F6F1",borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
-              <div style={{fontSize:".6rem",color:"#7B7063"}}>Total</div>
-              <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",fontWeight:700}}>{fmt(totalEdit)}</div>
+            <div style={{flex:1,background:"#F6F6F7",borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
+              <div style={{fontSize:".6rem",color:"#6B6D76"}}>Total</div>
+              <div style={{fontFamily:"inherit",fontSize:"1rem",fontWeight:700}}>{fmt(totalEdit)}</div>
             </div>
-            <div style={{flex:1,background:"#F9F6F1",borderRadius:10,padding:"8px 10px"}}>
-              <div style={{fontSize:".6rem",color:"#7B7063",textAlign:"center"}}>Venta sistema</div>
+            <div style={{flex:1,background:"#F6F6F7",borderRadius:10,padding:"8px 10px"}}>
+              <div style={{fontSize:".6rem",color:"#6B6D76",textAlign:"center"}}>Venta sistema</div>
               <input type="number" value={editForm.ventaSistema||""} onChange={e=>setEditForm(f=>({...f,ventaSistema:e.target.value}))}
-                style={{background:"none",border:"none",outline:"none",fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E",width:"100%",textAlign:"center",fontWeight:700}}/>
+                style={{background:"none",border:"none",outline:"none",fontFamily:"inherit",fontSize:"1rem",color:"#16181D",width:"100%",textAlign:"center",fontWeight:700}}/>
             </div>
             <div style={{flex:1,background:difEdit>=0?"#EAF5F0":"#FFF0EF",borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
-              <div style={{fontSize:".6rem",color:"#7B7063"}}>Diferencia</div>
-              <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",fontWeight:700,color:difEdit>=0?"#2D6A4F":"#C0392B"}}>{difEdit>=0?"+":""}{fmt(difEdit)}</div>
+              <div style={{fontSize:".6rem",color:"#6B6D76"}}>Diferencia</div>
+              <div style={{fontFamily:"inherit",fontSize:"1rem",fontWeight:700,color:difEdit>=0?"#0F6E56":"#B42318"}}>{difEdit>=0?"+":""}{fmt(difEdit)}</div>
             </div>
           </div>
 
@@ -3611,19 +3611,19 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 
           {/* FOTOS */}
           <div style={{marginBottom:14}}>
-            <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#2C1A0E",marginBottom:8}}>📷 Fotos del cierre</label>
-            <label style={{display:"flex",alignItems:"center",gap:10,border:"2px dashed #E8DCC8",borderRadius:10,padding:"10px 14px",cursor:"pointer",background:"#F9F6F1",marginBottom:8}}>
+            <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#16181D",marginBottom:8}}>📷 Fotos del cierre</label>
+            <label style={{display:"flex",alignItems:"center",gap:10,border:"2px dashed #ECECEE",borderRadius:10,padding:"10px 14px",cursor:"pointer",background:"#F6F6F7",marginBottom:8}}>
               <input type="file" accept="image/*" multiple onChange={agregarFotoEdit} style={{display:"none"}}/>
               <span style={{fontSize:"1.2rem"}}>📷</span>
-              <span style={{fontSize:".78rem",color:"#7B7063"}}>Agregar fotos</span>
+              <span style={{fontSize:".78rem",color:"#6B6D76"}}>Agregar fotos</span>
             </label>
             {editFotos.length>0&&(
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {editFotos.map((f,j)=>(
                   <div key={j} style={{position:"relative"}}>
-                    <img src={f} style={{width:64,height:64,objectFit:"cover",borderRadius:8,border:"2px solid #E8DCC8"}} alt=""/>
+                    <img src={f} style={{width:64,height:64,objectFit:"cover",borderRadius:8,border:"2px solid #ECECEE"}} alt=""/>
                     <button onClick={()=>setEditFotos(prev=>prev.filter((_,k)=>k!==j))}
-                      style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",background:"#E74C3C",border:"none",color:"#fff",fontSize:".7rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                      style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",background:"#E5484D",border:"none",color:"#fff",fontSize:".7rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
                   </div>
                 ))}
               </div>
@@ -3631,8 +3631,8 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
           </div>
 
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={guardarEdit} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar cambios</button>
+            <button onClick={()=>setEditItem(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={guardarEdit} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#0F6E56",color:"#fff",fontWeight:600,cursor:"pointer"}}>Guardar cambios</button>
           </div>
         </div>
       </div>
@@ -3640,15 +3640,15 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 
     {/* MODAL ELIMINAR */}
     {confElim&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar cierre</p>
-          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:4}}>{confElim.turno} · {confElim.persona} · {fmtF(confElim.fecha)}</p>
-          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:16}}>Total: {fmt(confElim.total)} · Efectivo: {fmt(confElim.efectivo)}</p>
-          <p style={{fontSize:".78rem",color:"#C0392B",fontWeight:600,marginBottom:20}}>Esta acción ajustará el disponible en caja fuerte.</p>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar cierre</p>
+          <p style={{fontSize:".85rem",color:"#6B6D76",marginBottom:4}}>{confElim.turno} · {confElim.persona} · {fmtF(confElim.fecha)}</p>
+          <p style={{fontSize:".85rem",color:"#6B6D76",marginBottom:16}}>Total: {fmt(confElim.total)} · Efectivo: {fmt(confElim.efectivo)}</p>
+          <p style={{fontSize:".78rem",color:"#B42318",fontWeight:600,marginBottom:20}}>Esta acción ajustará el disponible en caja fuerte.</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={eliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+            <button onClick={()=>setConfElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={eliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#B42318",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
           </div>
         </div>
       </div>
@@ -3709,10 +3709,10 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
         <Field label="Contraseña de administrador">
           <input type="password" value={passInput} onChange={e=>{setPassInput(e.target.value);setPassErr(false);}}
             onKeyDown={e=>e.key==="Enter"&&intentarAcceso()}
-            placeholder="Contraseña" autoFocus style={{...iS,border:`1.5px solid ${passErr?"#E74C3C":"#E8DCC8"}`}}/>
+            placeholder="Contraseña" autoFocus style={{...iS,border:`1.5px solid ${passErr?"#E5484D":"#ECECEE"}`}}/>
         </Field>
-        {passErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginTop:6}}>Contraseña incorrecta</p>}
-        <Btn bg="#2C1A0E" onClick={intentarAcceso}>Ingresar</Btn>
+        {passErr&&<p style={{color:"#E5484D",fontSize:".8rem",marginTop:6}}>Contraseña incorrecta</p>}
+        <Btn bg="#16181D" onClick={intentarAcceso}>Ingresar</Btn>
       </Card>
     </>
   );
@@ -3730,16 +3730,16 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
   return(<>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <ST>Administración</ST>
-      <button onClick={()=>{setUnlocked(false);setSeccion(null);}} style={{background:"none",border:"none",fontSize:".75rem",color:"#7B7063",cursor:"pointer"}}>Cerrar sesión</button>
+      <button onClick={()=>{setUnlocked(false);setSeccion(null);}} style={{background:"none",border:"none",fontSize:".75rem",color:"#6B6D76",cursor:"pointer"}}>Cerrar sesión</button>
     </div>
     <SS>Configuración y gestión del sistema.</SS>
 
     {!seccion&&(
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {SECCIONES.map(s=>(
-          <button key={s.id} onClick={()=>setSeccion(s.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px",background:"#fff",border:"1px solid #E8DCC8",borderRadius:12,cursor:"pointer",textAlign:"left",boxShadow:"0 1px 6px rgba(44,26,14,.06)"}}>
+          <button key={s.id} onClick={()=>setSeccion(s.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px",background:"#fff",border:"1px solid #ECECEE",borderRadius:12,cursor:"pointer",textAlign:"left",boxShadow:"0 1px 6px rgba(22,24,29,.06)"}}>
             <span style={{fontSize:"1.4rem"}}>{s.icon}</span>
-            <span style={{fontWeight:600,fontSize:".9rem",color:"#2C1A0E"}}>{s.label}</span>
+            <span style={{fontWeight:600,fontSize:".9rem",color:"#16181D"}}>{s.label}</span>
             <span style={{marginLeft:"auto",color:"#B7A98F",fontSize:"1.1rem"}}>›</span>
           </button>
         ))}
@@ -3747,14 +3747,14 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
     )}
 
     {seccion&&(
-      <button onClick={()=>setSeccion(null)} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>
+      <button onClick={()=>setSeccion(null)} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#6B6D76",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>
         ← Volver al menú Admin
       </button>
     )}
 
     {seccion==="cajainicial"&&(
       <Card title="Saldo inicial de caja">
-        <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:10}}>El efectivo que ya tenías en caja antes de usar este sistema. ⚠️ Modificarlo afecta todo el historial.</p>
+        <p style={{fontSize:".8rem",color:"#6B6D76",marginBottom:10}}>El efectivo que ya tenías en caja antes de usar este sistema. ⚠️ Modificarlo afecta todo el historial.</p>
         <Field label="Monto inicial ($)"><Inp type="number" value={montoIni} onChange={setMontoIni} placeholder="0"/></Field>
         <Btn bg="#555" onClick={guardarCajaIni}>Guardar saldo inicial</Btn>
       </Card>
@@ -3779,19 +3779,19 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
         </Field>
         <Field label="Observaciones"><Inp value={obs} onChange={setObs} placeholder="Ej: 30 días de plazo"/></Field>
         <Field label="Deuda inicial ($)"><input type="number" value={deuda} onChange={e=>setDeuda(e.target.value)} placeholder="0" style={iS}/></Field>
-        <Btn bg="#C0392B" onClick={guardarProv} disabled={busy}>{busy?"Guardando…":"Guardar proveedor"}</Btn>
+        <Btn bg="#B42318" onClick={guardarProv} disabled={busy}>{busy?"Guardando…":"Guardar proveedor"}</Btn>
       </Card>
       {proveedores.length>0&&(
         <Card title="Proveedores registrados">
           {proveedores.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=>(
-            <div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #F9F6F1"}}>
+            <div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #F6F6F7"}}>
               <div>
                 <div style={{fontWeight:600,fontSize:".9rem"}}>{p.nombre}</div>
-                {p.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{p.obs}</div>}
+                {p.obs&&<div style={{fontSize:".73rem",color:"#6B6D76"}}>{p.obs}</div>}
               </div>
               <div style={{display:"flex",gap:8}}>
                 <SmBtn onClick={()=>editar(p)}>Editar</SmBtn>
-                <SmBtn color="#C0392B" onClick={()=>eliminar(p.id)}>Eliminar</SmBtn>
+                <SmBtn color="#B42318" onClick={()=>eliminar(p.id)}>Eliminar</SmBtn>
               </div>
             </div>
           ))}
@@ -3813,7 +3813,7 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
 
     {seccion==="cierresadmin"&&(
       <Card title="Gestión de cierres de caja">
-        <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:12}}>Eliminá registros incorrectos. Los cierres afectan el disponible en caja fuerte.</p>
+        <p style={{fontSize:".8rem",color:"#6B6D76",marginBottom:12}}>Eliminá registros incorrectos. Los cierres afectan el disponible en caja fuerte.</p>
         <CierresAdmin cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja}/>
       </Card>
     )}
@@ -3847,7 +3847,7 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
 
   return(
     <Card title="Ajuste de caja efectivo">
-      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Usá esto cuando el efectivo real difiere del sistema. Un monto positivo suma al saldo, uno negativo resta. Queda registrado con motivo y fecha.</p>
+      <p style={{fontSize:".78rem",color:"#6B6D76",marginBottom:14}}>Usá esto cuando el efectivo real difiere del sistema. Un monto positivo suma al saldo, uno negativo resta. Queda registrado con motivo y fecha.</p>
       <Field label="Monto del ajuste ($) — positivo suma, negativo resta">
         <Inp type="number" value={monto} onChange={setMonto} placeholder="Ej: 10000 o -10000"/>
       </Field>
@@ -3858,17 +3858,17 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
 
       {ajustes&&ajustes.length>0&&(
         <div style={{marginTop:20}}>
-          <div style={{fontSize:".72rem",fontWeight:700,letterSpacing:".07em",textTransform:"uppercase",color:"#7B7063",marginBottom:10}}>Historial de ajustes</div>
+          <div style={{fontSize:".72rem",fontWeight:700,letterSpacing:".07em",textTransform:"uppercase",color:"#6B6D76",marginBottom:10}}>Historial de ajustes</div>
           {ajustes.map(a=>(
             <div key={a.id} style={{borderBottom:"1px solid #F2EAE0",padding:"10px 0",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
               <div>
-                <div style={{fontSize:".78rem",color:"#7B7063"}}>{fmtFL(a.fecha)}</div>
-                <div style={{fontSize:".82rem",color:"#2C1A0E",margin:"2px 0",fontStyle:"italic"}}>{a.motivo}</div>
-                <div style={{fontSize:".72rem",color:"#7B7063"}}>{fmt(a.saldoAntes)} → {fmt(a.saldoDespues)}</div>
+                <div style={{fontSize:".78rem",color:"#6B6D76"}}>{fmtFL(a.fecha)}</div>
+                <div style={{fontSize:".82rem",color:"#16181D",margin:"2px 0",fontStyle:"italic"}}>{a.motivo}</div>
+                <div style={{fontSize:".72rem",color:"#6B6D76"}}>{fmt(a.saldoAntes)} → {fmt(a.saldoDespues)}</div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-                <span style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",color:Number(a.monto)>=0?"#2D6A4F":"#C0392B",fontWeight:700}}>{Number(a.monto)>=0?"+":""}{fmt(Math.abs(a.monto))}</span>
-                <button onClick={()=>eliminar(a.id)} style={{background:"none",border:"none",color:"#C0392B",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+                <span style={{fontFamily:"inherit",fontSize:"1.1rem",color:Number(a.monto)>=0?"#0F6E56":"#B42318",fontWeight:700}}>{Number(a.monto)>=0?"+":""}{fmt(Math.abs(a.monto))}</span>
+                <button onClick={()=>eliminar(a.id)} style={{background:"none",border:"none",color:"#B42318",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
               </div>
             </div>
           ))}
@@ -3921,7 +3921,7 @@ function AdminBoletas({boletas,saveBoletas}){
         return(
           <div style={{background:"#FFF8F0",border:"1.5px solid #F5CBA7",borderRadius:12,padding:16,marginTop:12}}>
             <div style={{fontWeight:700,fontSize:".85rem",marginBottom:12}}>✏️ Editando boleta</div>
-            <div style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>
+            <div style={{fontSize:".78rem",color:"#6B6D76",marginBottom:12}}>
               {b.proveedor} · {fmtFL(b.fecha)} · cargó: {b.empleado||"—"}
             </div>
             <Field label="Importe corregido ($)">
@@ -3931,7 +3931,7 @@ function AdminBoletas({boletas,saveBoletas}){
               <TA value={editObs} onChange={setEditObs} placeholder="Motivo de la corrección..."/>
             </Field>
             <div style={{display:"flex",gap:8,marginTop:14}}>
-              <button onClick={cerrarEdit} style={{flex:1,padding:11,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={cerrarEdit} style={{flex:1,padding:11,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
               <Btn onClick={guardar} disabled={busy}>{busy?"Guardando…":"Guardar corrección"}</Btn>
             </div>
           </div>
@@ -3944,14 +3944,14 @@ function AdminBoletas({boletas,saveBoletas}){
           <div key={b.id} style={{background:editId===b.id?"#FFF8F0":"#fff",border:editId===b.id?"1.5px solid #F5CBA7":"1px solid #F2EAE0",borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:700,fontSize:".88rem",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{b.proveedor||"Sin proveedor"}</div>
-              <div style={{fontSize:".72rem",color:"#7B7063",marginTop:2}}>
+              <div style={{fontSize:".72rem",color:"#6B6D76",marginTop:2}}>
                 {fmtFL(b.fecha)}{b.empleado?` · ${b.empleado}`:""}
               </div>
-              {b.obs&&<div style={{fontSize:".7rem",color:"#7B7063",marginTop:2,fontStyle:"italic"}}>{b.obs}</div>}
+              {b.obs&&<div style={{fontSize:".7rem",color:"#6B6D76",marginTop:2,fontStyle:"italic"}}>{b.obs}</div>}
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-              <span style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",color:"#2C1A0E"}}>{fmt(b.monto)}</span>
-              <button onClick={()=>editId===b.id?cerrarEdit():abrirEdit(b)} style={{padding:"5px 10px",border:"1px solid #E8DCC8",borderRadius:8,background:"none",fontSize:".72rem",fontWeight:600,cursor:"pointer",color:"#2C1A0E"}}>
+              <span style={{fontFamily:"inherit",fontSize:"1.1rem",color:"#16181D"}}>{fmt(b.monto)}</span>
+              <button onClick={()=>editId===b.id?cerrarEdit():abrirEdit(b)} style={{padding:"5px 10px",border:"1px solid #ECECEE",borderRadius:8,background:"none",fontSize:".72rem",fontWeight:600,cursor:"pointer",color:"#16181D"}}>
                 {editId===b.id?"✕":"Editar"}
               </button>
             </div>
@@ -4009,67 +4009,67 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,setLight
     <Card>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
         {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"]].map(([f,l])=>(
-          <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#2C1A0E":"#E8DCC8",color:filtro===f?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+          <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#16181D":"#ECECEE",color:filtro===f?"#ECECEE":"#16181D"}}>{l}</button>
         ))}
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <div style={{flex:1}}>
-          <label style={{fontSize:".72rem",fontWeight:600,color:"#7B7063",display:"block",marginBottom:3}}>Desde</label>
+          <label style={{fontSize:".72rem",fontWeight:600,color:"#6B6D76",display:"block",marginBottom:3}}>Desde</label>
           <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
         </div>
         <div style={{flex:1}}>
-          <label style={{fontSize:".72rem",fontWeight:600,color:"#7B7063",display:"block",marginBottom:3}}>Hasta</label>
+          <label style={{fontSize:".72rem",fontWeight:600,color:"#6B6D76",display:"block",marginBottom:3}}>Hasta</label>
           <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
         </div>
-        <button onClick={()=>{const h=new Date();const ini=new Date(h.getFullYear(),h.getMonth(),1);setDesde(ini.toISOString().slice(0,10));setHasta(h.toISOString().slice(0,10));}} style={{padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",background:"#F9F6F1",fontSize:".72rem",color:"#7B7063",cursor:"pointer",marginTop:16,flexShrink:0}}>Este mes</button>
+        <button onClick={()=>{const h=new Date();const ini=new Date(h.getFullYear(),h.getMonth(),1);setDesde(ini.toISOString().slice(0,10));setHasta(h.toISOString().slice(0,10));}} style={{padding:"7px 10px",borderRadius:8,border:"1.5px solid #ECECEE",background:"#F6F6F7",fontSize:".72rem",color:"#6B6D76",cursor:"pointer",marginTop:16,flexShrink:0}}>Este mes</button>
       </div>
-      <div style={{fontSize:".72rem",color:"#7B7063",marginTop:8}}>{items.length} registro{items.length!==1?"s":""} encontrado{items.length!==1?"s":""}</div>
+      <div style={{fontSize:".72rem",color:"#6B6D76",marginTop:8}}>{items.length} registro{items.length!==1?"s":""} encontrado{items.length!==1?"s":""}</div>
     </Card>
     {!items.length?<Empty icon="📋">Sin registros</Empty>:items.map(item=>{
       const d=fmtFL(item.fecha);const show=d!==lastDate;lastDate=d;
       const esT=item.forma==="Transferencia";
       return(
         <div key={item.id}>
-          {show&&<div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".06em",textTransform:"uppercase",color:"#7B7063",margin:"18px 0 8px"}}>{d}</div>}
-          <div style={{background:"#fff",borderRadius:12,padding:14,marginBottom:8,boxShadow:"0 2px 8px rgba(44,26,14,.06)"}}>
+          {show&&<div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".06em",textTransform:"uppercase",color:"#6B6D76",margin:"18px 0 8px"}}>{d}</div>}
+          <div style={{background:"#fff",borderRadius:12,padding:14,marginBottom:8,boxShadow:"0 2px 8px rgba(22,24,29,.06)"}}>
             <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
               {item.tipo==="boleta"&&item.foto
                 ?<img src={item.foto} onClick={()=>setLightbox(item.foto)} style={{width:48,height:48,objectFit:"cover",borderRadius:8,cursor:"pointer",flexShrink:0}} alt=""/>
                 :<Thumb size={48}>{item.tipo==="boleta"?"🧾":item.tipo==="cierre"?"💵":esT?"🏦":"💸"}</Thumb>}
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:600,fontSize:".9rem"}}>{item.tipo==="cierre"?"Cierre "+item.turno:item.proveedor}</div>
-                <div style={{fontSize:".72rem",color:"#7B7063",marginTop:2}}>{item.empleado} · {fmtH(item.fecha)}</div>
-                {item.obs&&<div style={{fontSize:".72rem",color:"#7B7063"}}>{item.obs}</div>}
+                <div style={{fontSize:".72rem",color:"#6B6D76",marginTop:2}}>{item.empleado} · {fmtH(item.fecha)}</div>
+                {item.obs&&<div style={{fontSize:".72rem",color:"#6B6D76"}}>{item.obs}</div>}
               </div>
               <div style={{textAlign:"right",flexShrink:0}}>
-                <div style={{fontWeight:700,fontSize:".9rem",color:item.tipo==="cierre"?"#2D6A4F":item.tipo==="pago"?"#C0392B":Number(item.monto)<0?"#B7860B":"#2C1A0E"}}>
+                <div style={{fontWeight:700,fontSize:".9rem",color:item.tipo==="cierre"?"#0F6E56":item.tipo==="pago"?"#B42318":Number(item.monto)<0?"#B45309":"#16181D"}}>
                   {item.tipo==="cierre"?"+"+fmt(item.monto):item.tipo==="pago"?"−"+fmt(item.monto):fmt(item.monto)}
                 </div>
-                <span style={{display:"inline-block",borderRadius:20,padding:"2px 8px",fontSize:".66rem",fontWeight:600,marginTop:4,background:item.tipo==="cierre"?"#EAF5F0":esT?"#FEF9E7":item.tipo==="pago"?"#FFF0EF":"#F0F0F0",color:item.tipo==="cierre"?"#2D6A4F":esT?"#B7860B":item.tipo==="pago"?"#C0392B":"#7B7063"}}>
+                <span style={{display:"inline-block",borderRadius:20,padding:"2px 8px",fontSize:".66rem",fontWeight:600,marginTop:4,background:item.tipo==="cierre"?"#EAF5F0":esT?"#FEF9E7":item.tipo==="pago"?"#FFF0EF":"#F0F0F0",color:item.tipo==="cierre"?"#0F6E56":esT?"#B45309":item.tipo==="pago"?"#B42318":"#6B6D76"}}>
                   {item.tipo==="boleta"?"Boleta":item.tipo==="cierre"?"Cierre":item.forma}
                 </span>
-                <button onClick={()=>pedirEliminar(item)} style={{display:"block",marginTop:5,marginLeft:"auto",background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:6,color:"#E74C3C",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"3px 8px"}}>✕ Eliminar</button>
+                <button onClick={()=>pedirEliminar(item)} style={{display:"block",marginTop:5,marginLeft:"auto",background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:6,color:"#E5484D",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"3px 8px"}}>✕ Eliminar</button>
               </div>
             </div>
           </div>
         </div>
       );
     })}
-    {items.length>0&&<button onClick={exportCSV} style={{display:"block",width:"100%",marginTop:12,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",color:"#C0392B",fontSize:".82rem",fontWeight:600,cursor:"pointer"}}>⬇ Exportar CSV</button>}
+    {items.length>0&&<button onClick={exportCSV} style={{display:"block",width:"100%",marginTop:12,padding:12,borderRadius:10,border:"none",background:"#ECECEE",color:"#B42318",fontSize:".82rem",fontWeight:600,cursor:"pointer"}}>⬇ Exportar CSV</button>}
 
     {confirmarElim&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8,color:"#2C1A0E"}}>⚠️ Eliminar registro</p>
-          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:6}}>
+          <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:8,color:"#16181D"}}>⚠️ Eliminar registro</p>
+          <p style={{fontSize:".85rem",color:"#6B6D76",marginBottom:6}}>
             <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.forma||confirmarElim.tipo}</strong>
             {" · "}{fmt(confirmarElim.monto)}
           </p>
-          <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
-          <p style={{fontSize:".78rem",color:"#C0392B",marginBottom:20,fontWeight:600}}>Esta acción no se puede deshacer.</p>
+          <p style={{fontSize:".82rem",color:"#6B6D76",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
+          <p style={{fontSize:".78rem",color:"#B42318",marginBottom:20,fontWeight:600}}>Esta acción no se puede deshacer.</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setConfirmarElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Cancelar</button>
-            <button onClick={confirmarEliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Eliminar</button>
+            <button onClick={()=>setConfirmarElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Cancelar</button>
+            <button onClick={confirmarEliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#B42318",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Eliminar</button>
           </div>
         </div>
       </div>
