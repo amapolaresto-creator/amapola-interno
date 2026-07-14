@@ -426,21 +426,21 @@ function App(){
   const{ini,tot,eg,saldo}=calcSaldo();
 
   if(phase==="init")return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100dvh",background:"#2C1A0E",gap:16}}>
-      <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"2rem",color:"#E8DCC8"}}>Amapola</div>
-      <div style={{color:"#7B7063",fontSize:".85rem"}}>Conectando con la base de datos…</div>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100dvh",background:"#16181D",gap:16}}>
+      <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"2rem",color:"#ECECEE"}}>Amapola</div>
+      <div style={{color:"#6B6D76",fontSize:".85rem"}}>Conectando con la base de datos…</div>
     </div>
   );
 
   if(phase==="error")return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100dvh",background:"#2C1A0E",gap:16,padding:24}}>
-      <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"2rem",color:"#E8DCC8"}}>Amapola</div>
-      <div style={{background:"rgba(231,76,60,.15)",border:"1px solid rgba(231,76,60,.4)",borderRadius:12,padding:"20px",maxWidth:340,textAlign:"center"}}>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100dvh",background:"#16181D",gap:16,padding:24}}>
+      <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"2rem",color:"#ECECEE"}}>Amapola</div>
+      <div style={{background:"rgba(229,72,77,.15)",border:"1px solid rgba(229,72,77,.4)",borderRadius:12,padding:"20px",maxWidth:340,textAlign:"center"}}>
         <div style={{fontSize:"1.5rem",marginBottom:8}}>⚠️</div>
-        <div style={{color:"#E8DCC8",fontWeight:600,marginBottom:8}}>Sin conexión</div>
-        <div style={{color:"#7B7063",fontSize:".78rem",marginBottom:4}}>Error: {errMsg}</div>
+        <div style={{color:"#ECECEE",fontWeight:600,marginBottom:8}}>Sin conexión</div>
+        <div style={{color:"#6B6D76",fontSize:".78rem",marginBottom:4}}>Error: {errMsg}</div>
       </div>
-      <button onClick={()=>{setPhase("init");cargar();}} style={{padding:"12px 28px",borderRadius:10,border:"none",background:"#E74C3C",color:"#fff",fontWeight:600,cursor:"pointer"}}>Reintentar</button>
+      <button onClick={()=>{setPhase("init");cargar();}} style={{padding:"12px 28px",borderRadius:10,border:"none",background:"#E5484D",color:"#fff",fontWeight:600,cursor:"pointer"}}>Reintentar</button>
     </div>
   );
 
@@ -466,34 +466,34 @@ function App(){
   const TABS=cocinaMode?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
   return(
-    <div style={{background:"#F9F6F1",minHeight:"100dvh",color:"#2C1A0E"}}>
+    <div style={{background:"#F6F6F7",minHeight:"100dvh",color:"#16181D"}}>
       {SaveErrorBanner}
       {cocinaLoginOpen&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(22,24,29,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>🍳 Acceso Cocina</p>
+            <p style={{fontFamily:"inherit",fontSize:"1.1rem",marginBottom:16}}>🍳 Acceso Cocina</p>
             <input type="password" placeholder="Contraseña" value={cocinaPassInput} autoFocus
               onChange={e=>{setCocinaPassInput(e.target.value);setCocinaPassErr(false);}}
               onKeyDown={e=>{if(e.key==="Enter"){if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}}}
-              style={{...iS,border:`1.5px solid ${cocinaPassErr?"#E74C3C":"#E8DCC8"}`,marginBottom:8}}/>
-            {cocinaPassErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
+              style={{...iS,border:`1.5px solid ${cocinaPassErr?"#E5484D":"#ECECEE"}`,marginBottom:8}}/>
+            {cocinaPassErr&&<p style={{color:"#E5484D",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
             <div style={{display:"flex",gap:10,marginTop:8}}>
-              <button onClick={()=>{setCocinaLoginOpen(false);setCocinaPassInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={()=>{if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
+              <button onClick={()=>{setCocinaLoginOpen(false);setCocinaPassInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ECECEE",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={()=>{if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#16181D",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
             </div>
           </div>
         </div>
       )}
-      <div style={{background:"#2C1A0E",padding:"14px 16px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+      <div style={{background:"#16181D",padding:"14px 16px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
         <div>
-          <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.4rem",color:"#E8DCC8",lineHeight:1.1}}>
-            Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Interno
+          <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.4rem",color:"#ECECEE",lineHeight:1.1}}>
+            Amapola <span style={{color:"#E5484D",fontStyle:"normal"}}>·</span> Interno
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
-            {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
-            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
-            {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>🍳 Cocina</button>}
+            {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
+            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
+            {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>🍳 Cocina</button>}
           </div>
         </div>
         {!cocinaMode&&(
@@ -502,33 +502,33 @@ function App(){
               <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
               <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
             </div>
-            <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
+            <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
               <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>EFECTIVO</span>
               <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
             </div>
           </div>
         )}
       </div>
-      <div style={{display:"flex",background:"#2C1A0E",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
+      <div style={{display:"flex",background:"#16181D",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#7B7063",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E5484D":"3px solid transparent",color:tab===t.id?"#ECECEE":"#6B6D76",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
         ))}
       </div>
       <div style={{padding:"20px 16px 100px",maxWidth:500,margin:"0 auto"}}>
         {tab==="admin-lock"&&(
           <div style={{padding:"20px 0"}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",marginBottom:4}}>Administración</p>
-            <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>Ingresá la contraseña para acceder a Resumen, Admin y Gastos.</p>
-            <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
-              <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Contraseña</label>
+            <p style={{fontFamily:"inherit",fontSize:"1.3rem",marginBottom:4}}>Administración</p>
+            <p style={{fontSize:".82rem",color:"#6B6D76",marginBottom:20}}>Ingresá la contraseña para acceder a Resumen, Admin y Gastos.</p>
+            <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)"}}>
+              <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#16181D",marginBottom:5}}>Contraseña</label>
               <input type="password" value={adminPassInput} autoFocus
                 onChange={e=>{setAdminPassInput(e.target.value);setAdminPassErr(false);}}
                 onKeyDown={e=>{if(e.key==="Enter"){if(adminPassInput==="Barcala716*"){setAdminUnlocked(true);setAdminPassInput("");setTab("dashboard");}else{setAdminPassErr(true);setAdminPassInput("");}}} }
                 placeholder="Contraseña de administrador"
-                style={{width:"100%",border:`1.5px solid ${adminPassErr?"#E74C3C":"#E8DCC8"}`,borderRadius:8,padding:"10px 12px",fontFamily:"inherit",fontSize:".92rem",color:"#2C1A0E",background:"#F9F6F1",outline:"none",boxSizing:"border-box",marginBottom:8}}/>
-              {adminPassErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
+                style={{width:"100%",border:`1.5px solid ${adminPassErr?"#E5484D":"#ECECEE"}`,borderRadius:8,padding:"10px 12px",fontFamily:"inherit",fontSize:".92rem",color:"#16181D",background:"#F6F6F7",outline:"none",boxSizing:"border-box",marginBottom:8}}/>
+              {adminPassErr&&<p style={{color:"#E5484D",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
               <button onClick={()=>{if(adminPassInput==="Barcala716*"){setAdminUnlocked(true);setAdminPassInput("");setTab("dashboard");}else{setAdminPassErr(true);setAdminPassInput("");}}}
-                style={{display:"block",width:"100%",padding:13,marginTop:8,border:"none",borderRadius:10,background:"#2C1A0E",color:"#fff",fontFamily:"inherit",fontSize:".95rem",fontWeight:600,cursor:"pointer"}}>
+                style={{display:"block",width:"100%",padding:13,marginTop:8,border:"none",borderRadius:10,background:"#16181D",color:"#fff",fontFamily:"inherit",fontSize:".95rem",fontWeight:600,cursor:"pointer"}}>
                 Ingresar
               </button>
             </div>
@@ -557,7 +557,7 @@ function App(){
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
       {lightbox&&<Lightbox src={lightbox} onClose={()=>setLightbox(null)}/>}
-      {toastMsg&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#2C1A0E",color:"#E8DCC8",padding:"10px 22px",borderRadius:20,fontSize:".84rem",fontWeight:600,zIndex:700,whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>{toastMsg}</div>}
+      {toastMsg&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#16181D",color:"#ECECEE",padding:"10px 22px",borderRadius:20,fontSize:".84rem",fontWeight:600,zIndex:700,whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>{toastMsg}</div>}
     </div>
   );
 }
