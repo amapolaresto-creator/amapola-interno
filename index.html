@@ -2316,7 +2316,7 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
 
   const PanelNum=({label,value,color,sub})=>(
     <div style={{flex:1,background:color||"#16181D",borderRadius:12,padding:"14px 16px"}}>
-      <div style={{fontSize:".62rem",color:"#ECECEE",opacity:.7,textTransform:"uppercase",letterSpacing:".06em"}}>{label}</div>
+      <div style={{fontSize:".72rem",color:"#ECECEE",opacity:.75}}>{label}</div>
       <div style={{fontFamily:"inherit",fontSize:"1.4rem",color:"#ECECEE",margin:"4px 0 2px",lineHeight:1.1}}>{fmt(value)}</div>
       {sub&&<div style={{fontSize:".7rem",color:"#ECECEE",opacity:.6}}>{sub}</div>}
     </div>
@@ -2327,7 +2327,7 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
 
     {/* DINERO DISPONIBLE */}
     <div style={{background:"#16181D",borderRadius:14,padding:"20px",marginBottom:12}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#ECECEE",opacity:.7}}>Total consolidado disponible</div>
+      <div style={{fontSize:".78rem",color:"#ECECEE",opacity:.75}}>Total consolidado disponible</div>
       <div style={{fontFamily:"inherit",fontSize:"2.8rem",color:"#ECECEE",margin:"4px 0 6px"}}>{fmt(totalConsolidado)}</div>
       <div style={{display:"flex",gap:8}}>
         <PanelNum label="💵 Caja fuerte" value={saldo}/>
@@ -2345,8 +2345,8 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
     )}
 
     {/* RESUMEN DÍA */}
-    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginBottom:12}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:12}}>Hoy · {new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
+    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #ECECEE",marginBottom:12}}>
+      <div style={{fontSize:".82rem",fontWeight:600,color:"#6B6D76",marginBottom:12}}>Hoy · {new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
         {[
           ["💵 Efectivo ingresado",fmt(efectivoHoy),"#0F6E56"],
@@ -2368,8 +2368,8 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
     </div>
 
     {/* GRÁFICO 7 DÍAS */}
-    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginBottom:12}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:14}}>Cierres · últimos 7 días</div>
+    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #ECECEE",marginBottom:12}}>
+      <div style={{fontSize:".82rem",fontWeight:600,color:"#6B6D76",marginBottom:14}}>Cierres · últimos 7 días</div>
       <div style={{display:"flex",alignItems:"flex-end",gap:6,height:100}}>
         {ultimos7.map((d,i)=>(
           <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
@@ -2390,8 +2390,8 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
     </div>
 
     {/* MES */}
-    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginBottom:12}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:12}}>
+    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #ECECEE",marginBottom:12}}>
+      <div style={{fontSize:".82rem",fontWeight:600,color:"#6B6D76",marginBottom:12}}>
         {now.toLocaleDateString("es-AR",{month:"long",year:"numeric"})}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
@@ -2415,8 +2415,8 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
 
     {/* TOP DEUDORES */}
     {topDeudores.length>0&&(
-      <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginBottom:12}}>
-        <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:12}}>🏪 Top deuda proveedores</div>
+      <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #ECECEE",marginBottom:12}}>
+        <div style={{fontSize:".82rem",fontWeight:600,color:"#6B6D76",marginBottom:12}}>🏪 Top deuda proveedores</div>
         {topDeudores.map((p,i)=>(
           <div key={p.nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<topDeudores.length-1?"1px solid #F6F6F7":"none"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -2434,8 +2434,8 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
     )}
 
     {/* ACCESOS RÁPIDOS */}
-    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",boxShadow:"0 2px 12px rgba(22,24,29,.08)"}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#6B6D76",marginBottom:12}}>Accesos rápidos</div>
+    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #ECECEE"}}>
+      <div style={{fontSize:".82rem",fontWeight:600,color:"#6B6D76",marginBottom:12}}>Accesos rápidos</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
         {[
           ["💰 Nuevo cierre","cierres","#16181D"],
