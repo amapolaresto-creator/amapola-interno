@@ -2314,11 +2314,10 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
   const {saldoReal} = calcDigital();
   const totalConsolidado = saldo + saldoReal;
 
-  const PanelNum=({label,value,color,sub})=>(
-    <div style={{flex:1,background:color||"#16181D",borderRadius:12,padding:"14px 16px"}}>
-      <div style={{fontSize:".72rem",color:"#ECECEE",opacity:.75}}>{label}</div>
-      <div style={{fontFamily:"inherit",fontSize:"1.4rem",color:"#ECECEE",margin:"4px 0 2px",lineHeight:1.1}}>{fmt(value)}</div>
-      {sub&&<div style={{fontSize:".7rem",color:"#ECECEE",opacity:.6}}>{sub}</div>}
+  const PanelNum=({label,value})=>(
+    <div style={{flex:1,background:"#F6F6F7",borderRadius:10,padding:"12px 14px"}}>
+      <div style={{fontSize:".72rem",color:"#6B6D76"}}>{label}</div>
+      <div style={{fontFamily:"inherit",fontSize:"1.2rem",color:"#16181D",margin:"2px 0 0",lineHeight:1.1}}>{fmt(value)}</div>
     </div>
   );
 
@@ -2326,12 +2325,14 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
     <ST>Dashboard</ST><SS>Panorama general del negocio.</SS>
 
     {/* DINERO DISPONIBLE */}
-    <div style={{background:"#16181D",borderRadius:14,padding:"20px",marginBottom:12}}>
-      <div style={{fontSize:".78rem",color:"#ECECEE",opacity:.75}}>Total consolidado disponible</div>
-      <div style={{fontFamily:"inherit",fontSize:"2.8rem",color:"#ECECEE",margin:"4px 0 6px"}}>{fmt(totalConsolidado)}</div>
+    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #ECECEE",marginBottom:12}}>
+      <div style={{background:"#F6F6F7",borderRadius:10,padding:"14px 16px",marginBottom:8}}>
+        <div style={{fontSize:".78rem",color:"#6B6D76"}}>Total consolidado disponible</div>
+        <div style={{fontFamily:"inherit",fontSize:"2rem",color:"#16181D",margin:"4px 0 0"}}>{fmt(totalConsolidado)}</div>
+      </div>
       <div style={{display:"flex",gap:8}}>
         <PanelNum label="💵 Caja fuerte" value={saldo}/>
-        <PanelNum label="💳 Banco" value={saldoReal} color="#1a3a2a"/>
+        <PanelNum label="💳 Banco" value={saldoReal}/>
       </div>
     </div>
 
