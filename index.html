@@ -1508,6 +1508,10 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
   const[hsExtras,setHsExtras]=useState("");
   const[crearModal,setCrearModal]=useState(false);const[nuevoEmp,setNuevoEmp]=useState("");
   const[listaEmps,setListaEmps]=useState(EMPS);
+  const[filtroFecha,setFiltroFecha]=useState("hoy");
+  const[fDesde,setFDesde]=useState(hoyLocal());
+  const[fHasta,setFHasta]=useState(hoyLocal());
+  const[filtroEmp,setFiltroEmp]=useState("");
 
   const guardar=async()=>{
     if(!emp||!monto){toast("Elegí un empleado e ingresá el monto");return;}
@@ -1523,9 +1527,20 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
     toast("Empleado creado ✓");
   };
 
-  const hoy=new Date().toDateString();
-  const hoyItems=sueldos.filter(s=>new Date(s.fecha).toDateString()===hoy).slice().reverse();
+  const hoy=new Date();
+  const isoD=d=>d.toISOString().slice(0,10);
+  const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
   const totalMes=sueldos.filter(s=>{const d=new Date(s.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,s)=>a+Number(s.monto||0),0);
+
+  const rangoDesde = filtroFecha==="hoy"?hoyLocal():filtroFecha==="mes"?isoD(inicioMes):filtroFecha==="todo"?"":fDesde;
+  const rangoHasta = filtroFecha==="hoy"?hoyLocal():filtroFecha==="mes"?isoD(hoy):filtroFecha==="todo"?"":fHasta;
+  const hoyItems=sueldos.filter(s=>{
+    const f=(s.fecha||"").slice(0,10);
+    const fOk=(!rangoDesde||f>=rangoDesde)&&(!rangoHasta||f<=rangoHasta);
+    const eOk=!filtroEmp||s.empleado===filtroEmp;
+    return fOk&&eOk;
+  }).slice().sort((a,b)=>a.fecha.localeCompare(b.fecha)).reverse();
+  const totalFiltrado=hoyItems.reduce((a,s)=>a+Number(s.monto||0),0);
 
   return(<>
     <ST help={"Registrá acá los pagos de sueldos, anticipos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Anticipo, Horas extra y Vacaciones.\n• Cada pago descuenta del efectivo disponible si se paga en efectivo.\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
@@ -1579,13 +1594,37 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
       <Btn bg="#0F6E56" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar sueldo"}</Btn>
     </Card>
-    <Card title={`Pagos de hoy (${hoyItems.length})`}>
-      {!hoyItems.length?<Empty icon="👥">Sin pagos registrados hoy</Empty>:hoyItems.map(s=>(
+    <Card title={`Historial de sueldos (${hoyItems.length})`}>
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {[["hoy","Hoy"],["mes","Este mes"],["todo","Todo"],["custom","Personalizado"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFiltroFecha(v)} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#16181D":"#ECECEE",color:filtroFecha===v?"#ECECEE":"#16181D"}}>{l}</button>
+        ))}
+      </div>
+      {filtroFecha==="custom"&&(
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <div style={{flex:1}}>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Desde</label>
+            <input type="date" value={fDesde} onChange={e=>setFDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+          </div>
+          <div style={{flex:1}}>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#6B6D76",marginBottom:3}}>Hasta</label>
+            <input type="date" value={fHasta} onChange={e=>setFHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+          </div>
+        </div>
+      )}
+      <div style={{marginBottom:14}}>
+        <select value={filtroEmp} onChange={e=>setFiltroEmp(e.target.value)} style={{...sS,fontSize:".82rem"}}>
+          <option value="">Todos los empleados</option>
+          {listaEmps.map(e=><option key={e} value={e}>{e}</option>)}
+        </select>
+      </div>
+      {hoyItems.length>0&&<div style={{fontSize:".76rem",color:"#6B6D76",marginBottom:10}}>Total del período: <strong style={{color:"#B42318"}}>{fmt(totalFiltrado)}</strong></div>}
+      {!hoyItems.length?<Empty icon="👥">Sin pagos registrados en este período</Empty>:hoyItems.map(s=>(
         <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F6F6F7"}}>
           <Thumb size={44}>👤</Thumb>
           <div style={{flex:1}}>
             <div style={{fontWeight:600,fontSize:".9rem"}}>{s.empleado}</div>
-            <div style={{fontSize:".73rem",color:"#6B6D76",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
+            <div style={{fontSize:".73rem",color:"#6B6D76",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtF(s.fecha)} {fmtH(s.fecha)}</div>
             {s.obs&&<div style={{fontSize:".73rem",color:"#6B6D76"}}>{s.obs}</div>}
           </div>
           <div style={{fontWeight:700,fontSize:".9rem",color:s.forma==="Efectivo"?"#B42318":"#B45309"}}>{fmt(s.monto)}</div>
