@@ -511,7 +511,7 @@ function App(){
       {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
       {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
       {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
-      {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente}/>}
+      {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
       {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
       {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
       {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
@@ -1082,7 +1082,7 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
   </>);
 }
 
-function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente}){
+function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente,ajustesCajaEfectivo}){
   const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
   const[monto,setMonto]=useState("");const[forma,setForma]=useState("Efectivo");
   const[obs,setObs]=useState("");const[busy,setBusy]=useState(false);
@@ -1159,12 +1159,12 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
       <Btn bg="#B45309" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
     </Card>
     {/* REGISTRO DE PAGOS */}
-    <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos}/>
+    <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>
   </>);
 }
 
 
-function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
+function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajustesCajaEfectivo}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -1185,8 +1185,9 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
     ...sueldosEf.map(s=>({...s,_cat:"sueldo",_signo:-1,proveedor:s.empleado+(s.concepto&&s.concepto!=="Sueldo"?" · "+s.concepto:"")})),
     ...gastosEf.map(g=>({...g,_cat:"gasto", _signo:-1,proveedor:g.categoria})),
   ];
+  const ajustesMovs = (ajustesCajaEfectivo||[]).map(a=>({...a,_cat:"ajuste",_signo:Number(a.monto)>=0?1:-1,monto:Math.abs(Number(a.monto)||0),proveedor:a.motivo||"Ajuste de caja"}));
   const ingresos = [...cierresEf,...cierresNEf].map(c=>({...c,_signo:1}));
-  const allMovs  = [...egresos,...ingresos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const allMovs  = [...egresos,...ingresos,...ajustesMovs].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   // Aplicar filtro de fechas
   const desdeF = filtroFecha==="mes" ? iso(inicioMes) : filtroFecha==="hoy" ? iso(hoy) : desde;
@@ -1219,7 +1220,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
   const totalIngresos = filasAsc.filter(f=>f._signo>0).reduce((s,f)=>s+f._delta,0);
   const totalEgresos  = filasAsc.filter(f=>f._signo<0).reduce((s,f)=>s+Math.abs(f._delta),0);
   const neto = totalIngresos - totalEgresos;
-  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":"💸";
+  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="ajuste"?"⚖️":"💸";
 
   return(
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(22,24,29,.08)",marginTop:16}}>
