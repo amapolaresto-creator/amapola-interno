@@ -520,12 +520,31 @@ function App(){
     <div style={{minHeight:"100dvh",background:"#F6F6F7",color:"#16181D"}}>
     {SaveErrorBanner}
     {!isDesktop&&(
-      <div style={{background:"#16181D",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
-        <button onClick={()=>setSidebarOpen(true)} aria-label="Abrir menú" style={{background:"none",border:"none",color:"#ECECEE",fontSize:"1.4rem",padding:"2px 6px",cursor:"pointer"}}>☰</button>
-        <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.15rem",color:"#ECECEE"}}>Amapola <span style={{color:"#E5484D",fontStyle:"normal"}}>·</span> Interno</div>
-        {!cocinaMode?(
-          <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:16,padding:"4px 10px",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>{fmt(saldo)}</div>
-        ):<div style={{width:24}}/>}
+      <div style={{background:"#16181D",padding:"12px 14px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,gap:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+          <button onClick={()=>setSidebarOpen(true)} aria-label="Abrir menú" style={{background:"none",border:"none",color:"#ECECEE",fontSize:"1.3rem",padding:"2px 4px",cursor:"pointer",flexShrink:0}}>☰</button>
+          <div style={{minWidth:0}}>
+            <div style={{fontFamily:"inherit",fontStyle:"italic",fontSize:"1.15rem",color:"#ECECEE",lineHeight:1.1,whiteSpace:"nowrap"}}>Amapola <span style={{color:"#E5484D",fontStyle:"normal"}}>·</span> Interno</div>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <div style={{fontSize:".58rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
+              {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".56rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 6px",cursor:"pointer"}}>Salir admin</button>}
+              {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".56rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 6px",cursor:"pointer"}}>Salir cocina</button>}
+              {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".56rem",background:"rgba(255,255,255,.12)",border:"none",color:"#ECECEE",borderRadius:6,padding:"2px 6px",cursor:"pointer"}}>🍳 Cocina</button>}
+            </div>
+          </div>
+        </div>
+        {!cocinaMode&&(
+          <div style={{display:"flex",gap:6,alignItems:"stretch",flexShrink:0}}>
+            <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:16,padding:"4px 9px",textAlign:"center",fontSize:".62rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+              <span style={{opacity:.7,fontSize:".5rem",textTransform:"uppercase",letterSpacing:".03em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
+              <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
+            </div>
+            <div onClick={()=>setTab("caja")} style={{background:"#0F6E56",color:"#fff",borderRadius:16,padding:"4px 10px",fontSize:".7rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
+              <span style={{opacity:.7,fontSize:".54rem",display:"block"}}>EFECTIVO</span>
+              <span style={{fontSize:".82rem"}}>{fmt(saldo)}</span>
+            </div>
+          </div>
+        )}
       </div>
     )}
     <div style={{display:"flex",alignItems:"flex-start"}}>
