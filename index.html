@@ -506,7 +506,7 @@ function App(){
         calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
         cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
       {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
-      {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos}/>}
+      {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
       {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
       {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
       {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
@@ -2526,7 +2526,7 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
 
 
 
-function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos}){
+function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,ajustesCajaEfectivo}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -2544,8 +2544,9 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const gastosEf   = (gastos||[]).filter(g=>g.forma==="Efectivo").map(g=>({...g,_cat:"gasto", _label:g.categoria,_signo:-1}));
   const cierresViejos = (cierres||[]).map(c=>({...c,_cat:"cierre",_label:"Cierre "+c.turno,_signo:1}));
   const cierresNuevos = (cierresCaja||[]).map(c=>({...c,_cat:"cierre",_label:"Cierre "+c.turno,monto:c.efectivo,_signo:1}));
+  const ajustesMovs = (ajustesCajaEfectivo||[]).map(a=>({...a,_cat:"ajuste",_label:a.motivo||"Ajuste de caja",_signo:Number(a.monto)>=0?1:-1,monto:Math.abs(Number(a.monto)||0)}));
 
-  const allMovs=[...pagosEf,...sueldosEf,...gastosEf,...cierresViejos,...cierresNuevos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const allMovs=[...pagosEf,...sueldosEf,...gastosEf,...cierresViejos,...cierresNuevos,...ajustesMovs].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   const desdeF = filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):filtroFecha==="custom"?desde:"";
   const hastaF = filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):filtroFecha==="custom"?hasta:"";
@@ -2572,7 +2573,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const totalIngresos=filtradosAsc.filter(m=>m._signo>0).reduce((s,m)=>s+Number(m.monto||0),0);
   const totalEgresos =filtradosAsc.filter(m=>m._signo<0).reduce((s,m)=>s+Number(m.monto||0),0);
 
-  const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":"🏠";
+  const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":c==="ajuste"?"⚖️":"🏠";
 
   const abrirEditar=m=>{
     setEditItem(m);
@@ -2628,7 +2629,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       </div>
     )}
     <div style={{display:"flex",gap:6,marginBottom:10}}>
-      {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"]].map(([v,l])=>(
+      {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"],["ajuste","Ajustes"]].map(([v,l])=>(
         <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #ECECEE",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#16181D":"transparent",color:filtroTipo===v?"#ECECEE":"#6B6D76"}}>{l}</button>
       ))}
     </div>
@@ -2661,7 +2662,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
                 <td style={{padding:"6px 8px",textAlign:"right",color:"#0F6E56",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo>0?fmt(m.monto):""}</td>
                 <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldo>=0?"#16181D":"#B42318"}}>{fmt(m._saldo)}</td>
                 <td style={{padding:"6px 8px"}}>
-                  {m._cat!=="cierre"&&(
+                  {m._cat!=="cierre"&&m._cat!=="ajuste"&&(
                     <div style={{display:"flex",gap:4}}>
                       <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#0F6E56",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
                       <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E5484D",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
