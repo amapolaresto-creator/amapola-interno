@@ -1175,7 +1175,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
 
   const egresos = [
     ...pagosEf.map(p=>({...p,_cat:"pago",  _signo:-1})),
-    ...sueldosEf.map(s=>({...s,_cat:"sueldo",_signo:-1})),
+    ...sueldosEf.map(s=>({...s,_cat:"sueldo",_signo:-1,proveedor:s.empleado+(s.concepto&&s.concepto!=="Sueldo"?" · "+s.concepto:"")})),
     ...gastosEf.map(g=>({...g,_cat:"gasto", _signo:-1,proveedor:g.categoria})),
   ];
   const ingresos = [...cierresEf,...cierresNEf].map(c=>({...c,_signo:1}));
