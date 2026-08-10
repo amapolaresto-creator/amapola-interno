@@ -1743,6 +1743,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
   const[busy,setBusy]=useState(false);
   const[nuevaCatModal,setNuevaCatModal]=useState(false);
   const[nuevaCat,setNuevaCat]=useState("");
+  const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
 
   const agregarCategoria=()=>{
     if(!nuevaCat.trim()){toast("Ingresá el nombre de la categoría");return;}
@@ -1757,15 +1758,14 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
   const[fecha,setFecha]=useState(hoyLocal());
 
   const guardar=async()=>{
-    if(!cat||!monto){toast("Elegí una categoría e ingresá el monto");return;}
-    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
+    if(!cat||!monto){toast("Elegí una categoría e ingresá el monto");return false;}
+    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return false;}
     setBusy(true);
     await saveGastos([...gastos,{id:uid(),tipo:"gasto",categoria:cat,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
     setBusy(false);setCat("");setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
+    return true;
   };
 
-  const hoy=new Date().toDateString();
-  const hoyItems=gastos.filter(g=>new Date(g.fecha).toDateString()===hoy).slice().reverse();
   const totalMes=gastos.filter(g=>{const d=new Date(g.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,g)=>a+Number(g.monto||0),0);
 
   return(<>
@@ -1775,56 +1775,56 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
     </div>
-    <Card title="Registrar pago digital">
-      {nuevaCatModal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
-            <input value={nuevaCat} onChange={e=>setNuevaCat(e.target.value)} placeholder="Ej: Seguro, Contador, ..."
-              autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCategoria()}
-              style={{...iS,marginBottom:16}}/>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={agregarCategoria} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#7B7063",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+
+    <Btn bg="#7B7063" onClick={()=>setNuevoPagoModal(true)}>+ Registrar pago</Btn>
+
+    {nuevoPagoModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nuevo pago digital</p>
+            <button onClick={()=>setNuevoPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+          </div>
+
+          {nuevaCatModal&&(
+            <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+              <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+                <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
+                <input value={nuevaCat} onChange={e=>setNuevaCat(e.target.value)} placeholder="Ej: Seguro, Contador, ..."
+                  autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCategoria()}
+                  style={{...iS,marginBottom:16}}/>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+                  <button onClick={agregarCategoria} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#7B7063",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+          <Field label="Categoría">
+            <div style={{display:"flex",gap:8}}>
+              <select value={cat} onChange={e=>setCat(e.target.value)} style={{...sS,flex:1}}>
+                <option value="">— Elegí una categoría —</option>
+                {cats.map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
+              <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
+                style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+            </div>
+          </Field>
+          <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
+          <Field label="Forma de pago">
+            <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
+              <option value="Efectivo">Efectivo (descuenta de caja)</option>
+              <option value="Transferencia">Transferencia (solo registro)</option>
+            </select>
+          </Field>
+          {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
+          <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: mes de junio, cuota..."/></Field>
+          <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
+          <Btn bg="#7B7063" onClick={async()=>{if(await guardar())setNuevoPagoModal(false);}} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
         </div>
-      )}
-      <Field label="Categoría">
-        <div style={{display:"flex",gap:8}}>
-          <select value={cat} onChange={e=>setCat(e.target.value)} style={{...sS,flex:1}}>
-            <option value="">— Elegí una categoría —</option>
-            {cats.map(c=><option key={c} value={c}>{c}</option>)}
-          </select>
-          <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
-            style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
-        </div>
-      </Field>
-      <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
-      <Field label="Forma de pago">
-        <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
-          <option value="Efectivo">Efectivo (descuenta de caja)</option>
-          <option value="Transferencia">Transferencia (solo registro)</option>
-        </select>
-      </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
-      <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: mes de junio, cuota..."/></Field>
-      <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#7B7063" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
-    </Card>
-    <Card title={`Pagos digitales de hoy (${hoyItems.length})`}>
-      {!hoyItems.length?<Empty icon="🏠">Sin pagos registrados hoy</Empty>:hoyItems.map(g=>(
-        <div key={g.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
-          <Thumb size={44}>📋</Thumb>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:600,fontSize:".9rem"}}>{g.categoria}</div>
-            <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{g.forma} · {fmtH(g.fecha)}</div>
-            {g.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{g.obs}</div>}
-          </div>
-          <div style={{fontWeight:700,fontSize:".9rem",color:g.forma==="Efectivo"?"#C0392B":"#B7860B"}}>{fmt(g.monto)}</div>
-        </div>
-      ))}
-    </Card>
+      </div>
+    )}
+
     <LibroDiarioGastos gastos={gastos}/>
   </>);
 }
@@ -1839,15 +1839,18 @@ function LibroDiarioGastos({gastos}){
   const[desde,setDesde]=useState(iso(inicioMes));
   const[hasta,setHasta]=useState(iso(hoy));
   const[filtroForma,setFiltroForma]=useState("todo");
+  const[filtroCat,setFiltroCat]=useState("todo");
 
   const allMovs=[...gastos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const categoriasPresentes=[...new Set(gastos.map(g=>g.categoria).filter(Boolean))].sort();
 
   const desdeF=filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
   const hastaF=filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):hasta;
 
   const filtrados=allMovs
     .filter(m=>{const f=m.fecha.slice(0,10);return(!desdeF||f>=desdeF)&&(!hastaF||f<=hastaF);})
-    .filter(m=>filtroForma==="todo"||m.forma===filtroForma);
+    .filter(m=>filtroForma==="todo"||m.forma===filtroForma)
+    .filter(m=>filtroCat==="todo"||m.categoria===filtroCat);
 
   const filtradosAsc=[...filtrados].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   let saldoAcum=0;
@@ -1886,12 +1889,22 @@ function LibroDiarioGastos({gastos}){
       )}
 
       {/* FILTRO FORMA */}
-      <div style={{display:"flex",gap:6,marginBottom:12}}>
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[["todo","Todo"],["Efectivo","Efectivo"],["Transferencia","Transferencia"]].map(([v,l])=>(
           <button key={v} onClick={()=>setFiltroForma(v)}
             style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroForma===v?"#2C1A0E":"transparent",color:filtroForma===v?"#E8DCC8":"#7B7063"}}>{l}</button>
         ))}
       </div>
+
+      {/* FILTRO CATEGORÍA */}
+      {categoriasPresentes.length>0&&(
+        <div style={{marginBottom:12}}>
+          <select value={filtroCat} onChange={e=>setFiltroCat(e.target.value)} style={{...sS,fontSize:".8rem"}}>
+            <option value="todo">Todas las categorías</option>
+            {categoriasPresentes.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      )}
 
       {/* RESUMEN */}
       {filas.length>0&&(
