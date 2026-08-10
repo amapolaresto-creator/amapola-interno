@@ -1825,13 +1825,13 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
       </div>
     )}
 
-    <LibroDiarioGastos gastos={gastos}/>
+    <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos}/>
   </>);
 }
 
 
 
-function LibroDiarioGastos({gastos}){
+function LibroDiarioGastos({gastos,saveGastos}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -1840,6 +1840,27 @@ function LibroDiarioGastos({gastos}){
   const[hasta,setHasta]=useState(iso(hoy));
   const[filtroForma,setFiltroForma]=useState("todo");
   const[filtroCat,setFiltroCat]=useState("todo");
+  const[editItem,setEditItem]=useState(null);
+  const[editForm,setEditForm]=useState({});
+  const[confElim,setConfElim]=useState(null);
+  const[busyEdit,setBusyEdit]=useState(false);
+
+  const abrirEditar=g=>{
+    setEditItem(g);
+    setEditForm({categoria:g.categoria||"",monto:String(g.monto),forma:g.forma||"Efectivo",obs:g.obs||"",fecha:g.fecha.slice(0,10)});
+  };
+  const guardarEdicion=async()=>{
+    if(!editForm.categoria||!editForm.monto){toast("Completá categoría y monto");return;}
+    setBusyEdit(true);
+    const nf=editForm.fecha?fechaLocalISO(editForm.fecha):editItem.fecha;
+    await saveGastos(gastos.map(g=>g.id===editItem.id?{...g,categoria:editForm.categoria,monto:Number(editForm.monto),forma:editForm.forma,obs:editForm.obs,fecha:nf}:g));
+    setBusyEdit(false);setEditItem(null);toast("Actualizado ✓");
+  };
+  const eliminar=async()=>{
+    const g=confElim;setConfElim(null);
+    await saveGastos(gastos.filter(x=>x.id!==g.id));
+    toast("Eliminado ✓");
+  };
 
   const allMovs=[...gastos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const categoriasPresentes=[...new Set(gastos.map(g=>g.categoria).filter(Boolean))].sort();
@@ -1924,8 +1945,8 @@ function LibroDiarioGastos({gastos}){
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:360}}>
             <thead>
               <tr style={{background:"#F9F6F1"}}>
-                {["Fecha","Categoría","Forma","Monto"].map(h=>(
-                  <th key={h} style={{padding:"7px 8px",textAlign:h==="Monto"?"right":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                {["Fecha","Categoría","Forma","Monto",""].map(h=>(
+                  <th key={h||"acc"} style={{padding:"7px 8px",textAlign:h==="Monto"?"right":h===""?"center":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1945,14 +1966,62 @@ function LibroDiarioGastos({gastos}){
                     </span>
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#C0392B",whiteSpace:"nowrap"}}>{fmt(g.monto)}</td>
+                  <td style={{padding:"6px 8px"}}>
+                    <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                      <button onClick={()=>abrirEditar(g)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
+                      <button onClick={()=>setConfElim(g)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               <tr style={{background:"#2C1A0E"}}>
                 <td colSpan={3} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTAL</td>
                 <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalGen)}</td>
+                <td/>
               </tr>
             </tbody>
           </table>
+        </div>
+      )}
+
+      {editItem&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"88dvh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>✏️ Editar pago digital</p>
+              <button onClick={()=>setEditItem(null)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            </div>
+            <Field label="Categoría">
+              <input list="cats-libro-gastos" value={editForm.categoria||""} onChange={e=>setEditForm(f=>({...f,categoria:e.target.value}))} style={iS}/>
+              <datalist id="cats-libro-gastos">{categoriasPresentes.map(c=><option key={c} value={c}/>)}</datalist>
+            </Field>
+            <Field label="Monto ($)"><Inp type="number" value={editForm.monto||""} onChange={v=>setEditForm(f=>({...f,monto:v}))}/></Field>
+            <Field label="Forma de pago">
+              <select value={editForm.forma||"Efectivo"} onChange={e=>setEditForm(f=>({...f,forma:e.target.value}))} style={sS}>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+              </select>
+            </Field>
+            <Field label="Observaciones"><TA value={editForm.obs||""} onChange={v=>setEditForm(f=>({...f,obs:v}))}/></Field>
+            <Field label="Fecha"><Inp type="date" value={editForm.fecha||""} onChange={v=>setEditForm(f=>({...f,fecha:v}))}/></Field>
+            <div style={{display:"flex",gap:10,marginTop:8}}>
+              <button onClick={()=>setEditItem(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={guardarEdicion} disabled={busyEdit} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>{busyEdit?"Guardando…":"Guardar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confElim&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar registro</p>
+            <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:16}}>{confElim.categoria} · {fmt(confElim.monto)} · {fmtF(confElim.fecha)}</p>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={eliminar} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
