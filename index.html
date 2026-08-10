@@ -1343,13 +1343,15 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
     })
     .sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
-  // Saldo acumulado
+  // Saldo acumulado (se calcula en orden cronológico ascendente para que el saldo corrido sea correcto)
   let saldoAcum=infoSel?infoSel.deudaInicial:0;
   const movConSaldo=movSel.map(m=>{
     if(m._tipo==="boleta") saldoAcum+=Number(m.monto)||0;
     else saldoAcum-=Number(m.monto)||0;
     return{...m,_saldo:saldoAcum};
   });
+  // Para mostrar: lo más reciente primero (el saldo ya viene calculado arriba, acá solo se invierte el orden visual)
+  const movParaMostrar=[...movConSaldo].reverse();
 
   const exportarEstadoCuenta=()=>{
     if(!provSel){toast("Elegí un proveedor primero");return;}
@@ -1418,18 +1420,8 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
               </tr>
             </thead>
             <tbody>
-              {infoSel&&infoSel.deudaInicial!==0&&(
-                <tr style={{background:"#FEF9E7"}}>
-                  <td style={{padding:"7px 8px",color:"#7B7063",whiteSpace:"nowrap"}}>—</td>
-                  <td style={{padding:"7px 8px"}}><span style={{background:"#E8DCC8",borderRadius:4,padding:"2px 6px",fontSize:".68rem",fontWeight:700}}>Inicial</span></td>
-                  <td style={{padding:"7px 8px",color:"#7B7063",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Deuda inicial</td>
-                  <td style={{padding:"7px 8px",textAlign:"right",color:"#C0392B",fontWeight:600}}>{fmt(infoSel.deudaInicial)}</td>
-                  <td style={{padding:"7px 8px",textAlign:"right"}}>—</td>
-                  <td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,color:"#C0392B"}}>{fmt(infoSel.deudaInicial)}</td>
-                </tr>
-              )}
-              {!movConSaldo.length&&<tr><td colSpan={6} style={{textAlign:"center",padding:"20px",color:"#7B7063"}}>Sin movimientos en el período</td></tr>}
-              {movConSaldo.map((m,i)=>{
+              {!movParaMostrar.length&&!(infoSel&&infoSel.deudaInicial!==0)&&<tr><td colSpan={6} style={{textAlign:"center",padding:"20px",color:"#7B7063"}}>Sin movimientos en el período</td></tr>}
+              {movParaMostrar.map((m,i)=>{
                 const esBol=m._tipo==="boleta";
                 const bg=i%2===0?"#fff":"#F9F6F1";
                 return(
@@ -1447,6 +1439,16 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
                   </tr>
                 );
               })}
+              {infoSel&&infoSel.deudaInicial!==0&&(
+                <tr style={{background:"#FEF9E7"}}>
+                  <td style={{padding:"7px 8px",color:"#7B7063",whiteSpace:"nowrap"}}>—</td>
+                  <td style={{padding:"7px 8px"}}><span style={{background:"#E8DCC8",borderRadius:4,padding:"2px 6px",fontSize:".68rem",fontWeight:700}}>Inicial</span></td>
+                  <td style={{padding:"7px 8px",color:"#7B7063",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Deuda inicial</td>
+                  <td style={{padding:"7px 8px",textAlign:"right",color:"#C0392B",fontWeight:600}}>{fmt(infoSel.deudaInicial)}</td>
+                  <td style={{padding:"7px 8px",textAlign:"right"}}>—</td>
+                  <td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,color:"#C0392B"}}>{fmt(infoSel.deudaInicial)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
