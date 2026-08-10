@@ -375,7 +375,7 @@ function App(){
     const ini=Number(cajaInicial)||0;
     const tot=cierres.reduce((s,c)=>s+Number(c.monto||0),0);
     const totNuevosCierres=cierresCaja.reduce((s,c)=>s+Number(c.efectivo||0),0);
-    const egPagos=pagos.filter(p=>p.forma==="Efectivo"&&!p.transferenciaInterna).reduce((s,p)=>s+Number(p.monto||0),0);
+    const egPagos=pagos.filter(p=>p.forma==="Efectivo").reduce((s,p)=>s+Number(p.monto||0),0);
     const egSueldos=sueldos.filter(s=>s.forma==="Efectivo").reduce((s2,s)=>s2+Number(s.monto||0),0);
     const egGastos=gastos.filter(g=>g.forma==="Efectivo").reduce((s,g)=>s+Number(g.monto||0),0);
     const eg=egPagos+egSueldos+egGastos;
@@ -407,17 +407,23 @@ function App(){
     return null;
   };
 
-  // Registra un pago y, si hay excedente sobre la deuda, lo transfiere al par
+  // Registra un pago y, si hay excedente sobre la deuda, lo transfiere al par.
+  // El monto contra el proveedor original queda limitado a lo que realmente debía,
+  // y el excedente se registra como pago aparte al proveedor par (misma forma de pago,
+  // para que la caja se descuente una sola vez por el total realmente pagado).
   const pagarConExcedente=async(pagoBase,pagosActuales,savePagosFn)=>{
     const deudaInfo=calcDeuda(pagoBase.proveedor);
     const pendiente=deudaInfo?Math.max(0,deudaInfo.pendiente):0;
     const destino=parDestino(pagoBase.proveedor);
-    const nuevoPago={...pagoBase,id:uid()};
-    let listaPagos=[...pagosActuales,nuevoPago];
+    const aplicaOriginal=destino?Math.min(pagoBase.monto,pendiente):pagoBase.monto;
+    let listaPagos=pagosActuales;
+    if(aplicaOriginal>0){
+      listaPagos=[...listaPagos,{...pagoBase,monto:aplicaOriginal,id:uid()}];
+    }
 
-    if(destino&&pagoBase.monto>pendiente&&pendiente>=0){
+    if(destino&&pagoBase.monto>pendiente){
       const excedente=pagoBase.monto-pendiente;
-      const pagoExtra={id:uid(),tipo:"pago",proveedor:destino,empleado:pagoBase.empleado||"—",monto:excedente,forma:"Transferencia interna",transferenciaInterna:true,obs:`Excedente de pago de ${pagoBase.proveedor} (auto)`,fecha:pagoBase.fecha||new Date().toISOString()};
+      const pagoExtra={id:uid(),tipo:"pago",proveedor:destino,empleado:pagoBase.empleado||"—",monto:excedente,forma:pagoBase.forma,transferenciaInterna:true,obs:`Excedente de pago de ${pagoBase.proveedor} (auto)`,fecha:pagoBase.fecha||new Date().toISOString()};
       listaPagos=[...listaPagos,pagoExtra];
       toast(`✅ Excedente ${fmt(excedente)} aplicado a ${destino}`);
     }
@@ -564,7 +570,7 @@ function App(){
         {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
-        {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente}/>}
+        {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
@@ -1055,20 +1061,23 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
   </>);
 }
 
-function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente}){
+function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente,empleados,saveEmpleados}){
   const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
   const[monto,setMonto]=useState("");const[forma,setForma]=useState("Efectivo");
   const[obs,setObs]=useState("");const[busy,setBusy]=useState(false);
   const[fecha,setFecha]=useState(hoyLocal());
-  const[registradores,setRegistradores]=useState(["Adrian","Laureano","Micaela","Priscila"]);
   const[nuevoRegModal,setNuevoRegModal]=useState(false);
   const[nuevoRegNombre,setNuevoRegNombre]=useState("");
 
-  const agregarRegistrador=()=>{
+  // "Registrado por" usa la misma lista persistida de Empleados que Boletas (antes era una lista local que se perdía al recargar).
+  const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
+
+  const agregarRegistrador=async()=>{
     const nombre=nuevoRegNombre.trim();
     if(!nombre){toast("Ingresá un nombre");return;}
-    if(registradores.some(r=>norm(r)===norm(nombre))){toast("Ya existe");return;}
-    setRegistradores([...registradores,nombre]);
+    if(registradores.some(r=>norm(r.nombre)===norm(nombre))){toast("Ya existe");setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);return;}
+    const nuevo={id:uid(),nombre,apellido:"",dni:"",domicilio:"",telPropio:"",telContacto:"",estado:"Activo"};
+    await saveEmpleados([...(empleados||[]),nuevo]);
     setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);
     toast("Agregado ✓");
   };
@@ -1077,12 +1086,20 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
     if(!prov.trim()||!emp.trim()||!monto){toast("Completá todos los campos");return;}
     if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
     setBusy(true);
-    const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString(),...(forma==="Transferencia interna"?{transferenciaInterna:true}:{})};
+    const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()};
     await pagarConExcedente(pagoBase,pagos,savePagos);
     setBusy(false);setProv("");setEmp("");setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
   };
+
+  const hoyD=new Date();
+  const chequesMes=pagos.filter(p=>{
+    if(p.forma!=="Cheque")return false;
+    const d=new Date(p.fecha);
+    return d.getMonth()===hoyD.getMonth()&&d.getFullYear()===hoyD.getFullYear();
+  }).reduce((s,p)=>s+Number(p.monto||0),0);
+
   return(<>
-    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Cheque: solo descuenta la deuda del proveedor, no toca la caja.\n• Si pagás de más a Avenida Efectivo o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
+    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Cheque: solo descuenta la deuda del proveedor, no toca la caja.\n• Si pagás de más a Avenida o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• Los cheques no se descuentan de ningún saldo (ni caja ni banco) hasta que se cobren — llevalos aparte.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
 
     {nuevoRegModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -1102,6 +1119,13 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6}}>Solo aplica a pagos en efectivo</div>
     </div>
+    {chequesMes>0&&(
+      <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
+        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>🧾 Cheques emitidos este mes</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(chequesMes)}</div>
+        <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que se cobre.</div>
+      </div>
+    )}
     <Card title="Nuevo pago">
       <Field label="Proveedor">
         <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
@@ -1113,7 +1137,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
         <div style={{display:"flex",gap:8}}>
           <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
             <option value="">— Elegí —</option>
-            {registradores.map(r=><option key={r} value={r}>{r}</option>)}
+            {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
           </select>
           <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
@@ -1127,6 +1151,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
         </select>
       </Field>
       {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
+      {forma==="Cheque"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🧾 No descuenta caja ni banco — se suma al total de cheques del mes.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: pago parcial, boleta #..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
       <Btn bg="#B7860B" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
