@@ -471,14 +471,14 @@ function App(){
     {id:"stock",      label:"📦 Stock"},
   ];
   const TABS_ADMIN=[
+    {id:"gastos",     label:"🏠 Pagos Digitales"},
+    {id:"historial",  label:"📋 Historial"},
     {id:"dashboard",  label:"🏠 Dashboard"},
     {id:"gerencia",   label:"💼 Gerencia"},
     {id:"cajaefectivo",label:"💵 Caja Disponible"},
     {id:"cajadigital",label:"💳 Caja Digital"},
     {id:"resumen",    label:"📊 Resumen"},
-    {id:"historial",  label:"📋 Historial"},
     {id:"admin",      label:"⚙️ Admin"},
-    {id:"gastos",     label:"🏠 Pagos Digitales"},
   ];
   const TABS=cocinaMode?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
