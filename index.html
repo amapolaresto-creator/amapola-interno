@@ -12,6 +12,15 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:system-ui,sans-serif;background:#F9F6F1;color:#2C1A0E;}
 input,select,textarea,button{font-family:inherit;}
+.amapola-tabbar-mobile{display:flex;}
+.amapola-sidebar{display:none;}
+.amapola-header-title{display:block;}
+@media (min-width:768px){
+  .amapola-tabbar-mobile{display:none;}
+  .amapola-sidebar{display:flex;position:fixed;top:0;left:0;bottom:0;width:230px;flex-direction:column;background:#2C1A0E;padding:18px 10px;overflow-y:auto;z-index:100;}
+  .amapola-main{margin-left:230px;}
+  .amapola-header-title{display:none;}
+}
 </style>
 </head>
 <body>
@@ -456,7 +465,7 @@ function App(){
   const TABS_ADMIN=[
     {id:"dashboard",  label:"🏠 Dashboard"},
     {id:"gerencia",   label:"💼 Gerencia"},
-    {id:"cajaefectivo",label:"💵 Caja Efectivo"},
+    {id:"cajaefectivo",label:"💵 Caja Disponible"},
     {id:"cajadigital",label:"💳 Caja Digital"},
     {id:"resumen",    label:"📊 Resumen"},
     {id:"historial",  label:"📋 Historial"},
@@ -466,7 +475,15 @@ function App(){
   const TABS=cocinaMode?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
   return(
-    <div style={{background:"#F9F6F1",minHeight:"100dvh",color:"#2C1A0E"}}>
+    <div className="amapola-main" style={{background:"#F9F6F1",minHeight:"100dvh",color:"#2C1A0E"}}>
+      <nav className="amapola-sidebar">
+        <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.3rem",color:"#E8DCC8",padding:"6px 14px 18px"}}>
+          Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Interno
+        </div>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",width:"100%",textAlign:"left",background:tab===t.id?"rgba(231,76,60,.15)":"transparent",border:"none",borderLeft:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#B8A88E",fontSize:".85rem",fontWeight:tab===t.id?600:500,padding:"10px 14px",cursor:"pointer",borderRadius:"0 8px 8px 0",marginBottom:2}}>{t.label}</button>
+        ))}
+      </nav>
       {SaveErrorBanner}
       {cocinaLoginOpen&&(
         <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -486,7 +503,7 @@ function App(){
       )}
       <div style={{background:"#2C1A0E",padding:"14px 16px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
         <div>
-          <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.4rem",color:"#E8DCC8",lineHeight:1.1}}>
+          <div className="amapola-header-title" style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.4rem",color:"#E8DCC8",lineHeight:1.1}}>
             Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Interno
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -503,13 +520,13 @@ function App(){
               <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
             </div>
             <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
-              <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>EFECTIVO</span>
+              <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
               <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
             </div>
           </div>
         )}
       </div>
-      <div style={{display:"flex",background:"#2C1A0E",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
+      <div className="amapola-tabbar-mobile" style={{background:"#2C1A0E",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#7B7063",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
         ))}
@@ -766,7 +783,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
   const guardarPago=async()=>{
     if(!prov){toast("Elegí un proveedor primero");return;}
     if(!pagoMonto||Number(pagoMonto)<=0){toast("Ingresá un monto válido");return;}
-    if(pagoForma==="Efectivo"&&Number(pagoMonto)>saldo){toast("⚠️ Supera el efectivo disponible");return;}
+    if(pagoForma==="Efectivo"&&Number(pagoMonto)>saldo){toast("⚠️ Supera la caja disponible");return;}
     setPagoBusy(true);
     const pagoBase={tipo:"pago",proveedor:prov,empleado:emp.trim()||"—",monto:Number(pagoMonto),forma:pagoForma,obs:pagoObs.trim(),fecha:pagoFecha?new Date(pagoFecha+"T12:00:00").toISOString():new Date().toISOString()};
     await pagarConExcedente(pagoBase,pagos,savePagos);
@@ -863,7 +880,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>💸 Pago a {prov}</p>
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Disponible en efectivo: <strong>{fmt(saldo)}</strong></p>
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Caja disponible: <strong>{fmt(saldo)}</strong></p>
           <Field label="Monto ($)"><Inp type="number" value={pagoMonto} onChange={setPagoMonto} placeholder="0"/></Field>
           <Field label="Forma de pago">
             <select value={pagoForma} onChange={e=>setPagoForma(e.target.value)} style={sS}>
@@ -987,7 +1004,7 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
     setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());toast("Cierre registrado ✓");
   };
   return(<>
-    <ST help={"Acá se registran los cierres de turno: el dinero en efectivo que se deposita en la caja fuerte al final de cada turno.\n\n• Cada cierre suma al saldo de efectivo disponible.\n• Los pagos a proveedores en efectivo restan de ese saldo.\n• El saldo inicial es el monto con el que arrancó la caja (protegido por contraseña).\n• El disponible final = Inicial + Cierres − Pagos en efectivo."}>Caja fuerte</ST><SS>Cierres de turno y efectivo disponible.</SS>
+    <ST help={"Acá se registran los cierres de turno: el dinero en efectivo que se deposita en la caja fuerte al final de cada turno.\n\n• Cada cierre suma al saldo de caja disponible.\n• Los pagos a proveedores en efectivo restan de ese saldo.\n• El saldo inicial es el monto con el que arrancó la caja (protegido por contraseña).\n• El disponible final = Inicial + Cierres − Pagos en efectivo."}>Caja Disponible</ST><SS>Cierres de turno y caja disponible.</SS>
 
     {nuevoModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -1003,7 +1020,7 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
     )}
 
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2.4rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".74rem",color:"#E8DCC8",opacity:.6}}>Saldo inicial + cierres − pagos en efectivo</div>
       <div style={{display:"flex",gap:10,marginTop:14}}>
@@ -1056,14 +1073,14 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
 
   const guardar=async()=>{
     if(!prov.trim()||!emp.trim()||!monto){toast("Completá todos los campos");return;}
-    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera el efectivo disponible");return;}
+    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
     setBusy(true);
     const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString(),...(forma==="Transferencia interna"?{transferenciaInterna:true}:{})};
     await pagarConExcedente(pagoBase,pagos,savePagos);
     setBusy(false);setProv("");setEmp("");setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
   };
   return(<>
-    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta del disponible en caja fuerte Y de la deuda del proveedor.\n• Transferencia / Cheque: solo descuenta la deuda del proveedor, no toca la caja.\n• Si pagás de más a Avenida Efectivo o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
+    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Cheque: solo descuenta la deuda del proveedor, no toca la caja.\n• Si pagás de más a Avenida Efectivo o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
 
     {nuevoRegModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -1079,7 +1096,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
     )}
 
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6}}>Solo aplica a pagos en efectivo</div>
     </div>
@@ -1107,7 +1124,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
           <option value="Cheque">Cheque</option>
         </select>
       </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
+      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: pago parcial, boleta #..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
       <Btn bg="#B7860B" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
@@ -1472,7 +1489,7 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
 
   const guardar=async()=>{
     if(!emp||!monto){toast("Elegí un empleado e ingresá el monto");return;}
-    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera el efectivo disponible");return;}
+    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
     setBusy(true);
     await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:emp,concepto,hsExtras:concepto==="HS Extras"?Number(hsExtras)||0:null,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
     setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setConcepto("Sueldo");setHsExtras("");toast("Sueldo registrado ✓");
@@ -1489,7 +1506,7 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
   const totalMes=sueldos.filter(s=>{const d=new Date(s.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,s)=>a+Number(s.monto||0),0);
 
   return(<>
-    <ST help={"Registrá acá los pagos de sueldos, anticipos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Anticipo, Horas extra y Vacaciones.\n• Cada pago descuenta del efectivo disponible si se paga en efectivo.\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
+    <ST help={"Registrá acá los pagos de sueldos, anticipos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Anticipo, Horas extra y Vacaciones.\n• Cada pago descuenta de la caja disponible si se paga en efectivo.\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
     {crearModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
@@ -1504,7 +1521,7 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
       </div>
     )}
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
     </div>
@@ -1535,7 +1552,7 @@ function TabSueldos({sueldos,saveSueldos,saldo}){
           <option value="Transferencia">Transferencia (solo registro)</option>
         </select>
       </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
+      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: quincena, adelanto..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
       <Btn bg="#2D6A4F" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar sueldo"}</Btn>
@@ -1580,7 +1597,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
 
   const guardar=async()=>{
     if(!cat||!monto){toast("Elegí una categoría e ingresá el monto");return;}
-    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera el efectivo disponible");return;}
+    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
     setBusy(true);
     await saveGastos([...gastos,{id:uid(),tipo:"gasto",categoria:cat,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
     setBusy(false);setCat("");setMonto("");setObs("");setFecha(hoyLocal());toast("Gasto registrado ✓");
@@ -1593,7 +1610,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
   return(<>
     <ST>Gastos fijos</ST><SS>Registrá pagos de gastos fijos del negocio.</SS>
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Efectivo disponible</div>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
     </div>
@@ -1629,7 +1646,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
           <option value="Transferencia">Transferencia (solo registro)</option>
         </select>
       </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará del efectivo en caja fuerte.</div>}
+      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: mes de junio, cuota..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
       <Btn bg="#7B7063" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar gasto"}</Btn>
@@ -2291,7 +2308,7 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total consolidado disponible</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2.8rem",color:"#E8DCC8",margin:"4px 0 6px"}}>{fmt(totalConsolidado)}</div>
       <div style={{display:"flex",gap:8}}>
-        <PanelNum label="💵 Caja fuerte" value={saldo}/>
+        <PanelNum label="💵 Caja Disponible" value={saldo}/>
         <PanelNum label="💳 Banco" value={saldoReal} color="#1a3a2a"/>
       </div>
     </div>
@@ -2491,7 +2508,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   };
 
   return(<>
-    <ST>Caja Efectivo</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
+    <ST>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
 
     <div style={{background:"#2D6A4F",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Saldo final del período</div>
@@ -2912,18 +2929,18 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,saveCajaDigi
   const totalDisponible=saldo+saldoReal;
 
   return(<>
-    <ST help={"Vista consolidada para gerencia.\n\n• Total disponible: suma de Caja fuerte (efectivo) + Caja Digital (banco).\n• Caja fuerte: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia.\n\nPara actualizar el saldo banco de Caja Digital, ingresá el valor real desde la sección Caja Digital o directamente desde acá."}>Gerencia</ST><SS>Resumen de efectivo y caja digital disponible.</SS>
+    <ST help={"Vista consolidada para gerencia.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia.\n\nPara actualizar el saldo banco de Caja Digital, ingresá el valor real desde la sección Caja Digital o directamente desde acá."}>Gerencia</ST><SS>Resumen de efectivo y caja digital disponible.</SS>
 
     {/* TOTAL CONSOLIDADO */}
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total disponible consolidado</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2.6rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(totalDisponible)}</div>
-      <div style={{fontSize:".74rem",color:"#E8DCC8",opacity:.6}}>Caja fuerte + Caja digital</div>
+      <div style={{fontSize:".74rem",color:"#E8DCC8",opacity:.6}}>Caja Disponible + Caja digital</div>
     </div>
 
     {/* CAJA FUERTE */}
     <div style={{background:"#2D6A4F",borderRadius:14,padding:"20px",marginBottom:12}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>💵 Caja fuerte · Efectivo</div>
+      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>💵 Caja Disponible · Efectivo</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldo)}</div>
       <div style={{display:"flex",gap:8}}>
         {[["Inicial",fmt(ini)],["Cierres",fmt(tot)],["Pagado",fmt(eg)]].map(([l,v])=>(
@@ -3645,7 +3662,7 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar cierre</p>
           <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:4}}>{confElim.turno} · {confElim.persona} · {fmtF(confElim.fecha)}</p>
           <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:16}}>Total: {fmt(confElim.total)} · Efectivo: {fmt(confElim.efectivo)}</p>
-          <p style={{fontSize:".78rem",color:"#C0392B",fontWeight:600,marginBottom:20}}>Esta acción ajustará el disponible en caja fuerte.</p>
+          <p style={{fontSize:".78rem",color:"#C0392B",fontWeight:600,marginBottom:20}}>Esta acción ajustará la caja disponible.</p>
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setConfElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
             <button onClick={eliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
@@ -3724,7 +3741,7 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
     {id:"sueldosadmin",  icon:"👷", label:"Editar sueldos"},
     {id:"cierresadmin",  icon:"🗂️", label:"Editar cierres de caja"},
     {id:"boletas",       icon:"🧾", label:"Corregir boletas"},
-    {id:"ajustecaja",    icon:"⚖️", label:"Ajuste de caja efectivo"},
+    {id:"ajustecaja",    icon:"⚖️", label:"Ajuste de caja disponible"},
   ];
 
   return(<>
@@ -3813,7 +3830,7 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
 
     {seccion==="cierresadmin"&&(
       <Card title="Gestión de cierres de caja">
-        <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:12}}>Eliminá registros incorrectos. Los cierres afectan el disponible en caja fuerte.</p>
+        <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:12}}>Eliminá registros incorrectos. Los cierres afectan la caja disponible.</p>
         <CierresAdmin cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja}/>
       </Card>
     )}
@@ -3846,7 +3863,7 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
   };
 
   return(
-    <Card title="Ajuste de caja efectivo">
+    <Card title="Ajuste de caja disponible">
       <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Usá esto cuando el efectivo real difiere del sistema. Un monto positivo suma al saldo, uno negativo resta. Queda registrado con motivo y fecha.</p>
       <Field label="Monto del ajuste ($) — positivo suma, negativo resta">
         <Inp type="number" value={monto} onChange={setMonto} placeholder="Ej: 10000 o -10000"/>
@@ -3972,7 +3989,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const[desde,setDesde]=useState(iso(inicioMes));
   const[hasta,setHasta]=useState(iso(hoy));
 
-  // Movimientos normalizados. _cuenta=true => afecta el saldo de Caja Efectivo (mismo criterio que Pagos > Libro diario).
+  // Movimientos normalizados. _cuenta=true => afecta el saldo de Caja Disponible (mismo criterio que Pagos > Libro diario).
   const boletasM=(boletas||[]).map(b=>({...b,tipo:"boleta",_cat:"boleta",_signo:0,_cuenta:false}));
   const cierresM=(cierres||[]).map(c=>({...c,tipo:"cierre",_cat:"cierre",_signo:1,_cuenta:true,proveedor:"Cierre "+c.turno}));
   const cierresCajaM=(cierresCaja||[]).map(c=>({...c,tipo:"cierre_caja",_cat:"cierre",_signo:1,_cuenta:true,proveedor:"Cierre "+c.turno,empleado:c.persona,monto:c.efectivo}));
@@ -4038,7 +4055,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":"🧾";
 
   return(<>
-    <ST help={"Historial completo de todos los registros, en formato de libro diario (igual que en Pagos).\n\n• Debe = salidas de efectivo. Haber = ingresos de efectivo. Saldo = plata en Caja Efectivo en ese momento.\n• Las boletas y los pagos/sueldos/gastos por Transferencia aparecen como referencia (sin Debe/Haber) porque no mueven la Caja Efectivo directamente — asi evitamos contar un mismo gasto dos veces.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
+    <ST help={"Historial completo de todos los registros, en formato de libro diario (igual que en Pagos).\n\n• Debe = salidas de efectivo. Haber = ingresos de efectivo. Saldo = plata en Caja Disponible en ese momento.\n• Las boletas y los pagos/sueldos/gastos por Transferencia aparecen como referencia (sin Debe/Haber) porque no mueven la Caja Disponible directamente — asi evitamos contar un mismo gasto dos veces.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
     <SS>Libro diario de todos los movimientos.</SS>
 
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
@@ -4074,7 +4091,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
         ))}
       </div>
 
-      <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:4}}>{filas.length} registro{filas.length!==1?"s":""} · Saldo Caja Efectivo: <strong style={{color:saldoFinal>=0?"#2D6A4F":"#C0392B"}}>{fmt(saldoFinal)}</strong></div>
+      <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:4}}>{filas.length} registro{filas.length!==1?"s":""} · Saldo Caja Disponible: <strong style={{color:saldoFinal>=0?"#2D6A4F":"#C0392B"}}>{fmt(saldoFinal)}</strong></div>
 
       {!filas.length?<Empty icon="📒">Sin registros en el periodo</Empty>:(
         <div style={{overflowX:"auto"}}>
