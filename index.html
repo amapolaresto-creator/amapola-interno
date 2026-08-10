@@ -478,7 +478,7 @@ function App(){
     {id:"resumen",    label:"📊 Resumen"},
     {id:"historial",  label:"📋 Historial"},
     {id:"admin",      label:"⚙️ Admin"},
-    {id:"gastos",     label:"🏠 Gastos"},
+    {id:"gastos",     label:"🏠 Pagos Digitales"},
   ];
   const TABS=cocinaMode?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
@@ -543,7 +543,7 @@ function App(){
         {tab==="admin-lock"&&(
           <div style={{padding:"20px 0"}}>
             <p style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",marginBottom:4}}>Administración</p>
-            <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>Ingresá la contraseña para acceder a Resumen, Admin y Gastos.</p>
+            <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>Ingresá la contraseña para acceder a Resumen, Admin y Pagos Digitales.</p>
             <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
               <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Contraseña</label>
               <input type="password" value={adminPassInput} autoFocus
@@ -641,7 +641,7 @@ function TabResumen({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicia
       <Row label="🧾 Boletas recibidas" value={boletasHoy.reduce((s,b)=>s+Number(b.monto||0),0)}/>
       <Row label="💸 Pagos a proveedores" value={totalPagosHoy} color="#C0392B"/>
       <Row label="👥 Sueldos pagados" value={totalSueldosHoy} color="#C0392B"/>
-      <Row label="🏠 Gastos fijos" value={totalGastosHoy} color="#C0392B"/>
+      <Row label="🏠 Pagos Digitales" value={totalGastosHoy} color="#C0392B"/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0 0",marginTop:4}}>
         <span style={{fontWeight:700,fontSize:".9rem"}}>Neto del día</span>
         <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:netoHoy>=0?"#2D6A4F":"#C0392B"}}>{fmt(netoHoy)}</span>
@@ -653,7 +653,7 @@ function TabResumen({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicia
       <Row label="💵 Total cierres" value={totalCierresMes} color="#2D6A4F"/>
       <Row label="💸 Pagos a proveedores" value={totalPagosMes} color="#C0392B"/>
       <Row label="👥 Sueldos" value={totalSueldosMes} color="#C0392B"/>
-      <Row label="🏠 Gastos fijos" value={totalGastosMes} color="#C0392B"/>
+      <Row label="🏠 Pagos Digitales" value={totalGastosMes} color="#C0392B"/>
       <Row label="📦 Total egresos" value={totalEgresosMes} color="#C0392B"/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0 0",marginTop:4}}>
         <span style={{fontWeight:700,fontSize:".9rem"}}>Neto del mes</span>
@@ -1629,7 +1629,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
     if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
     setBusy(true);
     await saveGastos([...gastos,{id:uid(),tipo:"gasto",categoria:cat,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
-    setBusy(false);setCat("");setMonto("");setObs("");setFecha(hoyLocal());toast("Gasto registrado ✓");
+    setBusy(false);setCat("");setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
   };
 
   const hoy=new Date().toDateString();
@@ -1637,13 +1637,13 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
   const totalMes=gastos.filter(g=>{const d=new Date(g.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,g)=>a+Number(g.monto||0),0);
 
   return(<>
-    <ST>Gastos fijos</ST><SS>Registrá pagos de gastos fijos del negocio.</SS>
+    <ST>Pagos Digitales</ST><SS>Registrá pagos fijos del negocio (alquiler, servicios, impuestos...).</SS>
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
     </div>
-    <Card title="Registrar gasto fijo">
+    <Card title="Registrar pago digital">
       {nuevaCatModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
@@ -1678,10 +1678,10 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
       {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: mes de junio, cuota..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#7B7063" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar gasto"}</Btn>
+      <Btn bg="#7B7063" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
     </Card>
-    <Card title={`Gastos de hoy (${hoyItems.length})`}>
-      {!hoyItems.length?<Empty icon="🏠">Sin gastos registrados hoy</Empty>:hoyItems.map(g=>(
+    <Card title={`Pagos digitales de hoy (${hoyItems.length})`}>
+      {!hoyItems.length?<Empty icon="🏠">Sin pagos registrados hoy</Empty>:hoyItems.map(g=>(
         <div key={g.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
           <Thumb size={44}>📋</Thumb>
           <div style={{flex:1}}>
@@ -1731,7 +1731,7 @@ function LibroDiarioGastos({gastos}){
 
   return(
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📒 Libro diario · Gastos</div>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📒 Libro diario · Pagos Digitales</div>
 
       {/* FILTROS FECHA */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
@@ -2406,7 +2406,7 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
           ["Total ingresos",fmt(ingMes),"#2D6A4F"],
           ["Pagos proveedores",fmt(pagosMes),"#C0392B"],
           ["Sueldos",fmt(sueMes),"#C0392B"],
-          ["Gastos fijos",fmt(gasMes),"#C0392B"],
+          ["Pagos Digitales",fmt(gasMes),"#C0392B"],
         ].map(([l,v,c])=>(
           <div key={l} style={{background:"#F9F6F1",borderRadius:10,padding:"10px 12px"}}>
             <div style={{fontSize:".68rem",color:"#7B7063",marginBottom:2}}>{l}</div>
@@ -2564,7 +2564,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       </div>
     )}
     <div style={{display:"flex",gap:6,marginBottom:10}}>
-      {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"]].map(([v,l])=>(
+      {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([v,l])=>(
         <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#2C1A0E":"transparent",color:filtroTipo===v?"#E8DCC8":"#7B7063"}}>{l}</button>
       ))}
     </div>
@@ -2841,7 +2841,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 
       {/* FILTROS TIPO */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["todo","Todo"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"]].map(([v,l])=>(
+        {[["todo","Todo"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([v,l])=>(
           <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#2C1A0E":"transparent",color:filtroTipo===v?"#E8DCC8":"#7B7063"}}>{l}</button>
         ))}
       </div>
@@ -4089,7 +4089,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
 
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"]].map(([f,l])=>(
+        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([f,l])=>(
           <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#2C1A0E":"#E8DCC8",color:filtro===f?"#E8DCC8":"#2C1A0E"}}>{l}</button>
         ))}
       </div>
