@@ -15,11 +15,13 @@ input,select,textarea,button{font-family:inherit;}
 .amapola-tabbar-mobile{display:flex;}
 .amapola-sidebar{display:none;}
 .amapola-header-title{display:block;}
+.amapola-content{padding:20px 16px 100px;max-width:500px;margin:0 auto;}
 @media (min-width:768px){
   .amapola-tabbar-mobile{display:none;}
   .amapola-sidebar{display:flex;position:fixed;top:0;left:0;bottom:0;width:230px;flex-direction:column;background:#2C1A0E;padding:18px 10px;overflow-y:auto;z-index:100;}
   .amapola-main{margin-left:230px;}
   .amapola-header-title{display:none;}
+  .amapola-content{max-width:none;margin:0;padding:28px 36px 100px;}
 }
 </style>
 </head>
@@ -531,7 +533,7 @@ function App(){
           <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#7B7063",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
         ))}
       </div>
-      <div style={{padding:"20px 16px 100px",maxWidth:500,margin:"0 auto"}}>
+      <div className="amapola-content">
         {tab==="admin-lock"&&(
           <div style={{padding:"20px 0"}}>
             <p style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",marginBottom:4}}>Administración</p>
