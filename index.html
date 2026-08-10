@@ -547,7 +547,7 @@ function App(){
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
-        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
+        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
@@ -3962,34 +3962,62 @@ function AdminBoletas({boletas,saveBoletas}){
   );
 }
 
-function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos}){
+function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos}){
   const[filtro,setFiltro]=useState("todo");
+  const[filtroDH,setFiltroDH]=useState("todos");
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const[filtroFecha,setFiltroFecha]=useState("mes");
   const[desde,setDesde]=useState(iso(inicioMes));
   const[hasta,setHasta]=useState(iso(hoy));
 
-  const cierresNuevos=(cierresCaja||[]).map(c=>({...c,tipo:"cierre_caja",proveedor:"Cierre "+c.turno,empleado:c.persona}));
-  let items=[...boletas,...cierres,...cierresNuevos,...pagos,...sueldos,...gastos];
-  if(filtro!=="todo"){if(filtro==="cierre")items=items.filter(i=>i.tipo==="cierre"||i.tipo==="cierre_caja");else items=items.filter(i=>i.tipo===filtro);}
-  // Filtrar por rango de fechas
-  items=items.filter(i=>{
-    const f=i.fecha.slice(0,10);
-    return(!desde||f>=desde)&&(!hasta||f<=hasta);
+  // Movimientos normalizados. _cuenta=true => afecta el saldo de Caja Efectivo (mismo criterio que Pagos > Libro diario).
+  const boletasM=(boletas||[]).map(b=>({...b,tipo:"boleta",_cat:"boleta",_signo:0,_cuenta:false}));
+  const cierresM=(cierres||[]).map(c=>({...c,tipo:"cierre",_cat:"cierre",_signo:1,_cuenta:true,proveedor:"Cierre "+c.turno}));
+  const cierresCajaM=(cierresCaja||[]).map(c=>({...c,tipo:"cierre_caja",_cat:"cierre",_signo:1,_cuenta:true,proveedor:"Cierre "+c.turno,empleado:c.persona,monto:c.efectivo}));
+  const pagosM=(pagos||[]).map(p=>({...p,tipo:"pago",_cat:"pago",_signo:-1,_cuenta:p.forma==="Efectivo"}));
+  const sueldosM=(sueldos||[]).map(s=>({...s,tipo:"sueldo",_cat:"sueldo",_signo:-1,_cuenta:s.forma==="Efectivo"}));
+  const gastosM=(gastos||[]).map(g=>({...g,tipo:"gasto",_cat:"gasto",_signo:-1,_cuenta:g.forma==="Efectivo",proveedor:g.categoria}));
+  const allMovs=[...boletasM,...cierresM,...cierresCajaM,...pagosM,...sueldosM,...gastosM].filter(m=>m.fecha);
+
+  const desdeF=filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
+  const hastaF=filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):hasta;
+
+  // Saldo de arrastre: cajaInicial + todo lo que cuenta y quedo antes del rango mostrado (sin importar el filtro de tipo).
+  let saldoBase=Number(cajaInicial)||0;
+  allMovs.filter(m=>m._cuenta&&m.fecha.slice(0,10)<desdeF).forEach(m=>{saldoBase+=m._signo*Number(m.monto||0);});
+
+  // Saldo corrido dentro del rango, usando TODOS los tipos (para que el numero sea correcto sin importar el filtro de tipo activo).
+  const enRangoAsc=allMovs.filter(m=>{const f=m.fecha.slice(0,10);return(!desdeF||f>=desdeF)&&(!hastaF||f<=hastaF);}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  let saldoAcum=saldoBase;
+  const conSaldo=enRangoAsc.map(m=>{
+    const delta=m._cuenta?m._signo*Number(m.monto||0):0;
+    saldoAcum+=delta;
+    return{...m,_delta:delta,_saldo:saldoAcum};
   });
-  items.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  // Filtro de tipo + Debe/Haber para mostrar (no altera el calculo de saldo, ya hecho arriba).
+  let filas=conSaldo.filter(m=>filtro==="todo"?true:filtro==="cierre"?(m.tipo==="cierre"||m.tipo==="cierre_caja"):m.tipo===filtro);
+  if(filtroDH==="debe")filas=filas.filter(m=>m._cuenta&&m._signo<0);
+  if(filtroDH==="haber")filas=filas.filter(m=>m._cuenta&&m._signo>0);
+  filas=[...filas].reverse();
+
+  const totalDebe=conSaldo.filter(m=>m._cuenta&&m._signo<0).reduce((s,m)=>s+Math.abs(m._delta),0);
+  const totalHaber=conSaldo.filter(m=>m._cuenta&&m._signo>0).reduce((s,m)=>s+m._delta,0);
+  const saldoFinal=conSaldo.length?conSaldo[conSaldo.length-1]._saldo:saldoBase;
+
   const[confirmarElim,setConfirmarElim]=useState(null);
-  const pedirEliminar=(item)=>setConfirmarElim(item);
+  const pedirEliminar=item=>setConfirmarElim(item);
   const confirmarEliminar=async()=>{
     const item=confirmarElim;
     setConfirmarElim(null);
-    if(item.tipo==="boleta")  await saveBoletas(boletas.filter(b=>b.id!==item.id));
-    if(item.tipo==="cierre")      await saveCierres(cierres.filter(c=>c.id!==item.id));
-    if(item.tipo==="cierre_caja") await saveCierresCaja((cierresCaja||[]).filter(c=>c.id!==item.id));
-    if(item.tipo==="pago")    await savePagos(pagos.filter(p=>p.id!==item.id));
-    if(item.tipo==="sueldo")  await saveSueldos(sueldos.filter(s=>s.id!==item.id));
-    if(item.tipo==="gasto")   await saveGastos(gastos.filter(g=>g.id!==item.id));
+    if(item.tipo==="boleta")     await saveBoletas(boletas.filter(b=>b.id!==item.id));
+    if(item.tipo==="cierre")     await saveCierres(cierres.filter(c=>c.id!==item.id));
+    if(item.tipo==="cierre_caja")await saveCierresCaja((cierresCaja||[]).filter(c=>c.id!==item.id));
+    if(item.tipo==="pago")       await savePagos(pagos.filter(p=>p.id!==item.id));
+    if(item.tipo==="sueldo")     await saveSueldos(sueldos.filter(s=>s.id!==item.id));
+    if(item.tipo==="gasto")      await saveGastos(gastos.filter(g=>g.id!==item.id));
     toast("Registro eliminado ✓");
   };
 
@@ -3997,76 +4025,121 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,setLight
     const rows=[["Tipo","Fecha","Hora","Proveedor/Turno","Empleado","Monto","Forma","Detalle"]];
     boletas.forEach(b=>rows.push(["Boleta",fmtF(b.fecha),fmtH(b.fecha),b.proveedor,b.empleado,b.monto,"",b.obs]));
     cierres.forEach(c=>rows.push(["Cierre",fmtF(c.fecha),fmtH(c.fecha),"Turno "+c.turno,c.empleado,c.monto,"",c.obs]));
+    (cierresCaja||[]).forEach(c=>rows.push(["Cierre de Caja",fmtF(c.fecha),fmtH(c.fecha),"Turno "+c.turno,c.persona,c.efectivo,"",c.obs]));
     pagos.forEach(p=>rows.push(["Pago",fmtF(p.fecha),fmtH(p.fecha),p.proveedor,p.empleado,p.monto,p.forma,p.obs]));
+    sueldos.forEach(s=>rows.push(["Sueldo",fmtF(s.fecha),fmtH(s.fecha),s.proveedor||s.empleado,s.empleado,s.monto,s.forma,s.obs]));
+    gastos.forEach(g=>rows.push(["Gasto",fmtF(g.fecha),fmtH(g.fecha),g.categoria,g.empleado,g.monto,g.forma,g.obs]));
     const csv=rows.map(r=>r.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
     const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"}));
-    a.download=`amapola_${hoyLocal()}.csv`;a.click();
+    a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"}));
+    a.download=`amapola_historial_${hoyLocal()}.csv`;a.click();
   };
-  let lastDate="";
+
+  const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":"🧾";
+
   return(<>
-    <ST help={"Historial completo de todos los registros del sistema.\n\n• Podés filtrar por tipo (boletas, pagos, cierres, sueldos, gastos) y por período (hoy, este mes, personalizado).\n• Desde acá podés eliminar registros si cometiste un error (requiere confirmar).\n• Los registros eliminados no se pueden recuperar."}>Historial</ST><SS>Todos los movimientos registrados.</SS>
-    <Card>
+    <ST help={"Historial completo de todos los registros, en formato de libro diario (igual que en Pagos).\n\n• Debe = salidas de efectivo. Haber = ingresos de efectivo. Saldo = plata en Caja Efectivo en ese momento.\n• Las boletas y los pagos/sueldos/gastos por Transferencia aparecen como referencia (sin Debe/Haber) porque no mueven la Caja Efectivo directamente — asi evitamos contar un mismo gasto dos veces.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
+    <SS>Libro diario de todos los movimientos.</SS>
+
+    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
         {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Gastos"]].map(([f,l])=>(
           <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#2C1A0E":"#E8DCC8",color:filtro===f?"#E8DCC8":"#2C1A0E"}}>{l}</button>
         ))}
       </div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <div style={{flex:1}}>
-          <label style={{fontSize:".72rem",fontWeight:600,color:"#7B7063",display:"block",marginBottom:3}}>Desde</label>
-          <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
-        </div>
-        <div style={{flex:1}}>
-          <label style={{fontSize:".72rem",fontWeight:600,color:"#7B7063",display:"block",marginBottom:3}}>Hasta</label>
-          <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
-        </div>
-        <button onClick={()=>{const h=new Date();const ini=new Date(h.getFullYear(),h.getMonth(),1);setDesde(ini.toISOString().slice(0,10));setHasta(h.toISOString().slice(0,10));}} style={{padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",background:"#F9F6F1",fontSize:".72rem",color:"#7B7063",cursor:"pointer",marginTop:16,flexShrink:0}}>Este mes</button>
+
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {[["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
+          <button key={v} onClick={()=>{setFiltroFecha(v);if(v==="mes"){setDesde(iso(inicioMes));setHasta(iso(hoy));}if(v==="hoy"){setDesde(iso(hoy));setHasta(iso(hoy));}}} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#2C1A0E":"#E8DCC8",color:filtroFecha===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+        ))}
       </div>
-      <div style={{fontSize:".72rem",color:"#7B7063",marginTop:8}}>{items.length} registro{items.length!==1?"s":""} encontrado{items.length!==1?"s":""}</div>
-    </Card>
-    {!items.length?<Empty icon="📋">Sin registros</Empty>:items.map(item=>{
-      const d=fmtFL(item.fecha);const show=d!==lastDate;lastDate=d;
-      const esT=item.forma==="Transferencia";
-      return(
-        <div key={item.id}>
-          {show&&<div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".06em",textTransform:"uppercase",color:"#7B7063",margin:"18px 0 8px"}}>{d}</div>}
-          <div style={{background:"#fff",borderRadius:12,padding:14,marginBottom:8,boxShadow:"0 2px 8px rgba(44,26,14,.06)"}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-              {item.tipo==="boleta"&&item.foto
-                ?<img src={item.foto} onClick={()=>setLightbox(item.foto)} style={{width:48,height:48,objectFit:"cover",borderRadius:8,cursor:"pointer",flexShrink:0}} alt=""/>
-                :<Thumb size={48}>{item.tipo==="boleta"?"🧾":item.tipo==="cierre"?"💵":esT?"🏦":"💸"}</Thumb>}
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:600,fontSize:".9rem"}}>{item.tipo==="cierre"?"Cierre "+item.turno:item.proveedor}</div>
-                <div style={{fontSize:".72rem",color:"#7B7063",marginTop:2}}>{item.empleado} · {fmtH(item.fecha)}</div>
-                {item.obs&&<div style={{fontSize:".72rem",color:"#7B7063"}}>{item.obs}</div>}
-              </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                <div style={{fontWeight:700,fontSize:".9rem",color:item.tipo==="cierre"?"#2D6A4F":item.tipo==="pago"?"#C0392B":Number(item.monto)<0?"#B7860B":"#2C1A0E"}}>
-                  {item.tipo==="cierre"?"+"+fmt(item.monto):item.tipo==="pago"?"−"+fmt(item.monto):fmt(item.monto)}
-                </div>
-                <span style={{display:"inline-block",borderRadius:20,padding:"2px 8px",fontSize:".66rem",fontWeight:600,marginTop:4,background:item.tipo==="cierre"?"#EAF5F0":esT?"#FEF9E7":item.tipo==="pago"?"#FFF0EF":"#F0F0F0",color:item.tipo==="cierre"?"#2D6A4F":esT?"#B7860B":item.tipo==="pago"?"#C0392B":"#7B7063"}}>
-                  {item.tipo==="boleta"?"Boleta":item.tipo==="cierre"?"Cierre":item.forma}
-                </span>
-                <button onClick={()=>pedirEliminar(item)} style={{display:"block",marginTop:5,marginLeft:"auto",background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:6,color:"#E74C3C",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"3px 8px"}}>✕ Eliminar</button>
-              </div>
-            </div>
+      {filtroFecha==="custom"&&(
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <div style={{flex:1}}>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
+            <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+          </div>
+          <div style={{flex:1}}>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label>
+            <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
           </div>
         </div>
-      );
-    })}
-    {items.length>0&&<button onClick={exportCSV} style={{display:"block",width:"100%",marginTop:12,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",color:"#C0392B",fontSize:".82rem",fontWeight:600,cursor:"pointer"}}>⬇ Exportar CSV</button>}
+      )}
+
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        {[["todos","Todos"],["debe","💸 Solo Debe"],["haber","💵 Solo Haber"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFiltroDH(v)} style={{flex:1,padding:"5px 8px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,
+            background:filtroDH===v?(v==="debe"?"#C0392B":v==="haber"?"#2D6A4F":"#2C1A0E"):"#E8DCC8",
+            color:filtroDH===v?"#fff":"#2C1A0E"}}>{l}</button>
+        ))}
+      </div>
+
+      <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:4}}>{filas.length} registro{filas.length!==1?"s":""} · Saldo Caja Efectivo: <strong style={{color:saldoFinal>=0?"#2D6A4F":"#C0392B"}}>{fmt(saldoFinal)}</strong></div>
+
+      {!filas.length?<Empty icon="📒">Sin registros en el periodo</Empty>:(
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:420}}>
+            <thead>
+              <tr style={{background:"#F9F6F1"}}>
+                {["Fecha","Concepto","Debe","Haber","Saldo",""].map(h=>(
+                  <th key={h||"acc"} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Concepto"?"left":h===""?"center":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map((f,i)=>(
+                <tr key={f.tipo+f.id+i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                  <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>
+                    {fmtF(f.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(f.fecha)}</span>
+                  </td>
+                  <td style={{padding:"6px 8px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <span style={{flexShrink:0}}>{iconoCat(f._cat)}</span>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
+                        <div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>
+                          {f.empleado?f.empleado+" · ":""}{!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Transferencia"?" (transferencia)":""):""}{f.obs?" · "+f.obs:""}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._cuenta&&f._signo<0?fmt(Math.abs(f._delta)):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._cuenta&&f._signo>0?fmt(f._delta):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:f._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(f._saldo)}</td>
+                  <td style={{padding:"6px 8px",textAlign:"center"}}>
+                    <button onClick={()=>pedirEliminar(f)} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:6,color:"#E74C3C",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
+                  </td>
+                </tr>
+              ))}
+              <tr style={{background:"#2C1A0E"}}>
+                <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebe)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaber)}</td>
+                <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:saldoFinal>=0?"#a9dfbf":"#f5b7b1"}}>{fmt(saldoFinal)}</td>
+                <td/>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+
+    {filas.length>0&&<button onClick={exportCSV} style={{display:"block",width:"100%",marginBottom:12,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",color:"#C0392B",fontSize:".82rem",fontWeight:600,cursor:"pointer"}}>⬇ Exportar CSV</button>}
 
     {confirmarElim&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8,color:"#2C1A0E"}}>⚠️ Eliminar registro</p>
           <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:6}}>
-            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.forma||confirmarElim.tipo}</strong>
+            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.tipo==="cierre_caja"?"Cierre de Caja":confirmarElim.forma||confirmarElim.tipo}</strong>
             {" · "}{fmt(confirmarElim.monto)}
           </p>
           <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
-          <p style={{fontSize:".78rem",color:"#C0392B",marginBottom:20,fontWeight:600}}>Esta acción no se puede deshacer.</p>
+          <p style={{fontSize:".78rem",color:"#C0392B",marginBottom:20,fontWeight:600}}>Esta accion no se puede deshacer.</p>
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setConfirmarElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Cancelar</button>
             <button onClick={confirmarEliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Eliminar</button>
