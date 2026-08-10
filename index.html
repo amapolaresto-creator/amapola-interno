@@ -2149,7 +2149,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat}){
     <Card title="Catálogo cargado">
       <Field label="Filtrar por proveedor">
         <select value={filtroProv} onChange={e=>setFiltroProv(e.target.value)} style={sS}>
-          <option value="">Todos los proveedores ({catalogo.length})</option>
+          <option value="">Todos los proveedores ({proveedoresCat.length})</option>
           {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
       </Field>
