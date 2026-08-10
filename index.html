@@ -61,6 +61,7 @@ async function sbGetAll(){
     catalogoStock:Array.isArray(m.catalogoStock)&&m.catalogoStock.length>0?m.catalogoStock:CATALOGO_DEFAULT,
     pedidosStock:Array.isArray(m.pedidosStock)?m.pedidosStock:[],
     ajustesCajaEfectivo:Array.isArray(m.ajustesCajaEfectivo)?m.ajustesCajaEfectivo:[],
+    desperdicios:Array.isArray(m.desperdicios)?m.desperdicios:[],
   };
 }
 async function sbSet(key,value,intentos=3){
@@ -222,6 +223,9 @@ function App(){
   const[cocinaLoginOpen,setCocinaLoginOpen]=useState(false);
   const[cocinaPassInput,setCocinaPassInput]=useState("");
   const[cocinaPassErr,setCocinaPassErr]=useState(false);
+  const[cocinaIdentityOpen,setCocinaIdentityOpen]=useState(false);
+  const[cocinaIdentityInput,setCocinaIdentityInput]=useState("");
+  const[cocinaUser,setCocinaUser]=useState(()=>localStorage.getItem("amapola_cocina_user")||"");
   const[boletas,setBoletas]=useState([]);
   const[cierres,setCierres]=useState([]);
   const[pagos,setPagos]=useState([]);
@@ -237,8 +241,9 @@ function App(){
   const[catalogoStock,setCatalogoStock]=useState([]);
   const[pedidosStock,setPedidosStock]=useState([]);
   const[ajustesCajaEfectivo,setAjustesCajaEfectivo]=useState([]);
+  const[desperdicios,setDesperdicios]=useState([]);
   const ref=useRef({});
-  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo};
+  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo,desperdicios};
 
   _toast=msg=>{setToastMsg(msg);setTimeout(()=>setToastMsg(""),2800);};
   const online=()=>{setSyncMsg("● Online");setSyncColor("#40916C");};
@@ -260,6 +265,7 @@ function App(){
       if(d.catalogoStock)setCatalogoStock(d.catalogoStock);
       if(d.pedidosStock)setPedidosStock(d.pedidosStock);
       if(d.ajustesCajaEfectivo)setAjustesCajaEfectivo(d.ajustesCajaEfectivo);
+      if(d.desperdicios)setDesperdicios(d.desperdicios);
       online();setPhase("ready");
     }catch(e){setErrMsg(e.message);setPhase("error");}
   };
@@ -272,6 +278,7 @@ function App(){
     cargar();
   },[]);
   useEffect(()=>{if(cocinaMode&&tab!=="stock")setTab("stock");},[cocinaMode]);
+  useEffect(()=>{if(cocinaMode&&!cocinaUser)setCocinaIdentityOpen(true);},[cocinaMode]);
 
   useEffect(()=>{
     if(phase!=="ready")return;
@@ -294,6 +301,7 @@ function App(){
         if(!recentlySaved("catalogoStock")&&JSON.stringify(d.catalogoStock)!==JSON.stringify(c.catalogoStock)&&d.catalogoStock&&d.catalogoStock.length>0)setCatalogoStock(d.catalogoStock);
         if(!recentlySaved("pedidosStock")&&JSON.stringify(d.pedidosStock)!==JSON.stringify(c.pedidosStock))setPedidosStock(d.pedidosStock||[]);
         if(!recentlySaved("ajustesCajaEfectivo")&&JSON.stringify(d.ajustesCajaEfectivo)!==JSON.stringify(c.ajustesCajaEfectivo))setAjustesCajaEfectivo(d.ajustesCajaEfectivo||[]);
+        if(!recentlySaved("desperdicios")&&JSON.stringify(d.desperdicios)!==JSON.stringify(c.desperdicios))setDesperdicios(d.desperdicios||[]);
       }catch{offline();}
     },45000);
     return()=>clearInterval(id);
@@ -339,6 +347,7 @@ function App(){
   const saveCatalogoStock=v=>save("catalogoStock",v,setCatalogoStock);
   const savePedidosStock=v=>save("pedidosStock",v,setPedidosStock);
   const saveAjustesCajaEfectivo=v=>save("ajustesCajaEfectivo",v,setAjustesCajaEfectivo);
+  const saveDesperdicios=v=>save("desperdicios",v,setDesperdicios);
   const askPass=()=>new Promise(r=>setPassModal({resolve:r}));
 
   const reintentarSave=async()=>{
@@ -480,7 +489,21 @@ function App(){
     {id:"resumen",    label:"📊 Resumen"},
     {id:"admin",      label:"⚙️ Admin"},
   ];
+  const stockBajoCount=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo)).length;
   const TABS=cocinaMode?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
+  const entrarCocina=nombre=>{
+    const n=(nombre||"").trim();
+    if(!n){toast("Elegí quién sos");return;}
+    localStorage.setItem("amapola_cocina","1");
+    localStorage.setItem("amapola_cocina_user",n);
+    setCocinaUser(n);
+    setCocinaMode(true);
+    setCocinaIdentityOpen(false);
+    setCocinaIdentityInput("");
+    setCocinaLoginOpen(false);
+    setCocinaPassInput("");
+    setTab("stock");
+  };
 
   return(
     <div className="amapola-main" style={{background:"#F9F6F1",minHeight:"100dvh",color:"#2C1A0E"}}>
@@ -489,7 +512,7 @@ function App(){
           Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Interno
         </div>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",width:"100%",textAlign:"left",background:tab===t.id?"rgba(231,76,60,.15)":"transparent",border:"none",borderLeft:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#B8A88E",fontSize:".85rem",fontWeight:tab===t.id?600:500,padding:"10px 14px",cursor:"pointer",borderRadius:"0 8px 8px 0",marginBottom:2}}>{t.label}</button>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",width:"100%",textAlign:"left",background:tab===t.id?"rgba(231,76,60,.15)":"transparent",border:"none",borderLeft:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#B8A88E",fontSize:".85rem",fontWeight:tab===t.id?600:500,padding:"10px 14px",cursor:"pointer",borderRadius:"0 8px 8px 0",marginBottom:2}}>{t.label}{t.id==="stock"&&stockBajoCount>0&&<span style={{marginLeft:6,background:"#E74C3C",color:"#fff",borderRadius:20,padding:"1px 7px",fontSize:".62rem",fontWeight:700}}>{stockBajoCount}</span>}</button>
         ))}
       </nav>
       {SaveErrorBanner}
@@ -499,12 +522,35 @@ function App(){
             <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>🍳 Acceso Cocina</p>
             <input type="password" placeholder="Contraseña" value={cocinaPassInput} autoFocus
               onChange={e=>{setCocinaPassInput(e.target.value);setCocinaPassErr(false);}}
-              onKeyDown={e=>{if(e.key==="Enter"){if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}}}
+              onKeyDown={e=>{if(e.key==="Enter"){if(cocinaPassInput===COCINA_PASS){setCocinaLoginOpen(false);setCocinaPassInput("");setCocinaIdentityOpen(true);}else{setCocinaPassErr(true);setCocinaPassInput("");}}}}
               style={{...iS,border:`1.5px solid ${cocinaPassErr?"#E74C3C":"#E8DCC8"}`,marginBottom:8}}/>
             {cocinaPassErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
             <div style={{display:"flex",gap:10,marginTop:8}}>
               <button onClick={()=>{setCocinaLoginOpen(false);setCocinaPassInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={()=>{if(cocinaPassInput===COCINA_PASS){localStorage.setItem("amapola_cocina","1");setCocinaMode(true);setCocinaLoginOpen(false);setCocinaPassInput("");setTab("stock");}else{setCocinaPassErr(true);setCocinaPassInput("");}}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
+              <button onClick={()=>{if(cocinaPassInput===COCINA_PASS){setCocinaLoginOpen(false);setCocinaPassInput("");setCocinaIdentityOpen(true);}else{setCocinaPassErr(true);setCocinaPassInput("");}}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {cocinaIdentityOpen&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>👤 ¿Quién sos?</p>
+            <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Elegí tu nombre para que quede registrado en cada carga de stock.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:280,overflowY:"auto",marginBottom:14}}>
+              {empleados.filter(e=>e.estado==="Activo").map(e=>(
+                <button key={e.id} onClick={()=>entrarCocina(e.nombre)} style={{textAlign:"left",padding:"11px 14px",borderRadius:10,border:"1.5px solid #E8DCC8",background:"#F9F6F1",color:"#2C1A0E",fontSize:".88rem",fontWeight:600,cursor:"pointer"}}>{e.nombre}</button>
+              ))}
+            </div>
+            <Field label="No estás en la lista">
+              <input type="text" placeholder="Escribí tu nombre" value={cocinaIdentityInput} autoFocus={!empleados.some(e=>e.estado==="Activo")}
+                onChange={e=>setCocinaIdentityInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")entrarCocina(cocinaIdentityInput);}}
+                style={iS}/>
+            </Field>
+            <div style={{display:"flex",gap:10,marginTop:14}}>
+              <button onClick={()=>{setCocinaIdentityOpen(false);setCocinaIdentityInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={()=>entrarCocina(cocinaIdentityInput)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
             </div>
           </div>
         </div>
@@ -517,7 +563,8 @@ function App(){
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
             {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
-            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");setCocinaMode(false);setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
+            {cocinaMode&&<span style={{fontSize:".62rem",color:"#E8DCC8",opacity:.85}}>👤 {cocinaUser||"Sin nombre"} · <button onClick={()=>setCocinaIdentityOpen(true)} style={{background:"none",border:"none",color:"#E8DCC8",textDecoration:"underline",fontSize:".62rem",cursor:"pointer",padding:0}}>Cambiar</button></span>}
+            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");localStorage.removeItem("amapola_cocina_user");setCocinaMode(false);setCocinaUser("");setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
             {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>🍳 Cocina</button>}
           </div>
         </div>
@@ -536,7 +583,7 @@ function App(){
       </div>
       <div className="amapola-tabbar-mobile" style={{background:"#2C1A0E",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#7B7063",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #E74C3C":"3px solid transparent",color:tab===t.id?"#E8DCC8":"#7B7063",fontSize:".61rem",fontWeight:500,letterSpacing:".03em",textTransform:"uppercase",padding:"10px 4px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}{t.id==="stock"&&stockBajoCount>0&&<span style={{marginLeft:4,background:"#E74C3C",color:"#fff",borderRadius:20,padding:"1px 6px",fontSize:".58rem",fontWeight:700}}>{stockBajoCount}</span>}</button>
         ))}
       </div>
       <div className="amapola-content">
@@ -570,14 +617,14 @@ function App(){
         {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
-        {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
+        {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
-        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
+        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial={cocinaMode?cocinaSubInicial:"inventario"}/>}
+        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial={cocinaMode?cocinaSubInicial:"inventario"} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={cocinaMode?(cocinaUser||"Cocina"):"Administración"}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
@@ -1061,7 +1108,7 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
   </>);
 }
 
-function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente,empleados,saveEmpleados,catalogo,saveStock,stock,ajustesCajaEfectivo}){
+function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente,empleados,saveEmpleados,catalogo,saveStock,stock}){
   const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
   const[monto,setMonto]=useState("");const[forma,setForma]=useState("Efectivo");
   const[obs,setObs]=useState("");const[busy,setBusy]=useState(false);
@@ -1239,12 +1286,12 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
     )}
 
     {/* REGISTRO DE PAGOS */}
-    <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>
+    <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos}/>
   </>);
 }
 
 
-function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajustesCajaEfectivo}){
+function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -1259,9 +1306,6 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
   const gastosEf   = (gastos||[]).filter(g=>g.forma==="Efectivo");
   const cierresEf  = (cierres||[]).map(c=>({...c,_cat:"cierre",_signo:1,proveedor:"Cierre "+c.turno}));
   const cierresNEf = (cierresCaja||[]).map(c=>({...c,_cat:"cierre",_signo:1,proveedor:"Cierre "+c.turno,monto:c.efectivo}));
-  // Ajustes manuales de caja (ver Admin > Ajuste de caja disponible). Sin esto, el saldo de este libro
-  // diario quedaba desincronizado del número de "Caja Disponible" (que sí los suma en calcSaldo()).
-  const ajustesEf  = (ajustesCajaEfectivo||[]).map(a=>({...a,_cat:"ajuste",_signo:Number(a.monto||0)>=0?1:-1,proveedor:"Ajuste de caja",obs:a.motivo,monto:Math.abs(Number(a.monto||0))}));
 
   const egresos = [
     ...pagosEf.map(p=>({...p,_cat:"pago",  _signo:-1})),
@@ -1269,7 +1313,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
     ...gastosEf.map(g=>({...g,_cat:"gasto", _signo:-1,proveedor:g.categoria})),
   ];
   const ingresos = [...cierresEf,...cierresNEf].map(c=>({...c,_signo:1}));
-  const allMovs  = [...egresos,...ingresos,...ajustesEf].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const allMovs  = [...egresos,...ingresos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   // Aplicar filtro de fechas
   const desdeF = filtroFecha==="mes" ? iso(inicioMes) : filtroFecha==="hoy" ? iso(hoy) : desde;
@@ -1302,7 +1346,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
   const totalIngresos = filasAsc.filter(f=>f._signo>0).reduce((s,f)=>s+f._delta,0);
   const totalEgresos  = filasAsc.filter(f=>f._signo<0).reduce((s,f)=>s+Math.abs(f._delta),0);
   const neto = totalIngresos - totalEgresos;
-  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="ajuste"?"⚖️":"💸";
+  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":"💸";
 
   return(
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
@@ -1899,26 +1943,35 @@ function LibroDiarioGastos({gastos}){
   );
 }
 
-function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial}){
+function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,registradoPor}){
   const[sub,setSub]=useState(subInicial||"inventario");
-  const SUBS=[{id:"inventario",label:"📋 Inventario"},{id:"produccion",label:"🍳 Producción"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
+  const SUBS=[{id:"inventario",label:"📋 Inventario"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
   const proveedoresCat=[...new Set(catalogo.map(c=>c.proveedor))].sort();
+  const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
   return(<>
-    <ST help={"El módulo de Stock tiene cuatro secciones:\n\n📋 Inventario: listado de productos con cantidad actual, mínimo y alertas de stock bajo.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
+    <ST help={"El módulo de Stock tiene cinco secciones:\n\n📋 Inventario: listado de productos con cantidad actual, mínimo y alertas de stock bajo.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
+    {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
+    {stockBajo.length>0&&sub!=="inventario"&&(
+      <div onClick={()=>setSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:"1rem"}}>⚠️</span>
+        <span style={{fontSize:".8rem",color:"#C0392B",fontWeight:600}}>{stockBajo.length} producto{stockBajo.length!==1?"s":""} con stock bajo · Ver inventario</span>
+      </div>
+    )}
     <div style={{display:"flex",gap:6,marginBottom:18,flexWrap:"wrap"}}>
       {SUBS.map(s=>(
         <button key={s.id} onClick={()=>setSub(s.id)} style={{flex:"1 1 auto",padding:"9px 8px",borderRadius:10,border:"none",background:sub===s.id?"#2C1A0E":"#E8DCC8",color:sub===s.id?"#fff":"#2C1A0E",fontSize:".74rem",fontWeight:600,cursor:"pointer"}}>{s.label}</button>
       ))}
     </div>
-    {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat}/>}
-    {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo}/>}
+    {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} registradoPor={registradoPor}/>}
+    {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor}/>}
+    {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
     {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat}/>}
-    {sub==="pedidos"&&<StockPedidos catalogo={catalogo} proveedoresCat={proveedoresCat} pedidos={pedidos} savePedidos={savePedidos}/>}
+    {sub==="pedidos"&&<StockPedidos catalogo={catalogo} proveedoresCat={proveedoresCat} pedidos={pedidos} savePedidos={savePedidos} registradoPor={registradoPor}/>}
   </>);
 }
 
-function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
+function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}){
   const[provSel,setProvSel]=useState("");
   const[catId,setCatId]=useState("");
   const[cantidad,setCantidad]=useState("");
@@ -1944,7 +1997,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
       const nuevos=stock.map(s=>s.id===editId?{...s,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad}:s);
       await saveStock(nuevos);toast("Producto actualizado ✓");
     }else{
-      const nuevo={id:uid(),catalogoId:catSel.id,nombre:catSel.producto,proveedor:catSel.proveedor,sector:catSel.sector,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad,movimientos:[],fecha:new Date().toISOString()};
+      const nuevo={id:uid(),catalogoId:catSel.id,nombre:catSel.producto,proveedor:catSel.proveedor,sector:catSel.sector,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad,movimientos:[],fecha:new Date().toISOString(),registradoPor:registradoPor||null};
       await saveStock([...stock,nuevo]);
       toast("Producto agregado ✓");
     }
@@ -1956,7 +2009,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
     const item=movModal;
     const delta=movTipo==="entrada"?Number(movCant):-Number(movCant);
     const nuevaCant=Math.max(0,item.cantidad+delta);
-    const mov={id:uid(),tipo:movTipo,cantidad:Number(movCant),obs:movObs.trim(),fecha:new Date().toISOString()};
+    const mov={id:uid(),tipo:movTipo,cantidad:Number(movCant),obs:movObs.trim(),fecha:new Date().toISOString(),registradoPor:registradoPor||null};
     const nuevos=stock.map(s=>s.id===item.id?{...s,cantidad:nuevaCant,movimientos:[mov,...(s.movimientos||[])].slice(0,20)}:s);
     await saveStock(nuevos);
     toast(movTipo==="entrada"?"Entrada registrada ✓":"Salida registrada ✓");
@@ -2083,7 +2136,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat}){
   </>);
 }
 
-function StockProduccion({stock,saveStock,catalogo}){
+function StockProduccion({stock,saveStock,catalogo,registradoPor}){
   const[prodId,setProdId]=useState("");
   const[cantidad,setCantidad]=useState("");
   const[obs,setObs]=useState("");
@@ -2102,11 +2155,11 @@ function StockProduccion({stock,saveStock,catalogo}){
     const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
     const stockActual=[...stock];
     const idx=stockActual.findIndex(s=>s.catalogoId===prodId);
-    const mov={id:uid(),tipo:"entrada",origen:"produccion",cantidad:Number(cantidad),obs:obs.trim()||"Producción del día",fecha:fechaISO};
+    const mov={id:uid(),tipo:"entrada",origen:"produccion",cantidad:Number(cantidad),obs:obs.trim()||"Producción del día",fecha:fechaISO,registradoPor:registradoPor||null};
     if(idx>=0){
       stockActual[idx]={...stockActual[idx],cantidad:stockActual[idx].cantidad+Number(cantidad),movimientos:[mov,...(stockActual[idx].movimientos||[])].slice(0,50)};
     }else{
-      stockActual.push({id:uid(),catalogoId:prodId,nombre:prod.producto,proveedor:"INTERNO",sector:prod.sector||"COCINA",cantidad:Number(cantidad),minimo:0,unidad:prod.unidad||"unidades",movimientos:[mov],fecha:fechaISO});
+      stockActual.push({id:uid(),catalogoId:prodId,nombre:prod.producto,proveedor:"INTERNO",sector:prod.sector||"COCINA",cantidad:Number(cantidad),minimo:0,unidad:prod.unidad||"unidades",movimientos:[mov],fecha:fechaISO,registradoPor:registradoPor||null});
     }
     await saveStock(stockActual);
     toast(`✓ ${prod.producto}: +${cantidad} ${prod.unidad||"unidades"} registradas`);
@@ -2149,7 +2202,7 @@ function StockProduccion({stock,saveStock,catalogo}){
             <div key={s.id} style={{padding:"10px 0",borderBottom:"1px solid #F2EAE0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontWeight:600,fontSize:".88rem"}}>{s.nombre}</div>
-                <div style={{fontSize:".72rem",color:"#7B7063"}}>{movsHoy.length} registro{movsHoy.length!==1?"s":""} hoy</div>
+                <div style={{fontSize:".72rem",color:"#7B7063"}}>{movsHoy.length} registro{movsHoy.length!==1?"s":""} hoy{movsHoy[0]?.registradoPor?` · ${movsHoy[0].registradoPor}`:""}</div>
               </div>
               <div style={{textAlign:"right"}}>
                 <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#2D6A4F"}}>+{totalHoy}</div>
@@ -2273,7 +2326,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat}){
   </>);
 }
 
-function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos}){
+function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor}){
   const[provSel,setProvSel]=useState("");
   const[cants,setCants]=useState({});
   const[obs,setObs]=useState("");
@@ -2286,7 +2339,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos}){
     if(!provSel){toast("Elegí un proveedor");return;}
     if(!items.length){toast("Ingresá cantidad en al menos un producto");return;}
     setBusy(true);
-    const nuevo={id:uid(),proveedor:provSel,fecha:new Date().toISOString(),items,obs:obs.trim(),estado:"pendiente"};
+    const nuevo={id:uid(),proveedor:provSel,fecha:new Date().toISOString(),items,obs:obs.trim(),estado:"pendiente",creadoPor:registradoPor||null};
     await savePedidos([nuevo,...pedidos]);
     toast("Pedido creado ✓");
     setBusy(false);setProvSel("");setCants({});setObs("");
@@ -2331,7 +2384,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos}){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <div style={{fontWeight:700,fontSize:".9rem"}}>{p.proveedor}</div>
-            <div style={{fontSize:".7rem",color:"#7B7063"}}>{fmtFL(p.fecha)}</div>
+            <div style={{fontSize:".7rem",color:"#7B7063"}}>{fmtFL(p.fecha)}{p.creadoPor?` · ${p.creadoPor}`:""}</div>
           </div>
           <span style={{background:colorEstado[p.estado]+"22",color:colorEstado[p.estado],fontSize:".66rem",fontWeight:700,padding:"3px 9px",borderRadius:20,textTransform:"uppercase"}}>{p.estado}</span>
         </div>
@@ -2352,6 +2405,95 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos}){
 
 
 
+
+function StockDesperdicios({stock,saveStock,desperdicios,saveDesperdicios,registradoPor}){
+  const[itemId,setItemId]=useState("");
+  const[cantidad,setCantidad]=useState("");
+  const[motivo,setMotivo]=useState("Vencido");
+  const[obs,setObs]=useState("");
+  const[busy,setBusy]=useState(false);
+  const[fecha,setFecha]=useState(hoyLocal());
+
+  const MOTIVOS=["Vencido","Roto/dañado","Quemado/error de cocina","Devolución de cliente","Otro"];
+  const itemsOrdenados=[...stock].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const itemSel=stock.find(s=>s.id===itemId);
+
+  const registrar=async()=>{
+    if(!itemId){toast("Elegí un producto del inventario");return;}
+    if(!cantidad||Number(cantidad)<=0){toast("Ingresá la cantidad");return;}
+    setBusy(true);
+    const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
+    const cant=Number(cantidad);
+    const mov={id:uid(),tipo:"salida",origen:"desperdicio",cantidad:cant,obs:`${motivo}${obs.trim()?" — "+obs.trim():""}`,fecha:fechaISO,registradoPor:registradoPor||null};
+    const stockActual=stock.map(s=>s.id===itemId?{...s,cantidad:Math.max(0,s.cantidad-cant),movimientos:[mov,...(s.movimientos||[])].slice(0,50)}:s);
+    await saveStock(stockActual);
+    const registro={id:uid(),stockId:itemId,producto:itemSel.nombre,unidad:itemSel.unidad,proveedor:itemSel.proveedor,cantidad:cant,motivo,obs:obs.trim(),registradoPor:registradoPor||null,fecha:fechaISO};
+    await saveDesperdicios([registro,...desperdicios]);
+    toast(`✓ Desperdicio registrado: ${itemSel.nombre}`);
+    setBusy(false);setItemId("");setCantidad("");setObs("");setMotivo("Vencido");setFecha(hoyLocal());
+  };
+
+  const eliminar=async id=>{
+    if(!confirm("¿Eliminar este registro de desperdicio? (no repone el stock)"))return;
+    await saveDesperdicios(desperdicios.filter(d=>d.id!==id));toast("Eliminado");
+  };
+
+  const hoyStr=hoyLocal();
+  const desperdiciosHoy=desperdicios.filter(d=>d.fecha&&d.fecha.slice(0,10)===hoyStr);
+
+  if(!stock.length)return(
+    <Empty icon="🗑️">Todavía no hay productos en el inventario. Cargalos primero desde 📋 Inventario.</Empty>
+  );
+
+  return(<>
+    <Card title="Registrar desperdicio">
+      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Descuenta del inventario y queda registrado el motivo, para saber cuánto se pierde.</p>
+      <Field label="Producto">
+        <select value={itemId} onChange={e=>setItemId(e.target.value)} style={sS}>
+          <option value="">— Elegí un producto —</option>
+          {itemsOrdenados.map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad} {s.unidad})</option>)}
+        </select>
+      </Field>
+      <Field label={`Cantidad${itemSel?` (${itemSel.unidad})`:""}`}>
+        <Inp type="number" value={cantidad} onChange={setCantidad} placeholder="0"/>
+      </Field>
+      <Field label="Motivo">
+        <select value={motivo} onChange={e=>setMotivo(e.target.value)} style={sS}>
+          {MOTIVOS.map(m=><option key={m} value={m}>{m}</option>)}
+        </select>
+      </Field>
+      <Field label="Observaciones (opcional)"><TA value={obs} onChange={setObs} placeholder="Ej: se venció ayer"/></Field>
+      <Field label="Fecha"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
+      <Btn bg="#C0392B" onClick={registrar} disabled={busy}>{busy?"Guardando…":"Registrar desperdicio"}</Btn>
+    </Card>
+
+    {desperdiciosHoy.length>0&&(
+      <div style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"12px 16px",marginBottom:16}}>
+        <div style={{fontWeight:700,fontSize:".82rem",color:"#C0392B"}}>🗑️ {desperdiciosHoy.length} desperdicio{desperdiciosHoy.length!==1?"s":""} hoy</div>
+      </div>
+    )}
+
+    {!desperdicios.length?<Empty icon="🗑️">Todavía no registraste desperdicios</Empty>:desperdicios.map(d=>(
+      <div key={d.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:".9rem"}}>{d.producto}</div>
+            <div style={{fontSize:".7rem",color:"#7B7063"}}>{fmtFL(d.fecha)}{d.registradoPor?` · ${d.registradoPor}`:""}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#C0392B"}}>-{d.cantidad}</div>
+            <div style={{fontSize:".68rem",color:"#7B7063"}}>{d.unidad}</div>
+          </div>
+        </div>
+        <div style={{marginTop:8,fontSize:".78rem",color:"#2C1A0E"}}>{d.motivo}</div>
+        {d.obs&&<div style={{marginTop:4,fontSize:".76rem",color:"#7B7063",fontStyle:"italic"}}>{d.obs}</div>}
+        <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
+          <SmBtn color="#C0392B" onClick={()=>eliminar(d.id)}>Eliminar</SmBtn>
+        </div>
+      </div>
+    ))}
+  </>);
+}
 
 function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedores,calcDeuda,calcDigital,saldo,cajaDigitalSaldo,stock,setTab}){
   const hoy = new Date().toDateString();
@@ -4093,7 +4235,7 @@ function AdminBoletas({boletas,saveBoletas}){
   );
 }
 
-function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,ajustesCajaEfectivo,saveAjustesCajaEfectivo}){
+function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos}){
   const[filtro,setFiltro]=useState("todo");
   const[filtroDH,setFiltroDH]=useState("todos");
   const hoy=new Date();
@@ -4110,10 +4252,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const pagosM=(pagos||[]).map(p=>({...p,tipo:"pago",_cat:"pago",_signo:-1,_cuenta:p.forma==="Efectivo"}));
   const sueldosM=(sueldos||[]).map(s=>({...s,tipo:"sueldo",_cat:"sueldo",_signo:-1,_cuenta:s.forma==="Efectivo"}));
   const gastosM=(gastos||[]).map(g=>({...g,tipo:"gasto",_cat:"gasto",_signo:-1,_cuenta:g.forma==="Efectivo",proveedor:g.categoria}));
-  // Ajustes manuales de caja (Admin > Ajuste de caja disponible). Se incluyen para que el saldo de este
-  // libro diario coincida con el número de "Caja Disponible" (calcSaldo() ya los suma).
-  const ajustesM=(ajustesCajaEfectivo||[]).map(a=>({...a,tipo:"ajuste",_cat:"ajuste",_signo:Number(a.monto||0)>=0?1:-1,_cuenta:true,proveedor:"Ajuste de caja",obs:a.motivo,monto:Math.abs(Number(a.monto||0))}));
-  const allMovs=[...boletasM,...cierresM,...cierresCajaM,...pagosM,...sueldosM,...gastosM,...ajustesM].filter(m=>m.fecha);
+  const allMovs=[...boletasM,...cierresM,...cierresCajaM,...pagosM,...sueldosM,...gastosM].filter(m=>m.fecha);
 
   const desdeF=filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
   const hastaF=filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):hasta;
@@ -4152,7 +4291,6 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
     if(item.tipo==="pago")       await savePagos(pagos.filter(p=>p.id!==item.id));
     if(item.tipo==="sueldo")     await saveSueldos(sueldos.filter(s=>s.id!==item.id));
     if(item.tipo==="gasto")      await saveGastos(gastos.filter(g=>g.id!==item.id));
-    if(item.tipo==="ajuste"&&saveAjustesCajaEfectivo) await saveAjustesCajaEfectivo((ajustesCajaEfectivo||[]).filter(a=>a.id!==item.id));
     toast("Registro eliminado ✓");
   };
 
@@ -4164,14 +4302,13 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
     pagos.forEach(p=>rows.push(["Pago",fmtF(p.fecha),fmtH(p.fecha),p.proveedor,p.empleado,p.monto,p.forma,p.obs]));
     sueldos.forEach(s=>rows.push(["Sueldo",fmtF(s.fecha),fmtH(s.fecha),s.proveedor||s.empleado,s.empleado,s.monto,s.forma,s.obs]));
     gastos.forEach(g=>rows.push(["Gasto",fmtF(g.fecha),fmtH(g.fecha),g.categoria,g.empleado,g.monto,g.forma,g.obs]));
-    (ajustesCajaEfectivo||[]).forEach(a=>rows.push(["Ajuste",fmtF(a.fecha),fmtH(a.fecha),"Ajuste de caja","",a.monto,"",a.motivo]));
     const csv=rows.map(r=>r.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
     const a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"}));
     a.download=`amapola_historial_${hoyLocal()}.csv`;a.click();
   };
 
-  const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
+  const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":"🧾";
 
   return(<>
     <ST help={"Historial completo de todos los registros, en formato de libro diario (igual que en Pagos).\n\n• Debe = salidas de efectivo. Haber = ingresos de efectivo. Saldo = plata en Caja Disponible en ese momento.\n• Las boletas y los pagos/sueldos/gastos por Transferencia aparecen como referencia (sin Debe/Haber) porque no mueven la Caja Disponible directamente — asi evitamos contar un mismo gasto dos veces.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
@@ -4179,7 +4316,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
 
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."],["ajuste","Ajustes"]].map(([f,l])=>(
+        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([f,l])=>(
           <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#2C1A0E":"#E8DCC8",color:filtro===f?"#E8DCC8":"#2C1A0E"}}>{l}</button>
         ))}
       </div>
@@ -4271,7 +4408,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8,color:"#2C1A0E"}}>⚠️ Eliminar registro</p>
           <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:6}}>
-            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.tipo==="cierre_caja"?"Cierre de Caja":confirmarElim.tipo==="ajuste"?"Ajuste de caja":confirmarElim.forma||confirmarElim.tipo}</strong>
+            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.tipo==="cierre_caja"?"Cierre de Caja":confirmarElim.forma||confirmarElim.tipo}</strong>
             {" · "}{fmt(confirmarElim.monto)}
           </p>
           <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
