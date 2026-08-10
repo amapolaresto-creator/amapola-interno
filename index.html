@@ -612,14 +612,14 @@ function App(){
           calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
-        {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos}/>}
+        {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
         {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
-        {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
+        {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
-        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos}/>}
+        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
@@ -1108,7 +1108,7 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
   </>);
 }
 
-function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente,empleados,saveEmpleados,catalogo,saveStock,stock}){
+function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierresCaja,sueldos,gastos,pagarConExcedente,empleados,saveEmpleados,catalogo,saveStock,stock,ajustesCajaEfectivo}){
   const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
   const[monto,setMonto]=useState("");const[forma,setForma]=useState("Efectivo");
   const[obs,setObs]=useState("");const[busy,setBusy]=useState(false);
@@ -1286,12 +1286,12 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
     )}
 
     {/* REGISTRO DE PAGOS */}
-    <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos}/>
+    <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>
   </>);
 }
 
 
-function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
+function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajustesCajaEfectivo}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -1306,6 +1306,9 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
   const gastosEf   = (gastos||[]).filter(g=>g.forma==="Efectivo");
   const cierresEf  = (cierres||[]).map(c=>({...c,_cat:"cierre",_signo:1,proveedor:"Cierre "+c.turno}));
   const cierresNEf = (cierresCaja||[]).map(c=>({...c,_cat:"cierre",_signo:1,proveedor:"Cierre "+c.turno,monto:c.efectivo}));
+  // Ajustes manuales de caja (ver Admin > Ajuste de caja disponible). Sin esto, el saldo de este libro
+  // diario quedaba desincronizado del número de "Caja Disponible" (que sí los suma en calcSaldo()).
+  const ajustesEf  = (ajustesCajaEfectivo||[]).map(a=>({...a,_cat:"ajuste",_signo:Number(a.monto||0)>=0?1:-1,proveedor:"Ajuste de caja",obs:a.motivo,monto:Math.abs(Number(a.monto||0))}));
 
   const egresos = [
     ...pagosEf.map(p=>({...p,_cat:"pago",  _signo:-1})),
@@ -1313,7 +1316,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
     ...gastosEf.map(g=>({...g,_cat:"gasto", _signo:-1,proveedor:g.categoria})),
   ];
   const ingresos = [...cierresEf,...cierresNEf].map(c=>({...c,_signo:1}));
-  const allMovs  = [...egresos,...ingresos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const allMovs  = [...egresos,...ingresos,...ajustesEf].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   // Aplicar filtro de fechas
   const desdeF = filtroFecha==="mes" ? iso(inicioMes) : filtroFecha==="hoy" ? iso(hoy) : desde;
@@ -1346,7 +1349,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos}){
   const totalIngresos = filasAsc.filter(f=>f._signo>0).reduce((s,f)=>s+f._delta,0);
   const totalEgresos  = filasAsc.filter(f=>f._signo<0).reduce((s,f)=>s+Math.abs(f._delta),0);
   const neto = totalIngresos - totalEgresos;
-  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":"💸";
+  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="ajuste"?"⚖️":"💸";
 
   return(
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
@@ -2689,7 +2692,7 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
 
 
 
-function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos}){
+function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,ajustesCajaEfectivo}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -2707,8 +2710,11 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const gastosEf   = (gastos||[]).filter(g=>g.forma==="Efectivo").map(g=>({...g,_cat:"gasto", _label:g.categoria,_signo:-1}));
   const cierresViejos = (cierres||[]).map(c=>({...c,_cat:"cierre",_label:"Cierre "+c.turno,_signo:1}));
   const cierresNuevos = (cierresCaja||[]).map(c=>({...c,_cat:"cierre",_label:"Cierre "+c.turno,monto:c.efectivo,_signo:1}));
+  // Ajustes manuales de caja (Admin > Ajuste de caja disponible) — sin esto este "Saldo final del período"
+  // no coincidía con el número real de Caja Disponible en cuanto había algún ajuste registrado.
+  const ajustesEf = (ajustesCajaEfectivo||[]).map(a=>({...a,_cat:"ajuste",_label:"Ajuste de caja"+(a.motivo?" · "+a.motivo:""),_signo:Number(a.monto||0)>=0?1:-1,monto:Math.abs(Number(a.monto||0))}));
 
-  const allMovs=[...pagosEf,...sueldosEf,...gastosEf,...cierresViejos,...cierresNuevos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const allMovs=[...pagosEf,...sueldosEf,...gastosEf,...cierresViejos,...cierresNuevos,...ajustesEf].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   const desdeF = filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):filtroFecha==="custom"?desde:"";
   const hastaF = filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):filtroFecha==="custom"?hasta:"";
@@ -2735,7 +2741,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const totalIngresos=filtradosAsc.filter(m=>m._signo>0).reduce((s,m)=>s+Number(m.monto||0),0);
   const totalEgresos =filtradosAsc.filter(m=>m._signo<0).reduce((s,m)=>s+Number(m.monto||0),0);
 
-  const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":"🏠";
+  const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":c==="ajuste"?"⚖️":"🏠";
 
   const abrirEditar=m=>{
     setEditItem(m);
@@ -2791,7 +2797,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       </div>
     )}
     <div style={{display:"flex",gap:6,marginBottom:10}}>
-      {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([v,l])=>(
+      {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."],["ajuste","Ajustes"]].map(([v,l])=>(
         <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#2C1A0E":"transparent",color:filtroTipo===v?"#E8DCC8":"#7B7063"}}>{l}</button>
       ))}
     </div>
@@ -2824,7 +2830,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
                 <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo>0?fmt(m.monto):""}</td>
                 <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(m._saldo)}</td>
                 <td style={{padding:"6px 8px"}}>
-                  {m._cat!=="cierre"&&(
+                  {m._cat!=="cierre"&&m._cat!=="ajuste"&&(
                     <div style={{display:"flex",gap:4}}>
                       <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
                       <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
@@ -4235,7 +4241,7 @@ function AdminBoletas({boletas,saveBoletas}){
   );
 }
 
-function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos}){
+function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,ajustesCajaEfectivo,saveAjustesCajaEfectivo}){
   const[filtro,setFiltro]=useState("todo");
   const[filtroDH,setFiltroDH]=useState("todos");
   const hoy=new Date();
@@ -4245,39 +4251,59 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const[desde,setDesde]=useState(iso(inicioMes));
   const[hasta,setHasta]=useState(iso(hoy));
 
-  // Movimientos normalizados. _cuenta=true => afecta el saldo de Caja Disponible (mismo criterio que Pagos > Libro diario).
-  const boletasM=(boletas||[]).map(b=>({...b,tipo:"boleta",_cat:"boleta",_signo:0,_cuenta:false}));
-  const cierresM=(cierres||[]).map(c=>({...c,tipo:"cierre",_cat:"cierre",_signo:1,_cuenta:true,proveedor:"Cierre "+c.turno}));
-  const cierresCajaM=(cierresCaja||[]).map(c=>({...c,tipo:"cierre_caja",_cat:"cierre",_signo:1,_cuenta:true,proveedor:"Cierre "+c.turno,empleado:c.persona,monto:c.efectivo}));
-  const pagosM=(pagos||[]).map(p=>({...p,tipo:"pago",_cat:"pago",_signo:-1,_cuenta:p.forma==="Efectivo"}));
-  const sueldosM=(sueldos||[]).map(s=>({...s,tipo:"sueldo",_cat:"sueldo",_signo:-1,_cuenta:s.forma==="Efectivo"}));
-  const gastosM=(gastos||[]).map(g=>({...g,tipo:"gasto",_cat:"gasto",_signo:-1,_cuenta:g.forma==="Efectivo",proveedor:g.categoria}));
-  const allMovs=[...boletasM,...cierresM,...cierresCajaM,...pagosM,...sueldosM,...gastosM].filter(m=>m.fecha);
+  // Movimientos normalizados en dos columnas de flujo: _efDelta (efectivo) y _digDelta (digital/transferencia).
+  // _cuenta=true => el movimiento mueve algún saldo real (efectivo o digital); boletas y pagos por cheque
+  // no mueven nada todavía (quedan como referencia) hasta que se paguen / cobren.
+  const boletasM=(boletas||[]).map(b=>({...b,tipo:"boleta",_cat:"boleta",_efDelta:0,_digDelta:0,_cuenta:false}));
+  const cierresM=(cierres||[]).map(c=>({...c,tipo:"cierre",_cat:"cierre",_efDelta:Number(c.monto||0),_digDelta:0,_cuenta:true,proveedor:"Cierre "+c.turno}));
+  // Cada cierre de caja trae SIEMPRE dos ingresos simultáneos: lo contado en efectivo y lo vendido por canales
+  // digitales (MP/FUDO/PostNet/Digital/Uber). Antes solo se contabilizaba el efectivo — la parte digital
+  // no aparecía en ningún lado del Historial.
+  const cierresCajaM=(cierresCaja||[]).map(c=>({...c,tipo:"cierre_caja",_cat:"cierre",_efDelta:Number(c.efectivo||0),_digDelta:Number(c.totalDigital||0),_cuenta:true,proveedor:"Cierre "+c.turno,empleado:c.persona,monto:Number(c.total)||(Number(c.efectivo||0)+Number(c.totalDigital||0))}));
+  const pagosM=(pagos||[]).map(p=>({...p,tipo:"pago",_cat:"pago",
+    _efDelta:p.forma==="Efectivo"?-Number(p.monto||0):0,
+    _digDelta:p.forma==="Transferencia"?-Number(p.monto||0):0,
+    _cuenta:p.forma==="Efectivo"||p.forma==="Transferencia"}));
+  const sueldosM=(sueldos||[]).map(s=>({...s,tipo:"sueldo",_cat:"sueldo",
+    _efDelta:s.forma==="Efectivo"?-Number(s.monto||0):0,
+    _digDelta:s.forma==="Transferencia"?-Number(s.monto||0):0,
+    _cuenta:s.forma==="Efectivo"||s.forma==="Transferencia"}));
+  const gastosM=(gastos||[]).map(g=>({...g,tipo:"gasto",_cat:"gasto",
+    _efDelta:g.forma==="Efectivo"?-Number(g.monto||0):0,
+    _digDelta:g.forma==="Transferencia"?-Number(g.monto||0):0,
+    _cuenta:g.forma==="Efectivo"||g.forma==="Transferencia",proveedor:g.categoria}));
+  // Ajustes manuales de caja (Admin > Ajuste de caja disponible). Se incluyen para que el saldo de este
+  // libro diario coincida con el número de "Caja Disponible" (calcSaldo() ya los suma).
+  const ajustesM=(ajustesCajaEfectivo||[]).map(a=>({...a,tipo:"ajuste",_cat:"ajuste",_efDelta:Number(a.monto||0),_digDelta:0,_cuenta:true,proveedor:"Ajuste de caja",obs:a.motivo,monto:Math.abs(Number(a.monto||0))}));
+  const allMovs=[...boletasM,...cierresM,...cierresCajaM,...pagosM,...sueldosM,...gastosM,...ajustesM].filter(m=>m.fecha);
 
   const desdeF=filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
   const hastaF=filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):hasta;
 
-  // Saldo de arrastre: cajaInicial + todo lo que cuenta y quedo antes del rango mostrado (sin importar el filtro de tipo).
+  // Saldo de arrastre: cajaInicial + todo el flujo de EFECTIVO anterior al rango mostrado (sin importar el filtro de tipo).
+  // El saldo corrido de esta pantalla es siempre el de Caja Disponible (efectivo) — el saldo de banco/digital
+  // no se arrastra acá porque en la app se corrige a mano contra el resumen bancario real (ver Caja Digital).
   let saldoBase=Number(cajaInicial)||0;
-  allMovs.filter(m=>m._cuenta&&m.fecha.slice(0,10)<desdeF).forEach(m=>{saldoBase+=m._signo*Number(m.monto||0);});
+  allMovs.filter(m=>m.fecha.slice(0,10)<desdeF).forEach(m=>{saldoBase+=m._efDelta;});
 
   // Saldo corrido dentro del rango, usando TODOS los tipos (para que el numero sea correcto sin importar el filtro de tipo activo).
   const enRangoAsc=allMovs.filter(m=>{const f=m.fecha.slice(0,10);return(!desdeF||f>=desdeF)&&(!hastaF||f<=hastaF);}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   let saldoAcum=saldoBase;
   const conSaldo=enRangoAsc.map(m=>{
-    const delta=m._cuenta?m._signo*Number(m.monto||0):0;
-    saldoAcum+=delta;
-    return{...m,_delta:delta,_saldo:saldoAcum};
+    saldoAcum+=m._efDelta;
+    return{...m,_saldo:saldoAcum};
   });
 
   // Filtro de tipo + Debe/Haber para mostrar (no altera el calculo de saldo, ya hecho arriba).
   let filas=conSaldo.filter(m=>filtro==="todo"?true:filtro==="cierre"?(m.tipo==="cierre"||m.tipo==="cierre_caja"):m.tipo===filtro);
-  if(filtroDH==="debe")filas=filas.filter(m=>m._cuenta&&m._signo<0);
-  if(filtroDH==="haber")filas=filas.filter(m=>m._cuenta&&m._signo>0);
+  if(filtroDH==="debe")filas=filas.filter(m=>m._efDelta<0||m._digDelta<0);
+  if(filtroDH==="haber")filas=filas.filter(m=>m._efDelta>0||m._digDelta>0);
   filas=[...filas].reverse();
 
-  const totalDebe=conSaldo.filter(m=>m._cuenta&&m._signo<0).reduce((s,m)=>s+Math.abs(m._delta),0);
-  const totalHaber=conSaldo.filter(m=>m._cuenta&&m._signo>0).reduce((s,m)=>s+m._delta,0);
+  const totalDebeEf=conSaldo.filter(m=>m._efDelta<0).reduce((s,m)=>s+Math.abs(m._efDelta),0);
+  const totalHaberEf=conSaldo.filter(m=>m._efDelta>0).reduce((s,m)=>s+m._efDelta,0);
+  const totalDebeDig=conSaldo.filter(m=>m._digDelta<0).reduce((s,m)=>s+Math.abs(m._digDelta),0);
+  const totalHaberDig=conSaldo.filter(m=>m._digDelta>0).reduce((s,m)=>s+m._digDelta,0);
   const saldoFinal=conSaldo.length?conSaldo[conSaldo.length-1]._saldo:saldoBase;
 
   const[confirmarElim,setConfirmarElim]=useState(null);
@@ -4291,6 +4317,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
     if(item.tipo==="pago")       await savePagos(pagos.filter(p=>p.id!==item.id));
     if(item.tipo==="sueldo")     await saveSueldos(sueldos.filter(s=>s.id!==item.id));
     if(item.tipo==="gasto")      await saveGastos(gastos.filter(g=>g.id!==item.id));
+    if(item.tipo==="ajuste"&&saveAjustesCajaEfectivo) await saveAjustesCajaEfectivo((ajustesCajaEfectivo||[]).filter(a=>a.id!==item.id));
     toast("Registro eliminado ✓");
   };
 
@@ -4302,21 +4329,22 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
     pagos.forEach(p=>rows.push(["Pago",fmtF(p.fecha),fmtH(p.fecha),p.proveedor,p.empleado,p.monto,p.forma,p.obs]));
     sueldos.forEach(s=>rows.push(["Sueldo",fmtF(s.fecha),fmtH(s.fecha),s.proveedor||s.empleado,s.empleado,s.monto,s.forma,s.obs]));
     gastos.forEach(g=>rows.push(["Gasto",fmtF(g.fecha),fmtH(g.fecha),g.categoria,g.empleado,g.monto,g.forma,g.obs]));
+    (ajustesCajaEfectivo||[]).forEach(a=>rows.push(["Ajuste",fmtF(a.fecha),fmtH(a.fecha),"Ajuste de caja","",a.monto,"",a.motivo]));
     const csv=rows.map(r=>r.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
     const a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"}));
     a.download=`amapola_historial_${hoyLocal()}.csv`;a.click();
   };
 
-  const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":"🧾";
+  const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
 
   return(<>
-    <ST help={"Historial completo de todos los registros, en formato de libro diario (igual que en Pagos).\n\n• Debe = salidas de efectivo. Haber = ingresos de efectivo. Saldo = plata en Caja Disponible en ese momento.\n• Las boletas y los pagos/sueldos/gastos por Transferencia aparecen como referencia (sin Debe/Haber) porque no mueven la Caja Disponible directamente — asi evitamos contar un mismo gasto dos veces.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
-    <SS>Libro diario de todos los movimientos.</SS>
+    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con cheque aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
+    <SS>Libro diario de todos los movimientos — efectivo y digital.</SS>
 
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([f,l])=>(
+        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."],["ajuste","Ajustes"]].map(([f,l])=>(
           <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#2C1A0E":"#E8DCC8",color:filtro===f?"#E8DCC8":"#2C1A0E"}}>{l}</button>
         ))}
       </div>
@@ -4348,13 +4376,22 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
       </div>
 
       <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:4}}>{filas.length} registro{filas.length!==1?"s":""} · Saldo Caja Disponible: <strong style={{color:saldoFinal>=0?"#2D6A4F":"#C0392B"}}>{fmt(saldoFinal)}</strong></div>
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        {[["💵 Efectivo",totalHaberEf,totalDebeEf],["💳 Digital",totalHaberDig,totalDebeDig]].map(([l,h,d])=>(
+          <div key={l} style={{flex:1,minWidth:150,background:"#F9F6F1",borderRadius:10,padding:"8px 10px"}}>
+            <div style={{fontSize:".6rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:2}}>{l} del período</div>
+            <div style={{fontSize:".76rem",color:"#2D6A4F",fontWeight:700}}>Haber {fmt(h)}</div>
+            <div style={{fontSize:".76rem",color:"#C0392B",fontWeight:700}}>Debe {fmt(d)}</div>
+          </div>
+        ))}
+      </div>
 
       {!filas.length?<Empty icon="📒">Sin registros en el periodo</Empty>:(
         <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:420}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:620}}>
             <thead>
               <tr style={{background:"#F9F6F1"}}>
-                {["Fecha","Concepto","Debe","Haber","Saldo",""].map(h=>(
+                {["Fecha","Concepto","Debe Ef.","Haber Ef.","Debe Dig.","Haber Dig.","Saldo Ef.",""].map(h=>(
                   <th key={h||"acc"} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Concepto"?"left":h===""?"center":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
                 ))}
               </tr>
@@ -4371,16 +4408,22 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
                       <div style={{minWidth:0}}>
                         <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
                         <div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>
-                          {f.empleado?f.empleado+" · ":""}{!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Transferencia"?" (transferencia)":""):""}{f.obs?" · "+f.obs:""}
+                          {f.empleado?f.empleado+" · ":""}{!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Cheque"?" (cheque, no descuenta hasta cobrarse)":""):""}{f.obs?" · "+f.obs:""}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._cuenta&&f._signo<0?fmt(Math.abs(f._delta)):"—"}
+                    {f._efDelta<0?fmt(Math.abs(f._efDelta)):"—"}
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._cuenta&&f._signo>0?fmt(f._delta):"—"}
+                    {f._efDelta>0?fmt(f._efDelta):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._digDelta<0?fmt(Math.abs(f._digDelta)):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#1a6b8f",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._digDelta>0?fmt(f._digDelta):"—"}
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:f._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(f._saldo)}</td>
                   <td style={{padding:"6px 8px",textAlign:"center"}}>
@@ -4390,8 +4433,10 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
               ))}
               <tr style={{background:"#2C1A0E"}}>
                 <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
-                <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebe)}</td>
-                <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaber)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebeEf)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaberEf)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#f5d98b",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebeDig)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#a9d3e8",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaberDig)}</td>
                 <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:saldoFinal>=0?"#a9dfbf":"#f5b7b1"}}>{fmt(saldoFinal)}</td>
                 <td/>
               </tr>
@@ -4408,7 +4453,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8,color:"#2C1A0E"}}>⚠️ Eliminar registro</p>
           <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:6}}>
-            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.tipo==="cierre_caja"?"Cierre de Caja":confirmarElim.forma||confirmarElim.tipo}</strong>
+            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.tipo==="cierre_caja"?"Cierre de Caja":confirmarElim.tipo==="ajuste"?"Ajuste de caja":confirmarElim.forma||confirmarElim.tipo}</strong>
             {" · "}{fmt(confirmarElim.monto)}
           </p>
           <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
