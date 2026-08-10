@@ -1068,6 +1068,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
   const[fecha,setFecha]=useState(hoyLocal());
   const[nuevoRegModal,setNuevoRegModal]=useState(false);
   const[nuevoRegNombre,setNuevoRegNombre]=useState("");
+  const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
 
   // "Registrado por" usa la misma lista persistida de Empleados que Boletas (antes era una lista local que se perdía al recargar).
   const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
@@ -1083,12 +1084,13 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
   };
 
   const guardar=async()=>{
-    if(!prov.trim()||!emp.trim()||!monto){toast("Completá todos los campos");return;}
-    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
+    if(!prov.trim()||!emp.trim()||!monto){toast("Completá todos los campos");return false;}
+    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return false;}
     setBusy(true);
     const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()};
     await pagarConExcedente(pagoBase,pagos,savePagos);
     setBusy(false);setProv("");setEmp("");setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
+    return true;
   };
 
   const hoyD=new Date();
@@ -1126,36 +1128,47 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
         <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que se cobre.</div>
       </div>
     )}
-    <Card title="Nuevo pago">
-      <Field label="Proveedor">
-        <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
-          <option value="">— Elegí un proveedor —</option>
-          {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-        </select>
-      </Field>
-      <Field label="Registrado por">
-        <div style={{display:"flex",gap:8}}>
-          <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
-            <option value="">— Elegí —</option>
-            {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
-          </select>
-          <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+    <Btn bg="#B7860B" onClick={()=>setNuevoPagoModal(true)}>+ Registrar pago</Btn>
+
+    {nuevoPagoModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nuevo pago</p>
+            <button onClick={()=>setNuevoPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+          </div>
+          <Field label="Proveedor">
+            <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
+              <option value="">— Elegí un proveedor —</option>
+              {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+            </select>
+          </Field>
+          <Field label="Registrado por">
+            <div style={{display:"flex",gap:8}}>
+              <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
+                <option value="">— Elegí —</option>
+                {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
+              </select>
+              <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+            </div>
+          </Field>
+          <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
+          <Field label="Forma de pago">
+            <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
+              <option value="Efectivo">Efectivo (descuenta de caja)</option>
+              <option value="Transferencia">Transferencia (no descuenta caja)</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </Field>
+          {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
+          {forma==="Cheque"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🧾 No descuenta caja ni banco — se suma al total de cheques del mes.</div>}
+          <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: pago parcial, boleta #..."/></Field>
+          <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
+          <Btn bg="#B7860B" onClick={async()=>{if(await guardar())setNuevoPagoModal(false);}} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
         </div>
-      </Field>
-      <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
-      <Field label="Forma de pago">
-        <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
-          <option value="Efectivo">Efectivo (descuenta de caja)</option>
-          <option value="Transferencia">Transferencia (no descuenta caja)</option>
-          <option value="Cheque">Cheque</option>
-        </select>
-      </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
-      {forma==="Cheque"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🧾 No descuenta caja ni banco — se suma al total de cheques del mes.</div>}
-      <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: pago parcial, boleta #..."/></Field>
-      <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#B7860B" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
-    </Card>
+      </div>
+    )}
+
     {/* REGISTRO DE PAGOS */}
     <UltimosPagos pagos={pagos} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos}/>
   </>);
