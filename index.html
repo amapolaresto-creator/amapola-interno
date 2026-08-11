@@ -227,6 +227,12 @@ function LoginGate({onSuccess}){
     }else if(u===COCINA_USER&&pass===COCINA_LOGIN_PASS){
       localStorage.setItem("amapola_site_auth","1");
       localStorage.setItem("amapola_site_role","cocina");
+      if(window.emailjs){
+        emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
+          fecha:new Date().toLocaleString("es-AR"),
+          dispositivo:navigator.userAgent+" (Cocina)",
+        }).catch(()=>{});
+      }
       onSuccess("cocina");
     }else{
       setErr(true);setPass("");
