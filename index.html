@@ -1324,14 +1324,17 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
     return {...m,_delta:delta,_saldo:saldoAcum};
   });
   const filas = [...filasAsc].reverse().filter(f=>{
-    if(filtroTipo==="debe") return f._signo<0;
-    if(filtroTipo==="haber") return f._signo>0;
+    if(filtroTipo==="debe") return f._signo<0&&f._cat!=="ajuste";
+    if(filtroTipo==="haber") return f._signo>0&&f._cat!=="ajuste";
     return true;
   });
 
-  const totalIngresos = filasAsc.filter(f=>f._signo>0).reduce((s,f)=>s+f._delta,0);
-  const totalEgresos  = filasAsc.filter(f=>f._signo<0).reduce((s,f)=>s+Math.abs(f._delta),0);
-  const neto = totalIngresos - totalEgresos;
+  // Los ajustes de caja no son ingresos ni egresos reales (no hubo una venta ni un pago) — son una
+  // corrección del saldo contado. Se muestran aparte, no suman a Ingresos/Egresos ni aparecen en Debe/Haber.
+  const totalIngresos = filasAsc.filter(f=>f._signo>0&&f._cat!=="ajuste").reduce((s,f)=>s+f._delta,0);
+  const totalEgresos  = filasAsc.filter(f=>f._signo<0&&f._cat!=="ajuste").reduce((s,f)=>s+Math.abs(f._delta),0);
+  const totalAjustes  = filasAsc.filter(f=>f._cat==="ajuste").reduce((s,f)=>s+f._delta,0);
+  const neto = totalIngresos - totalEgresos + totalAjustes;
   const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="ajuste"?"⚖️":"💸";
 
   return(
@@ -1391,15 +1394,17 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
                       <span style={{flexShrink:0}}>{iconoCat(f._cat)}</span>
                       <div style={{minWidth:0}}>
                         <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
-                        {f.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.obs}</div>}
+                        {f._cat==="ajuste"?(
+                          <div style={{fontSize:".63rem",color:f._signo>0?"#2D6A4F":"#C0392B",fontWeight:700}}>{f._signo>0?"+":"-"}{fmt(Math.abs(f._delta))} · corrección de saldo{f.obs?" · "+f.obs:""}</div>
+                        ):(f.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.obs}</div>)}
                       </div>
                     </div>
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._signo<0?fmt(Math.abs(f._delta)):""}
+                    {f._cat!=="ajuste"&&f._signo<0?fmt(Math.abs(f._delta)):""}
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._signo>0?fmt(f._delta):""}
+                    {f._cat!=="ajuste"&&f._signo>0?fmt(f._delta):""}
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:f._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(f._saldo)}</td>
                 </tr>
@@ -2803,8 +2808,11 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   });
   const filas=[...filasAsc].reverse();
 
-  const totalIngresos=filtradosAsc.filter(m=>m._signo>0).reduce((s,m)=>s+Number(m.monto||0),0);
-  const totalEgresos =filtradosAsc.filter(m=>m._signo<0).reduce((s,m)=>s+Number(m.monto||0),0);
+  // Los ajustes de caja no son ingresos ni egresos reales (no hubo una venta ni un pago) — son una
+  // corrección del saldo contado. Se muestran aparte, no suman a Ingresos/Egresos ni aparecen en Debe/Haber.
+  const totalIngresos=filtradosAsc.filter(m=>m._signo>0&&m._cat!=="ajuste").reduce((s,m)=>s+Number(m.monto||0),0);
+  const totalEgresos =filtradosAsc.filter(m=>m._signo<0&&m._cat!=="ajuste").reduce((s,m)=>s+Number(m.monto||0),0);
+  const totalAjustes =filtradosAsc.filter(m=>m._cat==="ajuste").reduce((s,m)=>s+m._signo*Number(m.monto||0),0);
 
   const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":c==="ajuste"?"⚖️":"🏠";
 
@@ -2839,9 +2847,9 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
 
     <div style={{background:"#2D6A4F",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Saldo final del período</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldoBase+totalIngresos-totalEgresos)}</div>
-      <div style={{display:"flex",gap:8}}>
-        {[["Saldo base",fmt(saldoBase)],["Ingresos",fmt(totalIngresos)],["Egresos",fmt(totalEgresos)]].map(([l,v])=>(
+      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldoBase+totalIngresos-totalEgresos+totalAjustes)}</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {[["Saldo base",fmt(saldoBase)],["Ingresos",fmt(totalIngresos)],["Egresos",fmt(totalEgresos)],["Ajustes",(totalAjustes>=0?"+":"")+fmt(totalAjustes)]].map(([l,v])=>(
           <div key={l} style={{flex:1,background:"rgba(255,255,255,.12)",borderRadius:10,padding:"8px 10px"}}>
             <div style={{fontSize:".58rem",color:"#fff",opacity:.6,textTransform:"uppercase"}}>{l}</div>
             <div style={{fontSize:".85rem",fontWeight:700,color:"#fff",marginTop:2}}>{v}</div>
@@ -2887,12 +2895,14 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
                     <span style={{flexShrink:0}}>{iconoCat(m._cat)}</span>
                     <div style={{minWidth:0}}>
                       <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{m._label}</div>
-                      {m.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.obs}</div>}
+                      {m._cat==="ajuste"?(
+                        <div style={{fontSize:".63rem",color:m._signo>0?"#2D6A4F":"#C0392B",fontWeight:700}}>{m._signo>0?"+":"-"}{fmt(m.monto)} · corrección de saldo</div>
+                      ):(m.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.obs}</div>)}
                     </div>
                   </div>
                 </td>
-                <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo<0?fmt(Math.abs(m.monto)):""}</td>
-                <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo>0?fmt(m.monto):""}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>{m._cat!=="ajuste"&&m._signo<0?fmt(Math.abs(m.monto)):""}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>{m._cat!=="ajuste"&&m._signo>0?fmt(m.monto):""}</td>
                 <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(m._saldo)}</td>
                 <td style={{padding:"6px 8px"}}>
                   {m._cat!=="cierre"&&m._cat!=="ajuste"&&(
@@ -2908,7 +2918,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
               <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
               <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalEgresos)}</td>
               <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalIngresos)}</td>
-              <td colSpan={2} style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:"#E8DCC8"}}>{fmt(saldoBase+totalIngresos-totalEgresos)}</td>
+              <td colSpan={2} style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:"#E8DCC8"}}>{fmt(saldoBase+totalIngresos-totalEgresos+totalAjustes)}</td>
             </tr>
           </tbody>
         </table>
@@ -4376,12 +4386,15 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
 
   // Filtro de tipo + Debe/Haber para mostrar (no altera el calculo de saldo, ya hecho arriba).
   let filas=conSaldo.filter(m=>filtro==="todo"?true:filtro==="cierre"?(m.tipo==="cierre"||m.tipo==="cierre_caja"):m.tipo===filtro);
-  if(filtroDH==="debe")filas=filas.filter(m=>m._efDelta<0||m._digDelta<0);
-  if(filtroDH==="haber")filas=filas.filter(m=>m._efDelta>0||m._digDelta>0);
+  if(filtroDH==="debe")filas=filas.filter(m=>(m._efDelta<0||m._digDelta<0)&&m._cat!=="ajuste");
+  if(filtroDH==="haber")filas=filas.filter(m=>(m._efDelta>0||m._digDelta>0)&&m._cat!=="ajuste");
   filas=[...filas].reverse();
 
-  const totalDebeEf=conSaldo.filter(m=>m._efDelta<0).reduce((s,m)=>s+Math.abs(m._efDelta),0);
-  const totalHaberEf=conSaldo.filter(m=>m._efDelta>0).reduce((s,m)=>s+m._efDelta,0);
+  // Los ajustes de caja no son ingresos ni egresos reales (no hubo una venta ni un pago) — son una
+  // corrección del saldo contado. No suman a Debe/Haber Ef. (el Saldo Ef. sí los sigue incluyendo,
+  // se calcula aparte más arriba con _efDelta sobre TODOS los movimientos).
+  const totalDebeEf=conSaldo.filter(m=>m._efDelta<0&&m._cat!=="ajuste").reduce((s,m)=>s+Math.abs(m._efDelta),0);
+  const totalHaberEf=conSaldo.filter(m=>m._efDelta>0&&m._cat!=="ajuste").reduce((s,m)=>s+m._efDelta,0);
   const totalDebeDig=conSaldo.filter(m=>m._digDelta<0).reduce((s,m)=>s+Math.abs(m._digDelta),0);
   const totalHaberDig=conSaldo.filter(m=>m._digDelta>0).reduce((s,m)=>s+m._digDelta,0);
   const saldoFinal=conSaldo.length?conSaldo[conSaldo.length-1]._saldo:saldoBase;
@@ -4419,7 +4432,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
 
   return(<>
-    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con Amex (tarjeta de crédito) aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco — recién se descuentan cuando pagás el resumen de la tarjeta (eso se carga como Gasto, categoría Amex).\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
+    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con Amex (tarjeta de crédito) aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco — recién se descuentan cuando pagás el resumen de la tarjeta (eso se carga como Gasto, categoría Amex).\n• Los ajustes de caja tampoco aparecen en Debe/Haber ni suman a esos totales — no son una venta ni un pago, son una corrección del saldo contado. Igual se ven reflejados en el Saldo Ef. corrido.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
     <SS>Libro diario de todos los movimientos — efectivo y digital.</SS>
 
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
@@ -4487,17 +4500,19 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
                       <span style={{flexShrink:0}}>{iconoCat(f._cat)}</span>
                       <div style={{minWidth:0}}>
                         <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
-                        <div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>
-                          {f.empleado?f.empleado+" · ":""}{!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Amex"?" (Amex, no descuenta hasta pagar el resumen)":""):""}{f.obs?" · "+f.obs:""}
+                        <div style={{fontSize:".63rem",color:f._cat==="ajuste"?(f._efDelta>0?"#2D6A4F":"#C0392B"):"#7B7063",fontWeight:f._cat==="ajuste"?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>
+                          {f.empleado?f.empleado+" · ":""}
+                          {f._cat==="ajuste"?(f._efDelta>0?"+":"-")+fmt(Math.abs(f._efDelta))+" · corrección de saldo":(!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Amex"?" (Amex, no descuenta hasta pagar el resumen)":""):"")}
+                          {f.obs?" · "+f.obs:""}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._efDelta<0?fmt(Math.abs(f._efDelta)):"—"}
+                    {f._cat!=="ajuste"&&f._efDelta<0?fmt(Math.abs(f._efDelta)):"—"}
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._efDelta>0?fmt(f._efDelta):"—"}
+                    {f._cat!=="ajuste"&&f._efDelta>0?fmt(f._efDelta):"—"}
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontWeight:700,whiteSpace:"nowrap"}}>
                     {f._digDelta<0?fmt(Math.abs(f._digDelta)):"—"}
