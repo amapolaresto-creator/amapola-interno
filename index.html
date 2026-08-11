@@ -539,6 +539,7 @@ function App({role="full",cerrarSesion}){
     {id:"gastos",     label:"🏠 Pagos Digitales"},
     {id:"historial",  label:"📋 Historial"},
     {id:"dashboard",  label:"🏠 Dashboard"},
+    {id:"liquidacion",label:"🧾 Liquidación de sueldos"},
     {id:"gerencia",   label:"💼 Gerencia"},
     {id:"cajaefectivo",label:"💵 Caja Disponible"},
     {id:"cajadigital",label:"💳 Caja Digital"},
@@ -612,6 +613,7 @@ function App({role="full",cerrarSesion}){
           sueldos={sueldos} gastos={gastos} proveedores={proveedores}
           calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
+        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
@@ -620,7 +622,7 @@ function App({role="full",cerrarSesion}){
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
-        {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones}/> }
+        {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
@@ -4022,7 +4024,7 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 }
 
 
-function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPass,cierresCaja,saveCierresCaja,pagos,savePagos,sueldos,saveSueldos,boletas,saveBoletas,ajustesCajaEfectivo,saveAjustesCajaEfectivo,saldo,empleados,saveEmpleados,liquidaciones,saveLiquidaciones}){
+function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPass,cierresCaja,saveCierresCaja,pagos,savePagos,sueldos,saveSueldos,boletas,saveBoletas,ajustesCajaEfectivo,saveAjustesCajaEfectivo,saldo}){
   const[unlocked,setUnlocked]=useState(false);
   const[passInput,setPassInput]=useState("");
   const[passErr,setPassErr]=useState(false);
@@ -4087,7 +4089,6 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
     {id:"proveedores",   icon:"🏪", label:"Proveedores"},
     {id:"pagosadmin",    icon:"💸", label:"Editar pagos"},
     {id:"sueldosadmin",  icon:"👷", label:"Editar sueldos"},
-    {id:"liquidacion",   icon:"🧾", label:"Liquidación de sueldos"},
     {id:"cierresadmin",  icon:"🗂️", label:"Editar cierres de caja"},
     {id:"boletas",       icon:"🧾", label:"Corregir boletas"},
     {id:"ajustecaja",    icon:"⚖️", label:"Ajuste de caja disponible"},
@@ -4187,8 +4188,6 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
     {seccion==="boletas"&&<AdminBoletas boletas={boletas} saveBoletas={saveBoletas}/>}
 
     {seccion==="ajustecaja"&&<AjusteCajaEfectivo saldo={saldo} ajustes={ajustesCajaEfectivo} saveAjustes={saveAjustesCajaEfectivo}/>}
-
-    {seccion==="liquidacion"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones}/>}
   </>);
 }
 
