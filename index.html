@@ -4308,7 +4308,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     setEditando(emp);
     setForm(existente?{...existente}:{
       id:uid(),empleadoId:emp.id,periodo,
-      sueldoBasico:"",hsExtras:"",bono:"",feriados:"",plusVacacional:"",plusSac:"",
+      sueldoBasico:emp.sueldoBasicoRef?String(emp.sueldoBasicoRef):"",hsExtras:"",bono:"",feriados:"",plusVacacional:"",plusSac:"",
       ausencias:"",penalidad:"",adelantos:"",consumos:"",
       obs:"",estado:"borrador",fecha:new Date().toISOString(),fechaConfirmacion:null,
     });
@@ -4405,7 +4405,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
     {verBasicos&&(
       <Card title="Sueldos básicos agendados (ayuda memoria)">
-        <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Solo de referencia — no se autocompleta en la liquidación, cargá cada mes a mano.</p>
+        <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Este valor se autocompleta como sueldo básico al abrir una liquidación nueva (podés editarlo igual en el momento).</p>
         {empleadosActivos.map(e=>(
           <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F9F6F1"}}>
             <span style={{flex:1,fontSize:".85rem"}}>{e.nombre} {e.apellido||""}</span>
