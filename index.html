@@ -325,6 +325,7 @@ function App({role="full",cerrarSesion}){
       if(d.pedidosStock)setPedidosStock(d.pedidosStock);
       if(d.ajustesCajaEfectivo)setAjustesCajaEfectivo(d.ajustesCajaEfectivo);
       if(d.desperdicios)setDesperdicios(d.desperdicios);
+      if(d.liquidaciones)setLiquidaciones(d.liquidaciones);
       online();setPhase("ready");
     }catch(e){setErrMsg(e.message);setPhase("error");}
   };
@@ -355,6 +356,7 @@ function App({role="full",cerrarSesion}){
         if(!recentlySaved("pedidosStock")&&JSON.stringify(d.pedidosStock)!==JSON.stringify(c.pedidosStock))setPedidosStock(d.pedidosStock||[]);
         if(!recentlySaved("ajustesCajaEfectivo")&&JSON.stringify(d.ajustesCajaEfectivo)!==JSON.stringify(c.ajustesCajaEfectivo))setAjustesCajaEfectivo(d.ajustesCajaEfectivo||[]);
         if(!recentlySaved("desperdicios")&&JSON.stringify(d.desperdicios)!==JSON.stringify(c.desperdicios))setDesperdicios(d.desperdicios||[]);
+        if(!recentlySaved("liquidaciones")&&JSON.stringify(d.liquidaciones)!==JSON.stringify(c.liquidaciones))setLiquidaciones(d.liquidaciones||[]);
       }catch{offline();}
     },45000);
     return()=>clearInterval(id);
@@ -401,6 +403,7 @@ function App({role="full",cerrarSesion}){
   const savePedidosStock=v=>save("pedidosStock",v,setPedidosStock);
   const saveAjustesCajaEfectivo=v=>save("ajustesCajaEfectivo",v,setAjustesCajaEfectivo);
   const saveDesperdicios=v=>save("desperdicios",v,setDesperdicios);
+  const saveLiquidaciones=v=>save("liquidaciones",v,setLiquidaciones);
   const askPass=()=>new Promise(r=>setPassModal({resolve:r}));
 
   const reintentarSave=async()=>{
@@ -617,7 +620,7 @@ function App({role="full",cerrarSesion}){
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
-        {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
+        {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
@@ -4019,7 +4022,7 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 }
 
 
-function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPass,cierresCaja,saveCierresCaja,pagos,savePagos,sueldos,saveSueldos,boletas,saveBoletas,ajustesCajaEfectivo,saveAjustesCajaEfectivo,saldo}){
+function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPass,cierresCaja,saveCierresCaja,pagos,savePagos,sueldos,saveSueldos,boletas,saveBoletas,ajustesCajaEfectivo,saveAjustesCajaEfectivo,saldo,empleados,saveEmpleados,liquidaciones,saveLiquidaciones}){
   const[unlocked,setUnlocked]=useState(false);
   const[passInput,setPassInput]=useState("");
   const[passErr,setPassErr]=useState(false);
@@ -4084,6 +4087,7 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
     {id:"proveedores",   icon:"🏪", label:"Proveedores"},
     {id:"pagosadmin",    icon:"💸", label:"Editar pagos"},
     {id:"sueldosadmin",  icon:"👷", label:"Editar sueldos"},
+    {id:"liquidacion",   icon:"🧾", label:"Liquidación de sueldos"},
     {id:"cierresadmin",  icon:"🗂️", label:"Editar cierres de caja"},
     {id:"boletas",       icon:"🧾", label:"Corregir boletas"},
     {id:"ajustecaja",    icon:"⚖️", label:"Ajuste de caja disponible"},
@@ -4183,6 +4187,8 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
     {seccion==="boletas"&&<AdminBoletas boletas={boletas} saveBoletas={saveBoletas}/>}
 
     {seccion==="ajustecaja"&&<AjusteCajaEfectivo saldo={saldo} ajustes={ajustesCajaEfectivo} saveAjustes={saveAjustesCajaEfectivo}/>}
+
+    {seccion==="liquidacion"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones}/>}
   </>);
 }
 
@@ -4238,6 +4244,198 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
       )}
     </Card>
   );
+}
+
+const CAMPOS_HABER=[
+  ["sueldoBasico","Sueldo básico"],
+  ["hsExtras","Horas extras"],
+  ["bono","Bono"],
+  ["feriados","Feriados"],
+  ["plusVacacional","Plus vacacional"],
+  ["plusSac","Plus SAC"],
+];
+const CAMPOS_DESCUENTO=[
+  ["ausencias","Ausencias"],
+  ["penalidad","Penalidad"],
+  ["adelantos","Adelantos"],
+  ["consumos","Consumos"],
+];
+function reciboHTML(reg,emp){
+  const[y,m]=reg.periodo.split("-");
+  const mesTxt=new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});
+  const fila=(label,val)=>Number(val)?("<tr><td>"+label+"</td><td style=\"text-align:right\">"+fmt(val)+"</td></tr>"):"";
+  return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><title>Recibo — "+emp.nombre+" "+(emp.apellido||"")+"</title>"
+    +"<style>body{font-family:Georgia,serif;color:#2C1A0E;padding:36px;max-width:560px;margin:0 auto;}"
+    +"h1{font-size:1.3rem;margin:0 0 2px;}.sub{font-size:.8rem;color:#7B7063;margin-bottom:20px;}"
+    +"table{width:100%;border-collapse:collapse;margin-bottom:14px;}"
+    +"td{padding:5px 0;font-size:.9rem;border-bottom:1px solid #eee;}"
+    +".tot{font-weight:700;border-top:2px solid #2C1A0E;border-bottom:none!important;padding-top:8px;}"
+    +".neto{font-size:1.4rem;font-weight:700;text-align:right;margin-top:10px;}"
+    +".badge{display:inline-block;background:#F2EAE0;padding:3px 10px;border-radius:20px;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px;}"
+    +".foot{font-size:.68rem;color:#999;margin-top:30px;border-top:1px solid #eee;padding-top:10px;}"
+    +"@media print{.noprint{display:none;}}</style></head><body>"
+    +"<h1>Amapola Resto</h1><div class=\"sub\">Recibo de sueldo — uso interno (no reemplaza el recibo legal)</div>"
+    +"<div class=\"badge\">"+mesTxt+"</div>"
+    +"<p><strong>"+emp.nombre+" "+(emp.apellido||"")+"</strong>"+(emp.dni?(" · DNI "+emp.dni):"")+"</p>"
+    +"<table>"
+    +fila("Sueldo básico",reg.sueldoBasico)+fila("Horas extras",reg.hsExtras)+fila("Bono",reg.bono)
+    +fila("Feriados",reg.feriados)+fila("Plus vacacional",reg.plusVacacional)+fila("Plus SAC",reg.plusSac)
+    +"<tr><td class=\"tot\">Subtotal</td><td class=\"tot\" style=\"text-align:right\">"+fmt(reg.subtotal)+"</td></tr></table>"
+    +"<table>"
+    +fila("Ausencias",reg.ausencias)+fila("Penalidad",reg.penalidad)+fila("Adelantos",reg.adelantos)+fila("Consumos",reg.consumos)
+    +"<tr><td class=\"tot\">Total descuentos</td><td class=\"tot\" style=\"text-align:right\">-"+fmt(reg.totalDescuentos)+"</td></tr></table>"
+    +"<div class=\"neto\">NETO A COBRAR: "+fmt(reg.neto)+"</div>"
+    +(reg.obs?("<p style=\"font-size:.8rem;color:#7B7063;margin-top:16px;\">"+reg.obs+"</p>"):"")
+    +"<div class=\"foot\">Emitido el "+new Date().toLocaleDateString("es-AR")+" · Amapola Interno</div>"
+    +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar PDF</button>"
+    +"</body></html>";
+}
+function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones}){
+  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const[periodo,setPeriodo]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
+  const[editando,setEditando]=useState(null);
+  const[form,setForm]=useState(null);
+  const[busy,setBusy]=useState(false);
+  const[verBasicos,setVerBasicos]=useState(false);
+  const[basicosDraft,setBasicosDraft]=useState({});
+
+  const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
+  const liqDe=(empId,per)=>(liquidaciones||[]).find(l=>l.empleadoId===empId&&l.periodo===per);
+  const num=v=>Number(v)||0;
+
+  const abrirLiquidacion=emp=>{
+    const existente=liqDe(emp.id,periodo);
+    setEditando(emp);
+    setForm(existente?{...existente}:{
+      id:uid(),empleadoId:emp.id,periodo,
+      sueldoBasico:"",hsExtras:"",bono:"",feriados:"",plusVacacional:"",plusSac:"",
+      ausencias:"",penalidad:"",adelantos:"",consumos:"",
+      obs:"",estado:"borrador",fecha:new Date().toISOString(),fechaConfirmacion:null,
+    });
+  };
+
+  const guardarBasico=async emp=>{
+    const v=basicosDraft[emp.id];
+    if(v===undefined)return;
+    await saveEmpleados(empleados.map(e=>e.id===emp.id?{...e,sueldoBasicoRef:Number(v)||0}:e));
+    toast("Sueldo básico agendado ✓");
+  };
+
+  const guardar=async confirmar=>{
+    const subtotal=CAMPOS_HABER.reduce((s,[k])=>s+num(form[k]),0);
+    const totalDescuentos=CAMPOS_DESCUENTO.reduce((s,[k])=>s+num(form[k]),0);
+    if(subtotal<=0){toast("Cargá al menos un haber (ej. sueldo básico)");return null;}
+    setBusy(true);
+    const registro={...form,empleadoId:editando.id,empleadoNombre:(editando.nombre+" "+(editando.apellido||"")).trim(),periodo,
+      subtotal,totalDescuentos,neto:subtotal-totalDescuentos,
+      estado:confirmar?"confirmada":(form.estado||"borrador"),
+      fechaConfirmacion:confirmar?new Date().toISOString():(form.fechaConfirmacion||null),
+      fecha:form.fecha||new Date().toISOString()};
+    await saveLiquidaciones([registro,...(liquidaciones||[]).filter(l=>l.id!==registro.id)]);
+    setForm(registro);setBusy(false);
+    toast(confirmar?"Liquidación confirmada ✓":"Borrador guardado ✓");
+    return registro;
+  };
+
+  const confirmarYRecibo=async()=>{
+    const w=window.open("","_blank");
+    const reg=await guardar(true);
+    if(!reg){if(w)w.close();return;}
+    if(w){w.document.write(reciboHTML(reg,editando));w.document.close();}
+    else toast("Habilitá las ventanas emergentes para ver el recibo");
+  };
+  const verRecibo=()=>{
+    const w=window.open("","_blank");
+    if(w){w.document.write(reciboHTML(form,editando));w.document.close();}
+  };
+
+  if(editando&&form){
+    const subtotal=CAMPOS_HABER.reduce((s,[k])=>s+num(form[k]),0);
+    const totalDescuentos=CAMPOS_DESCUENTO.reduce((s,[k])=>s+num(form[k]),0);
+    const neto=subtotal-totalDescuentos;
+    return(<>
+      <button onClick={()=>{setEditando(null);setForm(null);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>← Volver a la nómina</button>
+      <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",marginBottom:2}}>{editando.nombre} {editando.apellido||""}</div>
+      <div style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>{mesLabel(periodo)}{form.estado==="confirmada"&&<span style={{marginLeft:8,color:"#2D6A4F",fontWeight:700}}>✓ Confirmada</span>}</div>
+
+      <Card title="Haberes">
+        {CAMPOS_HABER.map(([k,label])=>(
+          <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
+        ))}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0 0",marginTop:8,borderTop:"1px solid #F2EAE0"}}>
+          <span style={{fontWeight:700,fontSize:".85rem"}}>Subtotal</span>
+          <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:"#2D6A4F"}}>{fmt(subtotal)}</span>
+        </div>
+      </Card>
+
+      <Card title="Descuentos">
+        {CAMPOS_DESCUENTO.map(([k,label])=>(
+          <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
+        ))}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0 0",marginTop:8,borderTop:"1px solid #F2EAE0"}}>
+          <span style={{fontWeight:700,fontSize:".85rem"}}>Total descuentos</span>
+          <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:"#C0392B"}}>-{fmt(totalDescuentos)}</span>
+        </div>
+      </Card>
+
+      <Field label="Observaciones (opcional)"><TA value={form.obs} onChange={v=>setForm(f=>({...f,obs:v}))} placeholder="Notas para el recibo..."/></Field>
+
+      <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",margin:"18px 0 4px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{color:"#E8DCC8",fontWeight:600,fontSize:".9rem"}}>Neto a cobrar</span>
+        <span style={{fontFamily:"Georgia,serif",fontSize:"1.6rem",color:"#E8DCC8",fontWeight:700}}>{fmt(neto)}</span>
+      </div>
+
+      <Btn bg="#7B7063" onClick={()=>guardar(false)} disabled={busy}>{busy?"Guardando…":"Guardar borrador"}</Btn>
+      <Btn bg="#2C1A0E" onClick={confirmarYRecibo} disabled={busy}>Confirmar y generar recibo</Btn>
+      {form.estado==="confirmada"&&<Btn bg="#B7860B" onClick={verRecibo}>Ver recibo</Btn>}
+    </>);
+  }
+
+  return(<>
+    <ST help={"Calculá el sueldo de cada empleado por mes: haberes menos descuentos = neto a cobrar. Al confirmar generás un recibo imprimible.\n\nEsto NO registra un pago ni descuenta la Caja Disponible — el pago real se sigue cargando en la pestaña Sueldos como siempre."}>Liquidación de sueldos</ST>
+    <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
+
+    <Field label="Período">
+      <input type="month" value={periodo} onChange={e=>setPeriodo(e.target.value)} style={iS}/>
+    </Field>
+
+    <div style={{margin:"14px 0"}}>
+      <SmBtn onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar sueldos básicos agendados":"📌 Ver sueldos básicos agendados"}</SmBtn>
+    </div>
+
+    {verBasicos&&(
+      <Card title="Sueldos básicos agendados (ayuda memoria)">
+        <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Solo de referencia — no se autocompleta en la liquidación, cargá cada mes a mano.</p>
+        {empleadosActivos.map(e=>(
+          <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F9F6F1"}}>
+            <span style={{flex:1,fontSize:".85rem"}}>{e.nombre} {e.apellido||""}</span>
+            <input type="number" value={basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"")}
+              onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={{...iS,width:110}}/>
+            <SmBtn onClick={()=>guardarBasico(e)}>Guardar</SmBtn>
+          </div>
+        ))}
+        {empleadosActivos.length===0&&<Empty icon="👷">No hay empleados activos.</Empty>}
+      </Card>
+    )}
+
+    <Card title={"Nómina · "+mesLabel(periodo)}>
+      {empleadosActivos.map(e=>{
+        const liq=liqDe(e.id,periodo);
+        return(
+          <div key={e.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #F9F6F1",gap:10}}>
+            <div>
+              <div style={{fontWeight:600,fontSize:".88rem"}}>{e.nombre} {e.apellido||""}</div>
+              <div style={{fontSize:".72rem",color:liq?(liq.estado==="confirmada"?"#2D6A4F":"#B7860B"):"#B8A88E"}}>
+                {liq?(liq.estado==="confirmada"?"✓ Confirmada · "+fmt(liq.neto):"Borrador · "+fmt(liq.neto)):"Sin liquidar"}
+              </div>
+            </div>
+            <SmBtn onClick={()=>abrirLiquidacion(e)}>{liq?"Editar":"Liquidar"}</SmBtn>
+          </div>
+        );
+      })}
+      {empleadosActivos.length===0&&<Empty icon="👷">No hay empleados activos cargados.</Empty>}
+    </Card>
+  </>);
 }
 
 function AdminBoletas({boletas,saveBoletas}){
