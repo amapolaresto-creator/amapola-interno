@@ -4404,7 +4404,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         <p style={{fontSize:".74rem",color:"#7B7063",margin:"-10px 0 0"}}>Valor hora: {fmt(valorHsExtraHora)} · Total horas extras: <strong style={{color:"#2C1A0E"}}>{fmt(hsExtrasMonto)}</strong></p>
 
         <Field label="Bono base"><Inp type="number" value={form.bonoBase!==undefined?form.bonoBase:""} onChange={v=>setForm(f=>({...f,bonoBase:v}))} placeholder="0"/></Field>
-        <Field label="Llegadas tarde / faltas"><Inp type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={v=>setForm(f=>({...f,bonoCant:v}))} placeholder="0 = bono x2"/></Field>
+        <Field label={<>Penalidades <span style={{color:"#C0392B"}}>X</span></>}><Inp type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={v=>setForm(f=>({...f,bonoCant:v}))} placeholder="0 = bono x2"/></Field>
         <p style={{fontSize:".74rem",color:"#7B7063",margin:"-10px 0 0"}}>
           {bonoCantVacio?"Sin cargar → se toma el bono base tal cual.":(num(form.bonoCant)===0?"0 llegadas tarde/faltas → bono base x2.":(num(form.bonoCant)+" × $5.000 de descuento (tope: el bono base)."))}
           {" "}Bono a liquidar: <strong style={{color:"#2C1A0E"}}>{fmt(bonoMonto)}</strong>
