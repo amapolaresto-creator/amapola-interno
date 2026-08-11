@@ -4297,6 +4297,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[busy,setBusy]=useState(false);
   const[verBasicos,setVerBasicos]=useState(false);
   const[basicosDraft,setBasicosDraft]=useState({});
+  const[bonosDraft,setBonosDraft]=useState({});
   const[verNomina,setVerNomina]=useState(false);
 
   const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
@@ -4314,11 +4315,15 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     });
   };
 
-  const guardarBasico=async emp=>{
-    const v=basicosDraft[emp.id];
-    if(v===undefined)return;
-    await saveEmpleados(empleados.map(e=>e.id===emp.id?{...e,sueldoBasicoRef:Number(v)||0}:e));
-    toast("Sueldo básico agendado ✓");
+  const guardarValores=async emp=>{
+    const vB=basicosDraft[emp.id];
+    const vBo=bonosDraft[emp.id];
+    if(vB===undefined&&vBo===undefined)return;
+    await saveEmpleados(empleados.map(e=>e.id===emp.id?{...e,
+      sueldoBasicoRef:vB!==undefined?(Number(vB)||0):(e.sueldoBasicoRef||0),
+      bonoRef:vBo!==undefined?(Number(vBo)||0):(e.bonoRef||0),
+    }:e));
+    toast("Valores agendados ✓");
   };
 
   const guardar=async confirmar=>{
@@ -4400,15 +4405,34 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Este valor se autocompleta como sueldo básico al abrir una liquidación nueva (podés editarlo igual en el momento).</p>
-          {empleadosActivos.map(e=>(
-            <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F9F6F1"}}>
-              <span style={{flex:1,fontSize:".85rem"}}>{e.nombre} {e.apellido||""}</span>
-              <input type="number" value={basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"")}
-                onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={{...iS,width:110}}/>
-              <SmBtn onClick={()=>guardarBasico(e)}>Guardar</SmBtn>
-            </div>
-          ))}
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Sueldo básico y bono se autocompletan como ayuda memoria (editables en el momento). Valor hs extra y valor feriado se calculan solos a partir del básico.</p>
+          {empleadosActivos.map(e=>{
+            const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
+            const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
+            const basicoNum=Number(basicoVal)||0;
+            const valorHsExtra=basicoNum/208*2;
+            const valorFeriado=basicoNum/208*8;
+            return(
+              <div key={e.id} style={{padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
+                <div style={{fontWeight:600,fontSize:".85rem",marginBottom:8}}>{e.nombre} {e.apellido||""}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <Field label="Sueldo básico">
+                    <input type="number" value={basicoVal} onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={iS}/>
+                  </Field>
+                  <Field label="Valor bono">
+                    <input type="number" value={bonoVal} onChange={ev=>setBonosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={iS}/>
+                  </Field>
+                  <Field label="Valor hs extra (auto)">
+                    <div style={{...iS,background:"#F2EAE0",color:"#7B7063"}}>{fmt(valorHsExtra)}</div>
+                  </Field>
+                  <Field label="Valor feriado (auto)">
+                    <div style={{...iS,background:"#F2EAE0",color:"#7B7063"}}>{fmt(valorFeriado)}</div>
+                  </Field>
+                </div>
+                <div style={{marginTop:10}}><SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn></div>
+              </div>
+            );
+          })}
           {empleadosActivos.length===0&&<Empty icon="👷">No hay empleados activos.</Empty>}
         </Card>
       )}
