@@ -133,20 +133,6 @@ const Field=({label,children})=>(
 const Inp=({value,onChange,placeholder,type="text"})=>(
   <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={iS}/>
 );
-// Fila compacta para formularios con muchos campos numéricos parecidos (ej. Liquidación de sueldos):
-// label + aclaración chica a la izquierda, input angosto (+ resultado calculado opcional) a la derecha,
-// todo en una sola línea — para no marear con cajas enteras apiladas.
-const inpMini={width:92,border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 9px",fontSize:".85rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#F9F6F1",outline:"none",boxSizing:"border-box"};
-const resTxt={fontWeight:700,fontSize:".85rem",color:"#2C1A0E",minWidth:88,textAlign:"right"};
-const FilaCampo=({label,sub,ultima,children})=>(
-  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,padding:"11px 0",borderBottom:ultima?"none":"1px solid #F2EAE0"}}>
-    <div style={{flex:"1 1 auto",minWidth:0}}>
-      <div style={{fontWeight:600,fontSize:".85rem",color:"#2C1A0E"}}>{label}</div>
-      {sub&&<div style={{fontSize:".68rem",color:"#7B7063",marginTop:2}}>{sub}</div>}
-    </div>
-    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>{children}</div>
-  </div>
-);
 const TA=({value,onChange,placeholder})=>(
   <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{...iS,resize:"none",height:58}}/>
 );
@@ -4463,32 +4449,42 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,bonoDisponible,desperdiciosMonto,totalDescuentos}=haberesCalc(form);
     const neto=subtotal-totalDescuentos;
     const bonoCantVacio=form.bonoCant===undefined||form.bonoCant==="";
+    const inpCell={width:86,border:"1px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".72rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
     return(<>
       <button onClick={()=>{setEditando(null);setForm(null);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>← Volver a la nómina</button>
       <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",marginBottom:2}}>{editando.nombre} {editando.apellido||""}</div>
       <div style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>{mesLabel(periodo)}{form.estado==="confirmada"&&<span style={{marginLeft:8,color:"#2D6A4F",fontWeight:700}}>✓ Confirmada</span>}</div>
 
       <Card title="Haberes">
-        <FilaCampo label="Sueldo básico">
-          <input type="number" value={form.sueldoBasico} onChange={e=>setForm(f=>({...f,sueldoBasico:e.target.value}))} placeholder="0" style={inpMini}/>
-        </FilaCampo>
-        <FilaCampo label="Horas extras" sub={"valor hora "+fmt(valorHsExtraHora)}>
-          <input type="number" value={form.hsExtrasCant!==undefined?form.hsExtrasCant:""} onChange={e=>setForm(f=>({...f,hsExtrasCant:e.target.value}))} placeholder="0" style={inpMini}/>
-          <span style={resTxt}>{fmt(hsExtrasMonto)}</span>
-        </FilaCampo>
-        <FilaCampo label="Bono base" sub={"a liquidar: "+fmt(bonoMonto)}>
-          <input type="number" value={form.bonoBase!==undefined?form.bonoBase:""} onChange={e=>setForm(f=>({...f,bonoBase:e.target.value}))} placeholder="0" style={inpMini}/>
-        </FilaCampo>
-        <FilaCampo label="Feriados" sub={"valor feriado "+fmt(valorFeriado)}>
-          <input type="number" value={form.feriadosCant!==undefined?form.feriadosCant:""} onChange={e=>setForm(f=>({...f,feriadosCant:e.target.value}))} placeholder="0" style={inpMini}/>
-          <span style={resTxt}>{fmt(feriadosMonto)}</span>
-        </FilaCampo>
-        <FilaCampo label="Plus vacacional">
-          <input type="number" value={form.plusVacacional} onChange={e=>setForm(f=>({...f,plusVacacional:e.target.value}))} placeholder="0" style={inpMini}/>
-        </FilaCampo>
-        <FilaCampo label="Plus SAC" ultima>
-          <input type="number" value={form.plusSac} onChange={e=>setForm(f=>({...f,plusSac:e.target.value}))} placeholder="0" style={inpMini}/>
-        </FilaCampo>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:460}}>
+            <thead>
+              <tr style={{background:"#F9F6F1"}}>
+                {["Concepto","Cargás","Importe"].map(h=>(
+                  <th key={h} style={{padding:"7px 8px",textAlign:h==="Concepto"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                {label:"Sueldo básico",sub:null,val:form.sueldoBasico,onVal:v=>setForm(f=>({...f,sueldoBasico:v})),imp:null},
+                {label:"Horas extras",sub:"valor hora "+fmt(valorHsExtraHora),val:form.hsExtrasCant!==undefined?form.hsExtrasCant:"",onVal:v=>setForm(f=>({...f,hsExtrasCant:v})),imp:fmt(hsExtrasMonto)},
+                {label:"Bono base",sub:null,val:form.bonoBase!==undefined?form.bonoBase:"",onVal:v=>setForm(f=>({...f,bonoBase:v})),imp:fmt(bonoMonto)+" a liquidar"},
+                {label:"Feriados",sub:"valor feriado "+fmt(valorFeriado),val:form.feriadosCant!==undefined?form.feriadosCant:"",onVal:v=>setForm(f=>({...f,feriadosCant:v})),imp:fmt(feriadosMonto)},
+                {label:"Plus vacacional",sub:null,val:form.plusVacacional,onVal:v=>setForm(f=>({...f,plusVacacional:v})),imp:null},
+                {label:"Plus SAC",sub:null,val:form.plusSac,onVal:v=>setForm(f=>({...f,plusSac:v})),imp:null},
+              ].map((r,i)=>(
+                <tr key={r.label} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                  <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{r.label}{r.sub&&<div style={{fontSize:".63rem",color:"#7B7063",fontWeight:400}}>{r.sub}</div>}</td>
+                  <td style={{padding:"6px 4px",textAlign:"right"}}>
+                    <input type="number" value={r.val} onChange={e=>r.onVal(e.target.value)} placeholder="0" style={inpCell}/>
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#2C1A0E",fontWeight:600,whiteSpace:"nowrap"}}>{r.imp||"—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0 0",marginTop:8,borderTop:"1px solid #F2EAE0"}}>
           <span style={{fontWeight:700,fontSize:".85rem"}}>Subtotal</span>
           <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:"#2D6A4F"}}>{fmt(subtotal)}</span>
@@ -4496,23 +4492,35 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       </Card>
 
       <Card title="Descuentos">
-        <FilaCampo label="Ausencias" sub={"valor día "+fmt(valorAusenciaDia)}>
-          <input type="number" value={form.ausenciasCant!==undefined?form.ausenciasCant:""} onChange={e=>setForm(f=>({...f,ausenciasCant:e.target.value}))} placeholder="0" style={inpMini}/>
-          <span style={{...resTxt,color:"#C0392B"}}>{fmt(ausenciasMonto)}</span>
-        </FilaCampo>
-        <FilaCampo label={<>Penalidades <span style={{color:"#C0392B"}}>X</span></>} sub={bonoCantVacio?"vacío = bono base tal cual":(num(form.bonoCant)===0?"0 = bono base x2":(num(form.bonoCant)<5?"1 a 4 = sin cambios en el bono":num(form.bonoCant)+" × $5.000 (tope: bono base)"))}>
-          <input type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={e=>setForm(f=>({...f,bonoCant:e.target.value}))} placeholder="0 = x2" style={inpMini}/>
-        </FilaCampo>
-        <FilaCampo label="Desperdicios" sub={"disponible del bono: "+fmt(bonoDisponible)}>
-          <input type="number" value={form.desperdiciosInput!==undefined?form.desperdiciosInput:""} onChange={e=>setForm(f=>({...f,desperdiciosInput:e.target.value}))} placeholder="0" style={inpMini}/>
-          <span style={{...resTxt,color:"#C0392B"}}>{fmt(desperdiciosMonto)}</span>
-        </FilaCampo>
-        <FilaCampo label="Adelantos">
-          <input type="number" value={form.adelantos} onChange={e=>setForm(f=>({...f,adelantos:e.target.value}))} placeholder="0" style={inpMini}/>
-        </FilaCampo>
-        <FilaCampo label="Consumos" ultima>
-          <input type="number" value={form.consumos} onChange={e=>setForm(f=>({...f,consumos:e.target.value}))} placeholder="0" style={inpMini}/>
-        </FilaCampo>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:460}}>
+            <thead>
+              <tr style={{background:"#F9F6F1"}}>
+                {["Concepto","Cargás","Importe"].map(h=>(
+                  <th key={h} style={{padding:"7px 8px",textAlign:h==="Concepto"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                {label:"Ausencias",sub:"valor día "+fmt(valorAusenciaDia),val:form.ausenciasCant!==undefined?form.ausenciasCant:"",onVal:v=>setForm(f=>({...f,ausenciasCant:v})),imp:fmt(ausenciasMonto)},
+                {label:<>Penalidades <span style={{color:"#C0392B"}}>X</span></>,sub:null,val:form.bonoCant!==undefined?form.bonoCant:"",onVal:v=>setForm(f=>({...f,bonoCant:v})),ph:"0 = x2",
+                  imp:bonoCantVacio?"—":(num(form.bonoCant)===0?"bono x2":(num(form.bonoCant)<5?"sin cambios":"-$"+(num(form.bonoCant)*5000).toLocaleString("es-AR")+" del bono"))},
+                {label:"Desperdicios",sub:"disponible del bono: "+fmt(bonoDisponible),val:form.desperdiciosInput!==undefined?form.desperdiciosInput:"",onVal:v=>setForm(f=>({...f,desperdiciosInput:v})),imp:fmt(desperdiciosMonto)},
+                {label:"Adelantos",sub:null,val:form.adelantos,onVal:v=>setForm(f=>({...f,adelantos:v})),imp:null},
+                {label:"Consumos",sub:null,val:form.consumos,onVal:v=>setForm(f=>({...f,consumos:v})),imp:null},
+              ].map((r,i)=>(
+                <tr key={i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                  <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{r.label}{r.sub&&<div style={{fontSize:".63rem",color:"#7B7063",fontWeight:400}}>{r.sub}</div>}</td>
+                  <td style={{padding:"6px 4px",textAlign:"right"}}>
+                    <input type="number" value={r.val} onChange={e=>r.onVal(e.target.value)} placeholder={r.ph||"0"} style={inpCell}/>
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:600,whiteSpace:"nowrap"}}>{r.imp||"—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0 0",marginTop:8,borderTop:"1px solid #F2EAE0"}}>
           <span style={{fontWeight:700,fontSize:".85rem"}}>Total descuentos</span>
           <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:"#C0392B"}}>-{fmt(totalDescuentos)}</span>
