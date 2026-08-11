@@ -4306,21 +4306,25 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
   // Pago de una liquidación confirmada: puede salir de lo Reservado (retiro para sueldos, forma "Retiro"),
   // de Efectivo (forma "Efectivo", descuenta Caja Disponible) o de Digital (forma "Transferencia").
-  // Mixto = cargar más de una fuente a la vez; siempre se valida que la suma cierre con el neto.
+  // Mixto = cargar más de una fuente a la vez. Admite pagos parciales: lo ya pagado se calcula sumando
+  // los registros de Sueldos vinculados a la liquidación (liquidacionId) — no hace falta que cierre
+  // exacto de una sola vez, se puede completar en varias veces hasta llegar al neto.
   const totalRetirado=(gastos||[]).filter(g=>g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).reduce((s,g)=>s+Number(g.monto||0),0);
   const totalUsadoDeRetiro=(sueldos||[]).filter(s=>s.forma==="Retiro").reduce((s,x)=>s+Number(x.monto||0),0);
   const saldoRetiro=totalRetirado-totalUsadoDeRetiro;
+  const pagadoDe=liqId=>(sueldos||[]).filter(s=>s.liquidacionId===liqId).reduce((s2,s)=>s2+Number(s.monto||0),0);
 
   const abrirPago=emp=>{
     const liq=liqDe(emp.id,periodo);
     if(!liq||liq.estado!=="confirmada"){toast("Confirmá la liquidación antes de registrar el pago");return;}
+    const pendiente=Math.max(0,Number(liq.neto||0)-pagadoDe(liq.id));
     setPagoModal(emp);
-    setPagoMontos({reservado:"",efectivo:String(liq.neto),digital:""});
+    setPagoMontos({reservado:"",efectivo:String(Math.round(pendiente*100)/100),digital:""});
     setPagoObs("");
     setPagoFecha(hoyLocal());
   };
-  const setSoloFuente=(campo,neto)=>{
-    setPagoMontos({reservado:campo==="reservado"?String(neto):"",efectivo:campo==="efectivo"?String(neto):"",digital:campo==="digital"?String(neto):""});
+  const setSoloFuente=(campo,monto)=>{
+    setPagoMontos({reservado:campo==="reservado"?String(monto):"",efectivo:campo==="efectivo"?String(monto):"",digital:campo==="digital"?String(monto):""});
   };
   const pagoSuma=()=>num(pagoMontos.reservado)+num(pagoMontos.efectivo)+num(pagoMontos.digital);
 
@@ -4329,10 +4333,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const liq=liqDe(emp.id,periodo);
     if(!emp||!liq)return;
     const neto=Number(liq.neto)||0;
+    const pendiente=Math.max(0,neto-pagadoDe(liq.id));
     const mReservado=num(pagoMontos.reservado),mEfectivo=num(pagoMontos.efectivo),mDigital=num(pagoMontos.digital);
     const suma=mReservado+mEfectivo+mDigital;
     if(suma<=0){toast("Cargá al menos un monto");return;}
-    if(Math.round(suma*100)!==Math.round(neto*100)){toast("La suma cargada ("+fmt(suma)+") no coincide con el neto a pagar ("+fmt(neto)+")");return;}
+    if(Math.round(suma*100)>Math.round(pendiente*100)+1){toast("La suma cargada ("+fmt(suma)+") supera lo que falta pagar ("+fmt(pendiente)+")");return;}
     if(mEfectivo>saldo){toast("⚠️ La parte en Efectivo supera la Caja Disponible");return;}
     if(mReservado>saldoRetiro){toast("⚠️ La parte Reservada supera lo disponible del retiro para sueldos");return;}
     setPagoBusy(true);
@@ -4345,9 +4350,8 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     if(mEfectivo>0)nuevos.push({id:uid(),tipo:"sueldo",empleado:empleadoNombre,concepto,monto:mEfectivo,forma:"Efectivo",obs:pagoObs.trim(),fecha:fechaISO,liquidacionId:liq.id,grupoPagoId});
     if(mDigital>0)nuevos.push({id:uid(),tipo:"sueldo",empleado:empleadoNombre,concepto,monto:mDigital,forma:"Transferencia",obs:pagoObs.trim(),fecha:fechaISO,liquidacionId:liq.id,grupoPagoId});
     await saveSueldos([...(sueldos||[]),...nuevos]);
-    await saveLiquidaciones(liquidaciones.map(l=>l.id===liq.id?{...l,pagado:true,fechaPago:new Date().toISOString(),pagoIds:nuevos.map(n=>n.id)}:l));
     setPagoBusy(false);setPagoModal(null);
-    toast("Pago registrado ✓");
+    toast(Math.round(suma*100)>=Math.round(pendiente*100)?"Pago registrado ✓ — liquidación saldada":"Pago parcial registrado ✓");
   };
 
   // Horas extras: cantidad de horas × valor hora (básico/208×2). Bono: 0 llegadas tarde/faltas = bono base x2;
@@ -4596,6 +4600,9 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
             <tbody>
               {empleadosActivos.map((e,i)=>{
                 const liq=liqDe(e.id,periodo);
+                const pagado=liq?pagadoDe(liq.id):0;
+                const totalmentePagada=liq&&pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100);
+                const parcialmentePagada=liq&&pagado>0&&!totalmentePagada;
                 const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
                 const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
                 const basicoNum=Number(basicoVal)||0;
@@ -4615,14 +4622,14 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
                     <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorHsExtra)}</td>
                     <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorFeriado)}</td>
                     <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorAusencia)}</td>
-                    <td style={{padding:"8px",whiteSpace:"nowrap",color:liq?(liq.pagado?"#1B4F72":liq.estado==="confirmada"?"#2D6A4F":"#B7860B"):"#B8A88E",fontWeight:liq?700:400}}>
-                      {liq?(liq.pagado?"💵 Pagada · "+fmt(liq.neto):liq.estado==="confirmada"?"✓ Confirmada · "+fmt(liq.neto):"Borrador · "+fmt(liq.neto)):"Sin liquidar"}
+                    <td style={{padding:"8px",whiteSpace:"nowrap",color:liq?(totalmentePagada?"#1B4F72":parcialmentePagada?"#8E44AD":liq.estado==="confirmada"?"#2D6A4F":"#B7860B"):"#B8A88E",fontWeight:liq?700:400}}>
+                      {liq?(totalmentePagada?"💵 Pagada · "+fmt(liq.neto):parcialmentePagada?"Pago parcial · "+fmt(pagado)+" de "+fmt(liq.neto):liq.estado==="confirmada"?"✓ Confirmada · "+fmt(liq.neto):"Borrador · "+fmt(liq.neto)):"Sin liquidar"}
                     </td>
                     <td style={{padding:"6px 4px",textAlign:"right",whiteSpace:"nowrap"}}>
                       <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
                         <SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn>
                         <SmBtn onClick={()=>abrirLiquidacion(e)}>{liq?"Editar":"Liquidar"}</SmBtn>
-                        {liq&&liq.estado==="confirmada"&&!liq.pagado&&<SmBtn color="#2D6A4F" onClick={()=>abrirPago(e)}>💵 Pago</SmBtn>}
+                        {liq&&liq.estado==="confirmada"&&!totalmentePagada&&<SmBtn color="#2D6A4F" onClick={()=>abrirPago(e)}>{parcialmentePagada?"💵 Completar pago":"💵 Pago"}</SmBtn>}
                       </div>
                     </td>
                   </tr>
@@ -4639,8 +4646,12 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     {pagoModal&&(()=>{
       const liq=liqDe(pagoModal.id,periodo);
       const neto=liq?Number(liq.neto)||0:0;
+      const yaPagado=liq?pagadoDe(liq.id):0;
+      const pendiente=Math.max(0,Math.round((neto-yaPagado)*100)/100);
       const suma=pagoSuma();
-      const cierra=Math.round(suma*100)===Math.round(neto*100)&&suma>0;
+      const dentroDelLimite=Math.round(suma*100)<=Math.round(pendiente*100)+1;
+      const habilitado=suma>0&&dentroDelLimite;
+      const completaLiquidacion=habilitado&&Math.round(suma*100)>=Math.round(pendiente*100);
       return(
         <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
@@ -4650,16 +4661,28 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
             </div>
             <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:16}}>{pagoModal.nombre} {pagoModal.apellido||""} · {mesLabel(periodo)}</p>
 
-            <div style={{background:"#F9F6F1",borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:".78rem",color:"#7B7063"}}>Neto a pagar</span>
-              <span style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",fontWeight:700,color:"#2C1A0E"}}>{fmt(neto)}</span>
+            <div style={{background:"#F9F6F1",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:".78rem",color:"#7B7063"}}>Neto a pagar</span>
+                <span style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",fontWeight:700,color:"#2C1A0E"}}>{fmt(neto)}</span>
+              </div>
+              {yaPagado>0&&(<>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+                  <span style={{fontSize:".74rem",color:"#7B7063"}}>Ya pagado antes</span>
+                  <span style={{fontSize:".82rem",color:"#8E44AD",fontWeight:600}}>{fmt(yaPagado)}</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+                  <span style={{fontSize:".74rem",color:"#7B7063"}}>Pendiente</span>
+                  <span style={{fontSize:".82rem",color:"#C0392B",fontWeight:700}}>{fmt(pendiente)}</span>
+                </div>
+              </>)}
             </div>
 
-            <p style={{fontSize:".74rem",color:"#7B7063",marginBottom:8}}>Elegí de dónde sale (podés combinar más de una fuente — mixto):</p>
+            <p style={{fontSize:".74rem",color:"#7B7063",marginBottom:8}}>Elegí de dónde sale (podés combinar más de una fuente — mixto — o cargar menos del pendiente para un pago parcial):</p>
             <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              <SmBtn onClick={()=>setSoloFuente("reservado",neto)}>Todo Reservado</SmBtn>
-              <SmBtn onClick={()=>setSoloFuente("efectivo",neto)}>Todo Efectivo</SmBtn>
-              <SmBtn onClick={()=>setSoloFuente("digital",neto)}>Todo Digital</SmBtn>
+              <SmBtn onClick={()=>setSoloFuente("reservado",pendiente)}>Todo Reservado</SmBtn>
+              <SmBtn onClick={()=>setSoloFuente("efectivo",pendiente)}>Todo Efectivo</SmBtn>
+              <SmBtn onClick={()=>setSoloFuente("digital",pendiente)}>Todo Digital</SmBtn>
             </div>
 
             <Field label={<>Reservado <span style={{fontWeight:400,color:"#7B7063"}}>(disponible: {fmt(saldoRetiro)})</span></>}>
@@ -4672,8 +4695,8 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
               <Inp type="number" value={pagoMontos.digital} onChange={v=>setPagoMontos(m=>({...m,digital:v}))} placeholder="0"/>
             </Field>
 
-            <p style={{fontSize:".78rem",margin:"4px 0 14px",color:cierra?"#2D6A4F":"#C0392B",fontWeight:600}}>
-              Cargado: {fmt(suma)} de {fmt(neto)}{cierra?" ✓":""}
+            <p style={{fontSize:".78rem",margin:"4px 0 14px",color:!dentroDelLimite?"#C0392B":completaLiquidacion?"#2D6A4F":"#B7860B",fontWeight:600}}>
+              Cargado: {fmt(suma)} de {fmt(pendiente)} pendiente{!dentroDelLimite?" — supera lo pendiente":completaLiquidacion?" ✓ (salda la liquidación)":suma>0?" (queda pago parcial)":""}
             </p>
 
             <Field label="Observaciones (opcional)"><TA value={pagoObs} onChange={setPagoObs} placeholder="Notas del pago..."/></Field>
@@ -4681,7 +4704,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
             <div style={{display:"flex",gap:10,marginTop:8}}>
               <button onClick={()=>setPagoModal(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={confirmarPago} disabled={pagoBusy||!cierra} style={{flex:1,padding:12,borderRadius:10,border:"none",background:(pagoBusy||!cierra)?"#bbb":"#2D6A4F",color:"#fff",fontWeight:600,cursor:(pagoBusy||!cierra)?"default":"pointer"}}>{pagoBusy?"Guardando…":"Registrar pago"}</button>
+              <button onClick={confirmarPago} disabled={pagoBusy||!habilitado} style={{flex:1,padding:12,borderRadius:10,border:"none",background:(pagoBusy||!habilitado)?"#bbb":"#2D6A4F",color:"#fff",fontWeight:600,cursor:(pagoBusy||!habilitado)?"default":"pointer"}}>{pagoBusy?"Guardando…":completaLiquidacion?"Registrar pago":"Registrar pago parcial"}</button>
             </div>
           </div>
         </div>
