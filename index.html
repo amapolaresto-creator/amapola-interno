@@ -133,6 +133,20 @@ const Field=({label,children})=>(
 const Inp=({value,onChange,placeholder,type="text"})=>(
   <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={iS}/>
 );
+// Fila compacta para formularios con muchos campos numéricos parecidos (ej. Liquidación de sueldos):
+// label + aclaración chica a la izquierda, input angosto (+ resultado calculado opcional) a la derecha,
+// todo en una sola línea — para no marear con cajas enteras apiladas.
+const inpMini={width:92,border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 9px",fontSize:".85rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#F9F6F1",outline:"none",boxSizing:"border-box"};
+const resTxt={fontWeight:700,fontSize:".85rem",color:"#2C1A0E",minWidth:88,textAlign:"right"};
+const FilaCampo=({label,sub,ultima,children})=>(
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,padding:"11px 0",borderBottom:ultima?"none":"1px solid #F2EAE0"}}>
+    <div style={{flex:"1 1 auto",minWidth:0}}>
+      <div style={{fontWeight:600,fontSize:".85rem",color:"#2C1A0E"}}>{label}</div>
+      {sub&&<div style={{fontSize:".68rem",color:"#7B7063",marginTop:2}}>{sub}</div>}
+    </div>
+    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>{children}</div>
+  </div>
+);
 const TA=({value,onChange,placeholder})=>(
   <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{...iS,resize:"none",height:58}}/>
 );
@@ -4245,15 +4259,6 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
   );
 }
 
-const CAMPOS_HABER=[
-  ["sueldoBasico","Sueldo básico"],
-  ["plusVacacional","Plus vacacional"],
-  ["plusSac","Plus SAC"],
-];
-const CAMPOS_DESCUENTO=[
-  ["adelantos","Adelantos"],
-  ["consumos","Consumos"],
-];
 function reciboHTML(reg,emp){
   const[y,m]=reg.periodo.split("-");
   const mesTxt=new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});
@@ -4464,20 +4469,26 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <div style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>{mesLabel(periodo)}{form.estado==="confirmada"&&<span style={{marginLeft:8,color:"#2D6A4F",fontWeight:700}}>✓ Confirmada</span>}</div>
 
       <Card title="Haberes">
-        <Field label="Sueldo básico"><Inp type="number" value={form.sueldoBasico} onChange={v=>setForm(f=>({...f,sueldoBasico:v}))} placeholder="0"/></Field>
-
-        <Field label={<>Horas extras <span style={{fontWeight:400,color:"#7B7063"}}>(cantidad de horas · valor hora {fmt(valorHsExtraHora)})</span></>}><Inp type="number" value={form.hsExtrasCant!==undefined?form.hsExtrasCant:""} onChange={v=>setForm(f=>({...f,hsExtrasCant:v}))} placeholder="0"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Total horas extras: <strong style={{color:"#2C1A0E"}}>{fmt(hsExtrasMonto)}</strong></p>
-
-        <Field label="Bono base"><Inp type="number" value={form.bonoBase!==undefined?form.bonoBase:""} onChange={v=>setForm(f=>({...f,bonoBase:v}))} placeholder="0"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Bono a liquidar: <strong style={{color:"#2C1A0E"}}>{fmt(bonoMonto)}</strong></p>
-
-        <Field label={<>Feriados <span style={{fontWeight:400,color:"#7B7063"}}>(cantidad de feriados · valor feriado {fmt(valorFeriado)})</span></>}><Inp type="number" value={form.feriadosCant!==undefined?form.feriadosCant:""} onChange={v=>setForm(f=>({...f,feriadosCant:v}))} placeholder="0"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Total feriados: <strong style={{color:"#2C1A0E"}}>{fmt(feriadosMonto)}</strong></p>
-
-        {CAMPOS_HABER.filter(([k])=>k!=="sueldoBasico").map(([k,label])=>(
-          <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
-        ))}
+        <FilaCampo label="Sueldo básico">
+          <input type="number" value={form.sueldoBasico} onChange={e=>setForm(f=>({...f,sueldoBasico:e.target.value}))} placeholder="0" style={inpMini}/>
+        </FilaCampo>
+        <FilaCampo label="Horas extras" sub={"valor hora "+fmt(valorHsExtraHora)}>
+          <input type="number" value={form.hsExtrasCant!==undefined?form.hsExtrasCant:""} onChange={e=>setForm(f=>({...f,hsExtrasCant:e.target.value}))} placeholder="0" style={inpMini}/>
+          <span style={resTxt}>{fmt(hsExtrasMonto)}</span>
+        </FilaCampo>
+        <FilaCampo label="Bono base" sub={"a liquidar: "+fmt(bonoMonto)}>
+          <input type="number" value={form.bonoBase!==undefined?form.bonoBase:""} onChange={e=>setForm(f=>({...f,bonoBase:e.target.value}))} placeholder="0" style={inpMini}/>
+        </FilaCampo>
+        <FilaCampo label="Feriados" sub={"valor feriado "+fmt(valorFeriado)}>
+          <input type="number" value={form.feriadosCant!==undefined?form.feriadosCant:""} onChange={e=>setForm(f=>({...f,feriadosCant:e.target.value}))} placeholder="0" style={inpMini}/>
+          <span style={resTxt}>{fmt(feriadosMonto)}</span>
+        </FilaCampo>
+        <FilaCampo label="Plus vacacional">
+          <input type="number" value={form.plusVacacional} onChange={e=>setForm(f=>({...f,plusVacacional:e.target.value}))} placeholder="0" style={inpMini}/>
+        </FilaCampo>
+        <FilaCampo label="Plus SAC" ultima>
+          <input type="number" value={form.plusSac} onChange={e=>setForm(f=>({...f,plusSac:e.target.value}))} placeholder="0" style={inpMini}/>
+        </FilaCampo>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0 0",marginTop:8,borderTop:"1px solid #F2EAE0"}}>
           <span style={{fontWeight:700,fontSize:".85rem"}}>Subtotal</span>
           <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:"#2D6A4F"}}>{fmt(subtotal)}</span>
@@ -4485,20 +4496,23 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       </Card>
 
       <Card title="Descuentos">
-        <Field label={<>Ausencias <span style={{fontWeight:400,color:"#7B7063"}}>(cantidad de días · valor día {fmt(valorAusenciaDia)})</span></>}><Inp type="number" value={form.ausenciasCant!==undefined?form.ausenciasCant:""} onChange={v=>setForm(f=>({...f,ausenciasCant:v}))} placeholder="0"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Total ausencias: <strong style={{color:"#C0392B"}}>{fmt(ausenciasMonto)}</strong></p>
-
-        <Field label={<>Penalidades <span style={{color:"#C0392B"}}>X</span></>}><Inp type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={v=>setForm(f=>({...f,bonoCant:v}))} placeholder="0 = bono x2"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>
-          {bonoCantVacio?"Sin cargar → se toma el bono base tal cual.":(num(form.bonoCant)===0?"0 llegadas tarde/faltas → bono base x2.":(num(form.bonoCant)<5?"1 a 4 → sin cambios en el bono.":(num(form.bonoCant)+" × $5.000 de descuento (tope: el bono base).")))}
-        </p>
-
-        <Field label="Desperdicios"><Inp type="number" value={form.desperdiciosInput!==undefined?form.desperdiciosInput:""} onChange={v=>setForm(f=>({...f,desperdiciosInput:v}))} placeholder="0"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Descuenta solo lo que quede disponible del bono (después de Penalidades X) — bono disponible: {fmt(bonoDisponible)}. Se descuenta: <strong style={{color:"#C0392B"}}>{fmt(desperdiciosMonto)}</strong></p>
-
-        {CAMPOS_DESCUENTO.map(([k,label])=>(
-          <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
-        ))}
+        <FilaCampo label="Ausencias" sub={"valor día "+fmt(valorAusenciaDia)}>
+          <input type="number" value={form.ausenciasCant!==undefined?form.ausenciasCant:""} onChange={e=>setForm(f=>({...f,ausenciasCant:e.target.value}))} placeholder="0" style={inpMini}/>
+          <span style={{...resTxt,color:"#C0392B"}}>{fmt(ausenciasMonto)}</span>
+        </FilaCampo>
+        <FilaCampo label={<>Penalidades <span style={{color:"#C0392B"}}>X</span></>} sub={bonoCantVacio?"vacío = bono base tal cual":(num(form.bonoCant)===0?"0 = bono base x2":(num(form.bonoCant)<5?"1 a 4 = sin cambios en el bono":num(form.bonoCant)+" × $5.000 (tope: bono base)"))}>
+          <input type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={e=>setForm(f=>({...f,bonoCant:e.target.value}))} placeholder="0 = x2" style={inpMini}/>
+        </FilaCampo>
+        <FilaCampo label="Desperdicios" sub={"disponible del bono: "+fmt(bonoDisponible)}>
+          <input type="number" value={form.desperdiciosInput!==undefined?form.desperdiciosInput:""} onChange={e=>setForm(f=>({...f,desperdiciosInput:e.target.value}))} placeholder="0" style={inpMini}/>
+          <span style={{...resTxt,color:"#C0392B"}}>{fmt(desperdiciosMonto)}</span>
+        </FilaCampo>
+        <FilaCampo label="Adelantos">
+          <input type="number" value={form.adelantos} onChange={e=>setForm(f=>({...f,adelantos:e.target.value}))} placeholder="0" style={inpMini}/>
+        </FilaCampo>
+        <FilaCampo label="Consumos" ultima>
+          <input type="number" value={form.consumos} onChange={e=>setForm(f=>({...f,consumos:e.target.value}))} placeholder="0" style={inpMini}/>
+        </FilaCampo>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0 0",marginTop:8,borderTop:"1px solid #F2EAE0"}}>
           <span style={{fontWeight:700,fontSize:".85rem"}}>Total descuentos</span>
           <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:"#C0392B"}}>-{fmt(totalDescuentos)}</span>
