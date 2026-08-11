@@ -4290,7 +4290,7 @@ function reciboHTML(reg,emp){
     +"</body></html>";
 }
 function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones}){
-  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const[periodo,setPeriodo]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
   const[editando,setEditando]=useState(null);
   const[form,setForm]=useState(null);
