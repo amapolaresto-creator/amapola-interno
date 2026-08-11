@@ -4284,6 +4284,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verBasicos,setVerBasicos]=useState(false);
   const[basicosDraft,setBasicosDraft]=useState({});
   const[bonosDraft,setBonosDraft]=useState({});
+  const[legajoDraft,setLegajoDraft]=useState({});
   const[verNomina,setVerNomina]=useState(false);
   const[pagoModal,setPagoModal]=useState(null);
   const[pagoMontos,setPagoMontos]=useState({reservado:"",efectivo:"",digital:""});
@@ -4406,13 +4407,23 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     }
   };
 
+  const setLegajoCampo=(empId,campo,valor)=>{
+    setLegajoDraft(d=>({...d,[empId]:{...d[empId],[campo]:valor}}));
+  };
   const guardarValores=async emp=>{
     const vB=basicosDraft[emp.id];
     const vBo=bonosDraft[emp.id];
-    if(vB===undefined&&vBo===undefined)return;
+    const vL=legajoDraft[emp.id];
+    if(vB===undefined&&vBo===undefined&&!vL)return;
     await saveEmpleados(empleados.map(e=>e.id===emp.id?{...e,
       sueldoBasicoRef:vB!==undefined?(Number(vB)||0):(e.sueldoBasicoRef||0),
       bonoRef:vBo!==undefined?(Number(vBo)||0):(e.bonoRef||0),
+      dni:vL&&vL.dni!==undefined?vL.dni:(e.dni||""),
+      cuit:vL&&vL.cuit!==undefined?vL.cuit:(e.cuit||""),
+      fechaNac:vL&&vL.fechaNac!==undefined?vL.fechaNac:(e.fechaNac||""),
+      domicilio:vL&&vL.domicilio!==undefined?vL.domicilio:(e.domicilio||""),
+      telPropio:vL&&vL.telPropio!==undefined?vL.telPropio:(e.telPropio||""),
+      telContacto:vL&&vL.telContacto!==undefined?vL.telContacto:(e.telContacto||""),
     }:e));
     toast("Valores agendados ✓");
   };
@@ -4560,14 +4571,14 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Básico y bono son editables. HS extra, feriado y ausencia se calculan solos a partir del básico.</p>
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>DNI, CUIT, fecha de nacimiento, domicilio y teléfonos son el legajo de cada empleado — junto con Básico y Bono, todo editable acá. HS extra, feriado y ausencia se calculan solos a partir del básico.</p>
           {empleadosActivos.length>0?(
             <div style={{overflowX:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:640}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:1400}}>
                 <thead>
                   <tr style={{background:"#F9F6F1"}}>
-                    {["Empleado","Básico","Bono","HS extra","Feriado","Ausencia",""].map(h=>(
-                      <th key={h} style={{padding:"7px 8px",textAlign:h==="Empleado"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                    {["Empleado","DNI","CUIT","Fecha nac.","Domicilio","Tel. propio","Tel. contacto","Básico","Bono","HS extra","Feriado","Ausencia",""].map(h=>(
+                      <th key={h} style={{padding:"7px 8px",textAlign:h==="Empleado"||h==="Domicilio"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -4579,10 +4590,31 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
                     const valorHsExtra=basicoNum/208*2;
                     const valorFeriado=basicoNum/208*8;
                     const valorAusencia=basicoNum/208*8;
+                    const legajoVal=campo=>(legajoDraft[e.id]&&legajoDraft[e.id][campo]!==undefined)?legajoDraft[e.id][campo]:(e[campo]||"");
                     const inpCell={width:86,border:"1px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".72rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
+                    const inpTexto={width:100,border:"1px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".72rem",textAlign:"left",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
+                    const inpAncho={...inpTexto,width:150};
                     return(
                       <tr key={e.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
                         <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{e.nombre} {e.apellido||""}</td>
+                        <td style={{padding:"6px 4px"}}>
+                          <input type="text" value={legajoVal("dni")} onChange={ev=>setLegajoCampo(e.id,"dni",ev.target.value)} placeholder="DNI" style={inpTexto}/>
+                        </td>
+                        <td style={{padding:"6px 4px"}}>
+                          <input type="text" value={legajoVal("cuit")} onChange={ev=>setLegajoCampo(e.id,"cuit",ev.target.value)} placeholder="CUIT" style={inpTexto}/>
+                        </td>
+                        <td style={{padding:"6px 4px"}}>
+                          <input type="date" value={legajoVal("fechaNac")} onChange={ev=>setLegajoCampo(e.id,"fechaNac",ev.target.value)} style={inpTexto}/>
+                        </td>
+                        <td style={{padding:"6px 4px"}}>
+                          <input type="text" value={legajoVal("domicilio")} onChange={ev=>setLegajoCampo(e.id,"domicilio",ev.target.value)} placeholder="Domicilio" style={inpAncho}/>
+                        </td>
+                        <td style={{padding:"6px 4px"}}>
+                          <input type="text" value={legajoVal("telPropio")} onChange={ev=>setLegajoCampo(e.id,"telPropio",ev.target.value)} placeholder="Tel. propio" style={inpTexto}/>
+                        </td>
+                        <td style={{padding:"6px 4px"}}>
+                          <input type="text" value={legajoVal("telContacto")} onChange={ev=>setLegajoCampo(e.id,"telContacto",ev.target.value)} placeholder="Tel. contacto" style={inpAncho}/>
+                        </td>
                         <td style={{padding:"6px 4px",textAlign:"right"}}>
                           <input type="number" value={basicoVal} onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={inpCell}/>
                         </td>
