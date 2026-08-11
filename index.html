@@ -32,7 +32,6 @@ const {useState,useEffect,useRef} = React;
 
 const PASS="716*";
 const ADMIN_PASS="Barcala716*";
-const COCINA_PASS="Cocina716*";
 const SITE_USER="amapolaresto@gmail.com";
 const SITE_PASS="Barcala716";
 const SB_URL="https://qupcqcbvjxxsghwatxgq.supabase.co/rest/v1";
@@ -243,7 +242,7 @@ function Root(){
 function App(){
   const[phase,setPhase]=useState("init");
   const[errMsg,setErrMsg]=useState("");
-  const[tab,setTab]=useState(()=>localStorage.getItem("amapola_cocina")==="1"?"stock":"boletas");
+  const[tab,setTab]=useState("boletas");
   const[toastMsg,setToastMsg]=useState("");
   const[lightbox,setLightbox]=useState(null);
   const[passModal,setPassModal]=useState(null);
@@ -252,20 +251,6 @@ function App(){
   const[adminUnlocked,setAdminUnlocked]=useState(false);
   const[adminPassInput,setAdminPassInput]=useState("");
   const[adminPassErr,setAdminPassErr]=useState(false);
-  const[cocinaMode,setCocinaMode]=useState(()=>{
-    const params=new URLSearchParams(window.location.search);
-    return localStorage.getItem("amapola_cocina")==="1"||params.get("cocina")==="produccion";
-  });
-  const[cocinaSubInicial]=useState(()=>{
-    const params=new URLSearchParams(window.location.search);
-    return params.get("cocina")==="produccion"?"produccion":"inventario";
-  });
-  const[cocinaLoginOpen,setCocinaLoginOpen]=useState(false);
-  const[cocinaPassInput,setCocinaPassInput]=useState("");
-  const[cocinaPassErr,setCocinaPassErr]=useState(false);
-  const[cocinaIdentityOpen,setCocinaIdentityOpen]=useState(false);
-  const[cocinaIdentityInput,setCocinaIdentityInput]=useState("");
-  const[cocinaUser,setCocinaUser]=useState(()=>localStorage.getItem("amapola_cocina_user")||"");
   const[boletas,setBoletas]=useState([]);
   const[cierres,setCierres]=useState([]);
   const[pagos,setPagos]=useState([]);
@@ -311,14 +296,8 @@ function App(){
   };
 
   useEffect(()=>{
-    const params=new URLSearchParams(window.location.search);
-    if(params.get("cocina")==="produccion"){
-      localStorage.setItem("amapola_cocina","1");
-    }
     cargar();
   },[]);
-  useEffect(()=>{if(cocinaMode&&tab!=="stock")setTab("stock");},[cocinaMode]);
-  useEffect(()=>{if(cocinaMode&&!cocinaUser)setCocinaIdentityOpen(true);},[cocinaMode]);
 
   useEffect(()=>{
     if(phase!=="ready")return;
@@ -530,20 +509,7 @@ function App(){
     {id:"admin",      label:"⚙️ Admin"},
   ];
   const stockBajoCount=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo)).length;
-  const TABS=cocinaMode?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
-  const entrarCocina=nombre=>{
-    const n=(nombre||"").trim();
-    if(!n){toast("Elegí quién sos");return;}
-    localStorage.setItem("amapola_cocina","1");
-    localStorage.setItem("amapola_cocina_user",n);
-    setCocinaUser(n);
-    setCocinaMode(true);
-    setCocinaIdentityOpen(false);
-    setCocinaIdentityInput("");
-    setCocinaLoginOpen(false);
-    setCocinaPassInput("");
-    setTab("stock");
-  };
+  const TABS=[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
   return(
     <div className="amapola-main" style={{background:"#F9F6F1",minHeight:"100dvh",color:"#2C1A0E"}}>
@@ -556,45 +522,6 @@ function App(){
         ))}
       </nav>
       {SaveErrorBanner}
-      {cocinaLoginOpen&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>🍳 Acceso Cocina</p>
-            <input type="password" placeholder="Contraseña" value={cocinaPassInput} autoFocus
-              onChange={e=>{setCocinaPassInput(e.target.value);setCocinaPassErr(false);}}
-              onKeyDown={e=>{if(e.key==="Enter"){if(cocinaPassInput===COCINA_PASS){setCocinaLoginOpen(false);setCocinaPassInput("");setCocinaIdentityOpen(true);}else{setCocinaPassErr(true);setCocinaPassInput("");}}}}
-              style={{...iS,border:`1.5px solid ${cocinaPassErr?"#E74C3C":"#E8DCC8"}`,marginBottom:8}}/>
-            {cocinaPassErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:8}}>Contraseña incorrecta</p>}
-            <div style={{display:"flex",gap:10,marginTop:8}}>
-              <button onClick={()=>{setCocinaLoginOpen(false);setCocinaPassInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={()=>{if(cocinaPassInput===COCINA_PASS){setCocinaLoginOpen(false);setCocinaPassInput("");setCocinaIdentityOpen(true);}else{setCocinaPassErr(true);setCocinaPassInput("");}}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {cocinaIdentityOpen&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>👤 ¿Quién sos?</p>
-            <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Elegí tu nombre para que quede registrado en cada carga de stock.</p>
-            <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:280,overflowY:"auto",marginBottom:14}}>
-              {empleados.filter(e=>e.estado==="Activo").map(e=>(
-                <button key={e.id} onClick={()=>entrarCocina(e.nombre)} style={{textAlign:"left",padding:"11px 14px",borderRadius:10,border:"1.5px solid #E8DCC8",background:"#F9F6F1",color:"#2C1A0E",fontSize:".88rem",fontWeight:600,cursor:"pointer"}}>{e.nombre}</button>
-              ))}
-            </div>
-            <Field label="No estás en la lista">
-              <input type="text" placeholder="Escribí tu nombre" value={cocinaIdentityInput} autoFocus={!empleados.some(e=>e.estado==="Activo")}
-                onChange={e=>setCocinaIdentityInput(e.target.value)}
-                onKeyDown={e=>{if(e.key==="Enter")entrarCocina(cocinaIdentityInput);}}
-                style={iS}/>
-            </Field>
-            <div style={{display:"flex",gap:10,marginTop:14}}>
-              <button onClick={()=>{setCocinaIdentityOpen(false);setCocinaIdentityInput("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={()=>entrarCocina(cocinaIdentityInput)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Ingresar</button>
-            </div>
-          </div>
-        </div>
-      )}
       <div style={{background:"#2C1A0E",padding:"14px 16px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
         <div>
           <div className="amapola-header-title" style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.4rem",color:"#E8DCC8",lineHeight:1.1}}>
@@ -602,24 +529,19 @@ function App(){
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
-            {adminUnlocked&&!cocinaMode&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
-            {cocinaMode&&<span style={{fontSize:".62rem",color:"#E8DCC8",opacity:.85}}>👤 {cocinaUser||"Sin nombre"} · <button onClick={()=>setCocinaIdentityOpen(true)} style={{background:"none",border:"none",color:"#E8DCC8",textDecoration:"underline",fontSize:".62rem",cursor:"pointer",padding:0}}>Cambiar</button></span>}
-            {cocinaMode&&<button onClick={()=>{if(confirm("¿Salir del modo cocina?")){localStorage.removeItem("amapola_cocina");localStorage.removeItem("amapola_cocina_user");setCocinaMode(false);setCocinaUser("");setTab("boletas");}}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir modo cocina</button>}
-            {!cocinaMode&&<button onClick={()=>setCocinaLoginOpen(true)} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>🍳 Cocina</button>}
+            {adminUnlocked&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
           </div>
         </div>
-        {!cocinaMode&&(
-          <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
-            <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-              <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
-              <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
-            </div>
-            <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
-              <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
-              <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
-            </div>
+        <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
+          <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+            <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
+            <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
           </div>
-        )}
+          <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
+            <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
+            <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
+          </div>
+        </div>
       </div>
       <div className="amapola-tabbar-mobile" style={{background:"#2C1A0E",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
         {TABS.map(t=>(
@@ -664,7 +586,7 @@ function App(){
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial={cocinaMode?cocinaSubInicial:"inventario"} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={cocinaMode?(cocinaUser||"Cocina"):"Administración"}/>}
+        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor="Administración"/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
