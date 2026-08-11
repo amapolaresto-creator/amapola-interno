@@ -4247,7 +4247,6 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
 
 const CAMPOS_HABER=[
   ["sueldoBasico","Sueldo básico"],
-  ["feriados","Feriados"],
   ["plusVacacional","Plus vacacional"],
   ["plusSac","Plus SAC"],
 ];
@@ -4302,7 +4301,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
   // Horas extras: cantidad de horas × valor hora (básico/208×2). Bono: 0 llegadas tarde/faltas = bono base x2;
   // 1 a 4 = sin cambios (tolerancia); ≥5 = bono base - (cantidad×5000), con tope en el propio bono base (nunca negativo).
-  // Ausencias: cantidad de días × valor día (básico/208×8).
+  // Ausencias: cantidad de días × valor día (básico/208×8). Feriados: cantidad de feriados × valor feriado (básico/208×8, mismo valor que muestra la Nómina).
   const haberesCalc=f=>{
     const basico=num(f.sueldoBasico);
     const valorHsExtraHora=Math.round((basico/208*2)*100)/100;
@@ -4313,13 +4312,16 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const bonoCantSet=f.bonoCant!==undefined&&f.bonoCant!=="";
     const bonoCant=bonoCantSet?num(f.bonoCant):null;
     const bonoMonto=bonoCant===null?bonoBase:(bonoCant===0?bonoBase*2:(bonoCant<5?bonoBase:Math.max(0,bonoBase-Math.min(bonoCant*5000,bonoBase))));
-    const otros=num(f.feriados)+num(f.plusVacacional)+num(f.plusSac);
+    const valorFeriado=Math.round((basico/208*8)*100)/100;
+    const feriadosCantSet=f.feriadosCant!==undefined&&f.feriadosCant!=="";
+    const feriadosMonto=feriadosCantSet?Math.round(num(f.feriadosCant)*valorFeriado*100)/100:num(f.feriados);
+    const otros=feriadosMonto+num(f.plusVacacional)+num(f.plusSac);
     const subtotal=basico+hsExtrasMonto+bonoMonto+otros;
     const valorAusenciaDia=Math.round((basico/208*8)*100)/100;
     const ausenciasCantSet=f.ausenciasCant!==undefined&&f.ausenciasCant!=="";
     const ausenciasMonto=ausenciasCantSet?Math.round(num(f.ausenciasCant)*valorAusenciaDia*100)/100:num(f.ausencias);
     const totalDescuentos=ausenciasMonto+num(f.adelantos)+num(f.consumos);
-    return{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,subtotal,valorAusenciaDia,ausenciasMonto,totalDescuentos};
+    return{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,totalDescuentos};
   };
 
   const abrirLiquidacion=emp=>{
@@ -4334,6 +4336,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         hsExtrasCant:existente.hsExtrasCant!==undefined?existente.hsExtrasCant:"",
         bonoCant:existente.bonoCant!==undefined?existente.bonoCant:"",
         ausenciasCant:existente.ausenciasCant!==undefined?existente.ausenciasCant:"",
+        feriadosCant:existente.feriadosCant!==undefined?existente.feriadosCant:"",
       });
     }else{
       setForm({
@@ -4342,7 +4345,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         hsExtrasCant:"",
         bonoBase:bonoRef?String(bonoRef):"",
         bonoCant:"",
-        feriados:basicoRef?String(Math.round((basicoRef/208*8)*100)/100):"",
+        feriadosCant:"",
         plusVacacional:"",plusSac:"",
         ausenciasCant:"",
         penalidad:"",adelantos:"",consumos:"",
@@ -4363,11 +4366,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   };
 
   const guardar=async confirmar=>{
-    const{hsExtrasMonto,bonoMonto,subtotal,ausenciasMonto,totalDescuentos}=haberesCalc(form);
+    const{hsExtrasMonto,bonoMonto,feriadosMonto,subtotal,ausenciasMonto,totalDescuentos}=haberesCalc(form);
     if(subtotal<=0){toast("Cargá al menos un haber (ej. sueldo básico)");return null;}
     setBusy(true);
     const registro={...form,empleadoId:editando.id,empleadoNombre:(editando.nombre+" "+(editando.apellido||"")).trim(),periodo,
-      hsExtras:hsExtrasMonto,bono:bonoMonto,ausencias:ausenciasMonto,
+      hsExtras:hsExtrasMonto,bono:bonoMonto,ausencias:ausenciasMonto,feriados:feriadosMonto,
       subtotal,totalDescuentos,neto:subtotal-totalDescuentos,
       estado:confirmar?"confirmada":(form.estado||"borrador"),
       fechaConfirmacion:confirmar?new Date().toISOString():(form.fechaConfirmacion||null),
@@ -4391,7 +4394,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   };
 
   if(editando&&form){
-    const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,subtotal,valorAusenciaDia,ausenciasMonto,totalDescuentos}=haberesCalc(form);
+    const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,totalDescuentos}=haberesCalc(form);
     const neto=subtotal-totalDescuentos;
     const bonoCantVacio=form.bonoCant===undefined||form.bonoCant==="";
     return(<>
@@ -4407,6 +4410,9 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
         <Field label="Bono base"><Inp type="number" value={form.bonoBase!==undefined?form.bonoBase:""} onChange={v=>setForm(f=>({...f,bonoBase:v}))} placeholder="0"/></Field>
         <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Bono a liquidar: <strong style={{color:"#2C1A0E"}}>{fmt(bonoMonto)}</strong></p>
+
+        <Field label={<>Feriados <span style={{fontWeight:400,color:"#7B7063"}}>(cantidad de feriados · valor feriado {fmt(valorFeriado)})</span></>}><Inp type="number" value={form.feriadosCant!==undefined?form.feriadosCant:""} onChange={v=>setForm(f=>({...f,feriadosCant:v}))} placeholder="0"/></Field>
+        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Total feriados: <strong style={{color:"#2C1A0E"}}>{fmt(feriadosMonto)}</strong></p>
 
         {CAMPOS_HABER.filter(([k])=>k!=="sueldoBasico").map(([k,label])=>(
           <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
