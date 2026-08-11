@@ -4444,6 +4444,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const w=window.open("","_blank");
     if(w){w.document.write(reciboHTML(form,editando));w.document.close();}
   };
+  const verReciboDe=(liq,emp)=>{
+    const w=window.open("","_blank");
+    if(w){w.document.write(reciboHTML(liq,emp));w.document.close();}
+    else toast("Habilitá las ventanas emergentes para ver el recibo");
+  };
 
   if(editando&&form){
     const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,bonoDisponible,desperdiciosMonto,totalDescuentos}=haberesCalc(form);
@@ -4657,6 +4662,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
                       <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
                         <SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn>
                         <SmBtn onClick={()=>abrirLiquidacion(e)}>{liq?"Editar":"Liquidar"}</SmBtn>
+                        {liq&&liq.estado==="confirmada"&&<SmBtn onClick={()=>verReciboDe(liq,e)}>🧾 Recibo</SmBtn>}
                         {liq&&liq.estado==="confirmada"&&!totalmentePagada&&<SmBtn color="#2D6A4F" onClick={()=>abrirPago(e)}>{parcialmentePagada?"💵 Completar pago":"💵 Pago"}</SmBtn>}
                       </div>
                     </td>
