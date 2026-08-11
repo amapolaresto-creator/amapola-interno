@@ -4405,13 +4405,14 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Sueldo básico y bono se autocompletan como ayuda memoria (editables en el momento). Valor hs extra y valor feriado se calculan solos a partir del básico.</p>
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Sueldo básico y bono se autocompletan como ayuda memoria (editables en el momento). Valor hs extra, valor feriado y valor ausencia se calculan solos a partir del básico.</p>
           {empleadosActivos.map(e=>{
             const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
             const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
             const basicoNum=Number(basicoVal)||0;
             const valorHsExtra=basicoNum/208*2;
             const valorFeriado=basicoNum/208*8;
+            const valorAusencia=basicoNum/208*8;
             return(
               <div key={e.id} style={{padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
                 <div style={{fontWeight:600,fontSize:".85rem",marginBottom:8}}>{e.nombre} {e.apellido||""}</div>
@@ -4427,6 +4428,9 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
                   </Field>
                   <Field label="Valor feriado (auto)">
                     <div style={{...iS,background:"#F2EAE0",color:"#7B7063"}}>{fmt(valorFeriado)}</div>
+                  </Field>
+                  <Field label="Valor ausencia (auto)">
+                    <div style={{...iS,background:"#F2EAE0",color:"#7B7063"}}>{fmt(valorAusencia)}</div>
                   </Field>
                 </div>
                 <div style={{marginTop:10}}><SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn></div>
