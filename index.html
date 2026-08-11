@@ -941,7 +941,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
             <select value={pagoForma} onChange={e=>setPagoForma(e.target.value)} style={sS}>
               <option value="Efectivo">Efectivo (descuenta de caja)</option>
               <option value="Transferencia">Transferencia (no descuenta caja)</option>
-              <option value="Cheque">Cheque</option>
+              <option value="Amex">Amex</option>
             </select>
           </Field>
           {pagoForma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Descontará del efectivo disponible.</div>}
@@ -1177,14 +1177,14 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
   };
 
   const hoyD=new Date();
-  const chequesMes=pagos.filter(p=>{
-    if(p.forma!=="Cheque")return false;
+  const amexMes=pagos.filter(p=>{
+    if(p.forma!=="Amex")return false;
     const d=new Date(p.fecha);
     return d.getMonth()===hoyD.getMonth()&&d.getFullYear()===hoyD.getFullYear();
   }).reduce((s,p)=>s+Number(p.monto||0),0);
 
   return(<>
-    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Cheque: solo descuenta la deuda del proveedor, no toca la caja.\n• Si pagás de más a Avenida o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• Los cheques no se descuentan de ningún saldo (ni caja ni banco) hasta que se cobren — llevalos aparte.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
+    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Amex: solo descuenta la deuda del proveedor, no toca la caja ni el banco.\n• Amex es nuestra tarjeta de crédito — un pago con Amex queda cargado al resumen, no sale plata todavía. Cuando pagás el resumen de la tarjeta, eso se registra como un Gasto (Pagos Digitales) en la categoría Amex, en efectivo o transferencia según corresponda.\n• Si pagás de más a Avenida o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
 
     {nuevoRegModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -1204,11 +1204,11 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6}}>Solo aplica a pagos en efectivo</div>
     </div>
-    {chequesMes>0&&(
+    {amexMes>0&&(
       <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
-        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>🧾 Cheques emitidos este mes</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(chequesMes)}</div>
-        <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que se cobre.</div>
+        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>💳 Cargado a Amex este mes</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(amexMes)}</div>
+        <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que pagués el resumen de la tarjeta.</div>
       </div>
     )}
     <Btn bg="#B7860B" onClick={()=>setNuevoPagoModal(true)}>+ Registrar pago</Btn>
@@ -1240,11 +1240,11 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
             <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
               <option value="Efectivo">Efectivo (descuenta de caja)</option>
               <option value="Transferencia">Transferencia (no descuenta caja)</option>
-              <option value="Cheque">Cheque</option>
+              <option value="Amex">Amex</option>
             </select>
           </Field>
           {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
-          {forma==="Cheque"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🧾 No descuenta caja ni banco — se suma al total de cheques del mes.</div>}
+          {forma==="Amex"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💳 No descuenta caja ni banco — queda cargado al resumen de la tarjeta.</div>}
           <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: pago parcial, boleta #..."/></Field>
           <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
 
@@ -3630,7 +3630,7 @@ function PagosAdmin({pagos,savePagos,proveedores}){
             <select value={editForm.forma||"Efectivo"} onChange={e=>setEditForm(f=>({...f,forma:e.target.value}))} style={sS}>
               <option value="Efectivo">Efectivo</option>
               <option value="Transferencia">Transferencia</option>
-              <option value="Cheque">Cheque</option>
+              <option value="Amex">Amex</option>
             </select>
           </div>
           <div style={{marginBottom:16}}>
@@ -4334,8 +4334,8 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const[hasta,setHasta]=useState(iso(hoy));
 
   // Movimientos normalizados en dos columnas de flujo: _efDelta (efectivo) y _digDelta (digital/transferencia).
-  // _cuenta=true => el movimiento mueve algún saldo real (efectivo o digital); boletas y pagos por cheque
-  // no mueven nada todavía (quedan como referencia) hasta que se paguen / cobren.
+  // _cuenta=true => el movimiento mueve algún saldo real (efectivo o digital); boletas y pagos con Amex
+  // (tarjeta de crédito) no mueven nada todavía (quedan como referencia) hasta que se paguen / se pague el resumen.
   const boletasM=(boletas||[]).map(b=>({...b,tipo:"boleta",_cat:"boleta",_efDelta:0,_digDelta:0,_cuenta:false}));
   const cierresM=(cierres||[]).map(c=>({...c,tipo:"cierre",_cat:"cierre",_efDelta:Number(c.monto||0),_digDelta:0,_cuenta:true,proveedor:"Cierre "+c.turno}));
   // Cada cierre de caja trae SIEMPRE dos ingresos simultáneos: lo contado en efectivo y lo vendido por canales
@@ -4421,7 +4421,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
 
   return(<>
-    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con cheque aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
+    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con Amex (tarjeta de crédito) aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco — recién se descuentan cuando pagás el resumen de la tarjeta (eso se carga como Gasto, categoría Amex).\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
     <SS>Libro diario de todos los movimientos — efectivo y digital.</SS>
 
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
@@ -4490,7 +4490,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
                       <div style={{minWidth:0}}>
                         <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
                         <div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>
-                          {f.empleado?f.empleado+" · ":""}{!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Cheque"?" (cheque, no descuenta hasta cobrarse)":""):""}{f.obs?" · "+f.obs:""}
+                          {f.empleado?f.empleado+" · ":""}{!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Amex"?" (Amex, no descuenta hasta pagar el resumen)":""):""}{f.obs?" · "+f.obs:""}
                         </div>
                       </div>
                     </div>
