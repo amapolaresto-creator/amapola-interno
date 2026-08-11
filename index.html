@@ -462,7 +462,7 @@ function App({role="full",cerrarSesion}){
     return{ini,ingresos,egTransf:egTotal,saldoReal,deducciones};
   };
   // Pares de proveedores que comparten crédito (excedente de A → B y viceversa)
-  const PARES_CREDITO=[["Avenida","Avenida Digital"]];
+  const PARES_CREDITO=[["Avenida Efectivo","Avenida Digital"]];// nombres deben calzar EXACTO con proveedores.nombre
 
   const parDestino=(nombreProv)=>{
     for(const par of PARES_CREDITO){
