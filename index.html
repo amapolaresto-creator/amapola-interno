@@ -1736,7 +1736,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos}){
             <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
             {s.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{s.obs}</div>}
           </div>
-          <div style={{fontWeight:700,fontSize:".9rem",color:s.forma==="Efectivo"?"#C0392B":"#B7860B"}}>{fmt(s.monto)}</div>
+          <div style={{fontWeight:700,fontSize:".78rem",color:"#2D6A4F",whiteSpace:"nowrap"}}>✓ Registrado</div>
         </div>
       ))}
     </Card>
