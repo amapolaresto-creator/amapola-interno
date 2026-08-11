@@ -4405,39 +4405,50 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Sueldo básico y bono se autocompletan como ayuda memoria (editables en el momento). Valor hs extra, valor feriado y valor ausencia se calculan solos a partir del básico.</p>
-          {empleadosActivos.map(e=>{
-            const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
-            const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
-            const basicoNum=Number(basicoVal)||0;
-            const valorHsExtra=basicoNum/208*2;
-            const valorFeriado=basicoNum/208*8;
-            const valorAusencia=basicoNum/208*8;
-            return(
-              <div key={e.id} style={{padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
-                <div style={{fontWeight:600,fontSize:".85rem",marginBottom:8}}>{e.nombre} {e.apellido||""}</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  <Field label="Sueldo básico">
-                    <input type="number" value={basicoVal} onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={iS}/>
-                  </Field>
-                  <Field label="Valor bono">
-                    <input type="number" value={bonoVal} onChange={ev=>setBonosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={iS}/>
-                  </Field>
-                  <Field label="Valor hs extra (auto)">
-                    <div style={{...iS,background:"#F2EAE0",color:"#7B7063"}}>{fmt(valorHsExtra)}</div>
-                  </Field>
-                  <Field label="Valor feriado (auto)">
-                    <div style={{...iS,background:"#F2EAE0",color:"#7B7063"}}>{fmt(valorFeriado)}</div>
-                  </Field>
-                  <Field label="Valor ausencia (auto)">
-                    <div style={{...iS,background:"#F2EAE0",color:"#7B7063"}}>{fmt(valorAusencia)}</div>
-                  </Field>
-                </div>
-                <div style={{marginTop:10}}><SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn></div>
-              </div>
-            );
-          })}
-          {empleadosActivos.length===0&&<Empty icon="👷">No hay empleados activos.</Empty>}
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Básico y bono son editables. HS extra, feriado y ausencia se calculan solos a partir del básico.</p>
+          {empleadosActivos.length>0?(
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:640}}>
+                <thead>
+                  <tr style={{background:"#F9F6F1"}}>
+                    {["Empleado","Básico","Bono","HS extra","Feriado","Ausencia",""].map(h=>(
+                      <th key={h} style={{padding:"7px 8px",textAlign:h==="Empleado"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {empleadosActivos.map((e,i)=>{
+                    const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
+                    const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
+                    const basicoNum=Number(basicoVal)||0;
+                    const valorHsExtra=basicoNum/208*2;
+                    const valorFeriado=basicoNum/208*8;
+                    const valorAusencia=basicoNum/208*8;
+                    const inpCell={width:86,border:"1px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".72rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
+                    return(
+                      <tr key={e.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                        <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{e.nombre} {e.apellido||""}</td>
+                        <td style={{padding:"6px 4px",textAlign:"right"}}>
+                          <input type="number" value={basicoVal} onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={inpCell}/>
+                        </td>
+                        <td style={{padding:"6px 4px",textAlign:"right"}}>
+                          <input type="number" value={bonoVal} onChange={ev=>setBonosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={inpCell}/>
+                        </td>
+                        <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorHsExtra)}</td>
+                        <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorFeriado)}</td>
+                        <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorAusencia)}</td>
+                        <td style={{padding:"6px 4px",textAlign:"right"}}>
+                          <SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ):(
+            <Empty icon="👷">No hay empleados activos.</Empty>
+          )}
         </Card>
       )}
     </>);
