@@ -4297,6 +4297,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[busy,setBusy]=useState(false);
   const[verBasicos,setVerBasicos]=useState(false);
   const[basicosDraft,setBasicosDraft]=useState({});
+  const[verNomina,setVerNomina]=useState(false);
 
   const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
   const liqDe=(empId,per)=>(liquidaciones||[]).find(l=>l.empleadoId===empId&&l.periodo===per);
@@ -4390,7 +4391,16 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     </>);
   }
 
+  if(!verNomina){
+    return(<>
+      <ST help={"Calculá el sueldo de cada empleado por mes: haberes menos descuentos = neto a cobrar. Al confirmar generás un recibo imprimible.\n\nEsto NO registra un pago ni descuenta la Caja Disponible — el pago real se sigue cargando en la pestaña Sueldos como siempre."}>Liquidación de sueldos</ST>
+      <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
+      <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
+    </>);
+  }
+
   return(<>
+    <button onClick={()=>setVerNomina(false)} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>← Volver</button>
     <ST help={"Calculá el sueldo de cada empleado por mes: haberes menos descuentos = neto a cobrar. Al confirmar generás un recibo imprimible.\n\nEsto NO registra un pago ni descuenta la Caja Disponible — el pago real se sigue cargando en la pestaña Sueldos como siempre."}>Liquidación de sueldos</ST>
     <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
 
