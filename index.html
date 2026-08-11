@@ -4307,10 +4307,16 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const abrirLiquidacion=emp=>{
     const existente=liqDe(emp.id,periodo);
     setEditando(emp);
+    const basicoRef=Number(emp.sueldoBasicoRef)||0;
     setForm(existente?{...existente}:{
       id:uid(),empleadoId:emp.id,periodo,
-      sueldoBasico:emp.sueldoBasicoRef?String(emp.sueldoBasicoRef):"",hsExtras:"",bono:"",feriados:"",plusVacacional:"",plusSac:"",
-      ausencias:"",penalidad:"",adelantos:"",consumos:"",
+      sueldoBasico:basicoRef?String(basicoRef):"",
+      hsExtras:basicoRef?String(Math.round((basicoRef/208*2)*100)/100):"",
+      bono:emp.bonoRef?String(emp.bonoRef):"",
+      feriados:basicoRef?String(Math.round((basicoRef/208*8)*100)/100):"",
+      plusVacacional:"",plusSac:"",
+      ausencias:basicoRef?String(Math.round((basicoRef/208*8)*100)/100):"",// mismo cálculo que valor feriado, pedido así por Adrian
+      penalidad:"",adelantos:"",consumos:"",
       obs:"",estado:"borrador",fecha:new Date().toISOString(),fechaConfirmacion:null,
     });
   };
