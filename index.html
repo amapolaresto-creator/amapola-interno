@@ -34,6 +34,8 @@ const PASS="716*";
 const ADMIN_PASS="Barcala716*";
 const SITE_USER="amapolaresto@gmail.com";
 const SITE_PASS="Barcala716";
+const COCINA_USER="cocina";
+const COCINA_LOGIN_PASS="AmapolaResto";
 const SB_URL="https://qupcqcbvjxxsghwatxgq.supabase.co/rest/v1";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1cGNxY2J2anh4c2dod2F0eGdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTI3OTcsImV4cCI6MjA5NzkyODc5N30.odc_ywGklknD1hpkX3PSnADXfuNm9Ci4hd550_J-awA";
 const SBH={"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json"};
@@ -206,9 +208,15 @@ function LoginGate({onSuccess}){
   const[pass,setPass]=useState("");
   const[err,setErr]=useState(false);
   const check=()=>{
-    if(user.trim().toLowerCase()===SITE_USER&&pass===SITE_PASS){
+    const u=user.trim().toLowerCase();
+    if(u===SITE_USER&&pass===SITE_PASS){
       localStorage.setItem("amapola_site_auth","1");
-      onSuccess();
+      localStorage.setItem("amapola_site_role","full");
+      onSuccess("full");
+    }else if(u===COCINA_USER&&pass===COCINA_LOGIN_PASS){
+      localStorage.setItem("amapola_site_auth","1");
+      localStorage.setItem("amapola_site_role","cocina");
+      onSuccess("cocina");
     }else{
       setErr(true);setPass("");
     }
@@ -218,7 +226,7 @@ function LoginGate({onSuccess}){
       <div style={{background:"#fff",borderRadius:16,padding:"32px 26px",width:"100%",maxWidth:380,boxShadow:"0 8px 30px rgba(0,0,0,.3)"}}>
         <p style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",marginBottom:4,color:"#2C1A0E",textAlign:"center"}}>Amapola · Interno</p>
         <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:22,textAlign:"center"}}>Ingresá para continuar</p>
-        <input type="email" placeholder="Usuario" value={user} autoFocus autoCapitalize="none" autoCorrect="off"
+        <input type="text" placeholder="Usuario" value={user} autoFocus autoCapitalize="none" autoCorrect="off"
           onChange={e=>{setUser(e.target.value);setErr(false);}}
           onKeyDown={e=>e.key==="Enter"&&check()}
           style={{...iS,border:`1.5px solid ${err?"#E74C3C":"#E8DCC8"}`,marginBottom:10}}/>
@@ -235,14 +243,21 @@ function LoginGate({onSuccess}){
 
 function Root(){
   const[authed,setAuthed]=useState(()=>localStorage.getItem("amapola_site_auth")==="1");
-  if(!authed)return <LoginGate onSuccess={()=>setAuthed(true)}/>;
-  return <App/>;
+  const[role,setRole]=useState(()=>localStorage.getItem("amapola_site_role")||"full");
+  const cerrarSesion=()=>{
+    localStorage.removeItem("amapola_site_auth");
+    localStorage.removeItem("amapola_site_role");
+    setAuthed(false);
+  };
+  if(!authed)return <LoginGate onSuccess={r=>{setRole(r);setAuthed(true);}}/>;
+  return <App role={role} cerrarSesion={cerrarSesion}/>;
 }
 
-function App(){
+function App({role="full",cerrarSesion}){
+  const cocinaOnly=role==="cocina";
   const[phase,setPhase]=useState("init");
   const[errMsg,setErrMsg]=useState("");
-  const[tab,setTab]=useState("boletas");
+  const[tab,setTab]=useState(()=>cocinaOnly?"stock":"boletas");
   const[toastMsg,setToastMsg]=useState("");
   const[lightbox,setLightbox]=useState(null);
   const[passModal,setPassModal]=useState(null);
@@ -509,7 +524,7 @@ function App(){
     {id:"admin",      label:"⚙️ Admin"},
   ];
   const stockBajoCount=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo)).length;
-  const TABS=[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
+  const TABS=cocinaOnly?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
   return(
     <div className="amapola-main" style={{background:"#F9F6F1",minHeight:"100dvh",color:"#2C1A0E"}}>
@@ -530,18 +545,21 @@ function App(){
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{fontSize:".62rem",color:syncColor,fontWeight:600}}>{syncMsg}</div>
             {adminUnlocked&&<button onClick={()=>{setAdminUnlocked(false);setTab("caja");}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Salir admin</button>}
+            {cerrarSesion&&<button onClick={()=>{if(confirm("¿Cerrar sesión?"))cerrarSesion();}} style={{fontSize:".6rem",background:"rgba(255,255,255,.12)",border:"none",color:"#E8DCC8",borderRadius:6,padding:"2px 7px",cursor:"pointer"}}>Cerrar sesión</button>}
           </div>
         </div>
-        <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
-          <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-            <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
-            <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
+        {!cocinaOnly&&(
+          <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
+            <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+              <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
+              <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
+            </div>
+            <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
+              <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
+              <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
+            </div>
           </div>
-          <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
-            <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
-            <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
-          </div>
-        </div>
+        )}
       </div>
       <div className="amapola-tabbar-mobile" style={{background:"#2C1A0E",borderTop:"1px solid rgba(255,255,255,.08)",position:"sticky",top:60,zIndex:99,overflowX:"auto"}}>
         {TABS.map(t=>(
@@ -586,7 +604,7 @@ function App(){
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor="Administración"/>}
+        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={cocinaOnly?"Cocina":"Administración"}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
