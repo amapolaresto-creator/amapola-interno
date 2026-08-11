@@ -4247,8 +4247,6 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
 
 const CAMPOS_HABER=[
   ["sueldoBasico","Sueldo básico"],
-  ["hsExtras","Horas extras"],
-  ["bono","Bono"],
   ["feriados","Feriados"],
   ["plusVacacional","Plus vacacional"],
   ["plusSac","Plus SAC"],
@@ -4304,21 +4302,49 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const liqDe=(empId,per)=>(liquidaciones||[]).find(l=>l.empleadoId===empId&&l.periodo===per);
   const num=v=>Number(v)||0;
 
+  // Horas extras: cantidad de horas × valor hora (básico/208×2). Bono: 0 llegadas tarde/faltas = bono base x2;
+  // ≥1 = bono base - (cantidad×5000), con tope en el propio bono base (nunca negativo).
+  const haberesCalc=f=>{
+    const basico=num(f.sueldoBasico);
+    const valorHsExtraHora=Math.round((basico/208*2)*100)/100;
+    const hsExtrasCantSet=f.hsExtrasCant!==undefined&&f.hsExtrasCant!=="";
+    const hsExtrasMonto=hsExtrasCantSet?Math.round(num(f.hsExtrasCant)*valorHsExtraHora*100)/100:num(f.hsExtras);
+    const bonoBaseSet=f.bonoBase!==undefined&&f.bonoBase!=="";
+    const bonoBase=bonoBaseSet?num(f.bonoBase):num(f.bono);
+    const bonoCantSet=f.bonoCant!==undefined&&f.bonoCant!=="";
+    const bonoCant=bonoCantSet?num(f.bonoCant):null;
+    const bonoMonto=bonoCant===null?bonoBase:(bonoCant===0?bonoBase*2:Math.max(0,bonoBase-Math.min(bonoCant*5000,bonoBase)));
+    const otros=num(f.feriados)+num(f.plusVacacional)+num(f.plusSac);
+    const subtotal=basico+hsExtrasMonto+bonoMonto+otros;
+    return{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,subtotal};
+  };
+
   const abrirLiquidacion=emp=>{
     const existente=liqDe(emp.id,periodo);
     setEditando(emp);
     const basicoRef=Number(emp.sueldoBasicoRef)||0;
-    setForm(existente?{...existente}:{
-      id:uid(),empleadoId:emp.id,periodo,
-      sueldoBasico:basicoRef?String(basicoRef):"",
-      hsExtras:basicoRef?String(Math.round((basicoRef/208*2)*100)/100):"",
-      bono:emp.bonoRef?String(emp.bonoRef):"",
-      feriados:basicoRef?String(Math.round((basicoRef/208*8)*100)/100):"",
-      plusVacacional:"",plusSac:"",
-      ausencias:basicoRef?String(Math.round((basicoRef/208*8)*100)/100):"",// mismo cálculo que valor feriado, pedido así por Adrian
-      penalidad:"",adelantos:"",consumos:"",
-      obs:"",estado:"borrador",fecha:new Date().toISOString(),fechaConfirmacion:null,
-    });
+    const bonoRef=Number(emp.bonoRef)||0;
+    if(existente){
+      setForm({
+        ...existente,
+        bonoBase:existente.bonoBase!==undefined?existente.bonoBase:(existente.bono!==undefined&&existente.bono!==""?String(existente.bono):(bonoRef?String(bonoRef):"")),
+        hsExtrasCant:existente.hsExtrasCant!==undefined?existente.hsExtrasCant:"",
+        bonoCant:existente.bonoCant!==undefined?existente.bonoCant:"",
+      });
+    }else{
+      setForm({
+        id:uid(),empleadoId:emp.id,periodo,
+        sueldoBasico:basicoRef?String(basicoRef):"",
+        hsExtrasCant:"",
+        bonoBase:bonoRef?String(bonoRef):"",
+        bonoCant:"",
+        feriados:basicoRef?String(Math.round((basicoRef/208*8)*100)/100):"",
+        plusVacacional:"",plusSac:"",
+        ausencias:basicoRef?String(Math.round((basicoRef/208*8)*100)/100):"",// mismo cálculo que valor feriado, pedido así por Adrian
+        penalidad:"",adelantos:"",consumos:"",
+        obs:"",estado:"borrador",fecha:new Date().toISOString(),fechaConfirmacion:null,
+      });
+    }
   };
 
   const guardarValores=async emp=>{
@@ -4333,11 +4359,12 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   };
 
   const guardar=async confirmar=>{
-    const subtotal=CAMPOS_HABER.reduce((s,[k])=>s+num(form[k]),0);
+    const{hsExtrasMonto,bonoMonto,subtotal}=haberesCalc(form);
     const totalDescuentos=CAMPOS_DESCUENTO.reduce((s,[k])=>s+num(form[k]),0);
     if(subtotal<=0){toast("Cargá al menos un haber (ej. sueldo básico)");return null;}
     setBusy(true);
     const registro={...form,empleadoId:editando.id,empleadoNombre:(editando.nombre+" "+(editando.apellido||"")).trim(),periodo,
+      hsExtras:hsExtrasMonto,bono:bonoMonto,
       subtotal,totalDescuentos,neto:subtotal-totalDescuentos,
       estado:confirmar?"confirmada":(form.estado||"borrador"),
       fechaConfirmacion:confirmar?new Date().toISOString():(form.fechaConfirmacion||null),
@@ -4361,16 +4388,29 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   };
 
   if(editando&&form){
-    const subtotal=CAMPOS_HABER.reduce((s,[k])=>s+num(form[k]),0);
+    const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,subtotal}=haberesCalc(form);
     const totalDescuentos=CAMPOS_DESCUENTO.reduce((s,[k])=>s+num(form[k]),0);
     const neto=subtotal-totalDescuentos;
+    const bonoCantVacio=form.bonoCant===undefined||form.bonoCant==="";
     return(<>
       <button onClick={()=>{setEditando(null);setForm(null);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>← Volver a la nómina</button>
       <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",marginBottom:2}}>{editando.nombre} {editando.apellido||""}</div>
       <div style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>{mesLabel(periodo)}{form.estado==="confirmada"&&<span style={{marginLeft:8,color:"#2D6A4F",fontWeight:700}}>✓ Confirmada</span>}</div>
 
       <Card title="Haberes">
-        {CAMPOS_HABER.map(([k,label])=>(
+        <Field label="Sueldo básico"><Inp type="number" value={form.sueldoBasico} onChange={v=>setForm(f=>({...f,sueldoBasico:v}))} placeholder="0"/></Field>
+
+        <Field label="Horas extras (cantidad de horas)"><Inp type="number" value={form.hsExtrasCant!==undefined?form.hsExtrasCant:""} onChange={v=>setForm(f=>({...f,hsExtrasCant:v}))} placeholder="0"/></Field>
+        <p style={{fontSize:".74rem",color:"#7B7063",margin:"-10px 0 0"}}>Valor hora: {fmt(valorHsExtraHora)} · Total horas extras: <strong style={{color:"#2C1A0E"}}>{fmt(hsExtrasMonto)}</strong></p>
+
+        <Field label="Bono base"><Inp type="number" value={form.bonoBase!==undefined?form.bonoBase:""} onChange={v=>setForm(f=>({...f,bonoBase:v}))} placeholder="0"/></Field>
+        <Field label="Llegadas tarde / faltas"><Inp type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={v=>setForm(f=>({...f,bonoCant:v}))} placeholder="0 = bono x2"/></Field>
+        <p style={{fontSize:".74rem",color:"#7B7063",margin:"-10px 0 0"}}>
+          {bonoCantVacio?"Sin cargar → se toma el bono base tal cual.":(num(form.bonoCant)===0?"0 llegadas tarde/faltas → bono base x2.":(num(form.bonoCant)+" × $5.000 de descuento (tope: el bono base)."))}
+          {" "}Bono a liquidar: <strong style={{color:"#2C1A0E"}}>{fmt(bonoMonto)}</strong>
+        </p>
+
+        {CAMPOS_HABER.filter(([k])=>k!=="sueldoBasico").map(([k,label])=>(
           <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
         ))}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0 0",marginTop:8,borderTop:"1px solid #F2EAE0"}}>
