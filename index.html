@@ -4396,6 +4396,25 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <ST help={"Calculá el sueldo de cada empleado por mes: haberes menos descuentos = neto a cobrar. Al confirmar generás un recibo imprimible.\n\nEsto NO registra un pago ni descuenta la Caja Disponible — el pago real se sigue cargando en la pestaña Sueldos como siempre."}>Liquidación de sueldos</ST>
       <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
+
+      <div style={{margin:"14px 0"}}>
+        <SmBtn onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar sueldos básicos agendados":"📌 Ver sueldos básicos agendados"}</SmBtn>
+      </div>
+
+      {verBasicos&&(
+        <Card title="Sueldos básicos agendados (ayuda memoria)">
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Este valor se autocompleta como sueldo básico al abrir una liquidación nueva (podés editarlo igual en el momento).</p>
+          {empleadosActivos.map(e=>(
+            <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F9F6F1"}}>
+              <span style={{flex:1,fontSize:".85rem"}}>{e.nombre} {e.apellido||""}</span>
+              <input type="number" value={basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"")}
+                onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={{...iS,width:110}}/>
+              <SmBtn onClick={()=>guardarBasico(e)}>Guardar</SmBtn>
+            </div>
+          ))}
+          {empleadosActivos.length===0&&<Empty icon="👷">No hay empleados activos.</Empty>}
+        </Card>
+      )}
     </>);
   }
 
@@ -4407,25 +4426,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     <Field label="Período">
       <input type="month" value={periodo} onChange={e=>setPeriodo(e.target.value)} style={iS}/>
     </Field>
-
-    <div style={{margin:"14px 0"}}>
-      <SmBtn onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar sueldos básicos agendados":"📌 Ver sueldos básicos agendados"}</SmBtn>
-    </div>
-
-    {verBasicos&&(
-      <Card title="Sueldos básicos agendados (ayuda memoria)">
-        <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Este valor se autocompleta como sueldo básico al abrir una liquidación nueva (podés editarlo igual en el momento).</p>
-        {empleadosActivos.map(e=>(
-          <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #F9F6F1"}}>
-            <span style={{flex:1,fontSize:".85rem"}}>{e.nombre} {e.apellido||""}</span>
-            <input type="number" value={basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"")}
-              onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={{...iS,width:110}}/>
-            <SmBtn onClick={()=>guardarBasico(e)}>Guardar</SmBtn>
-          </div>
-        ))}
-        {empleadosActivos.length===0&&<Empty icon="👷">No hay empleados activos.</Empty>}
-      </Card>
-    )}
 
     <Card title={"Nómina · "+mesLabel(periodo)}>
       {empleadosActivos.map(e=>{
