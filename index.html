@@ -1176,13 +1176,6 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
     return true;
   };
 
-  const hoyD=new Date();
-  const amexMes=pagos.filter(p=>{
-    if(p.forma!=="Amex")return false;
-    const d=new Date(p.fecha);
-    return d.getMonth()===hoyD.getMonth()&&d.getFullYear()===hoyD.getFullYear();
-  }).reduce((s,p)=>s+Number(p.monto||0),0);
-
   return(<>
     <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Amex: solo descuenta la deuda del proveedor, no toca la caja ni el banco.\n• Amex es nuestra tarjeta de crédito — un pago con Amex queda cargado al resumen, no sale plata todavía. Cuando pagás el resumen de la tarjeta, eso se registra como un Gasto (Pagos Digitales) en la categoría Amex, en efectivo o transferencia según corresponda.\n• Si pagás de más a Avenida o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
 
@@ -1204,13 +1197,6 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
       <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6}}>Solo aplica a pagos en efectivo</div>
     </div>
-    {amexMes>0&&(
-      <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
-        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>💳 Cargado a Amex este mes</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(amexMes)}</div>
-        <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que pagués el resumen de la tarjeta.</div>
-      </div>
-    )}
     <Btn bg="#B7860B" onClick={()=>setNuevoPagoModal(true)}>+ Registrar pago</Btn>
 
     {nuevoPagoModal&&(
@@ -2993,6 +2979,13 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 
   const{ingresos,egTransf,saldoReal,deducciones}=calcDigital();
 
+  const hoyD=new Date();
+  const amexMes=(pagos||[]).filter(p=>{
+    if(p.forma!=="Amex")return false;
+    const d=new Date(p.fecha);
+    return d.getMonth()===hoyD.getMonth()&&d.getFullYear()===hoyD.getFullYear();
+  }).reduce((s,p)=>s+Number(p.monto||0),0);
+
   const actualizarBanco=async()=>{
     if(!saldoBanco){toast("Ingresá el saldo real");return;}
     setSavingBanco(true);
@@ -3109,6 +3102,14 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
         </div>
       )}
     </div>
+
+    {amexMes>0&&(
+      <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
+        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>💳 Cargado a Amex este mes</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(amexMes)}</div>
+        <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que pagués el resumen de la tarjeta.</div>
+      </div>
+    )}
 
     {/* CRUCE GLOBAL */}
     <div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:16,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
