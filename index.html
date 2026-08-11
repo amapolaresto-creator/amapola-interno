@@ -70,6 +70,7 @@ async function sbGetAll(){
     pedidosStock:Array.isArray(m.pedidosStock)?m.pedidosStock:[],
     ajustesCajaEfectivo:Array.isArray(m.ajustesCajaEfectivo)?m.ajustesCajaEfectivo:[],
     desperdicios:Array.isArray(m.desperdicios)?m.desperdicios:[],
+    liquidaciones:Array.isArray(m.liquidaciones)?m.liquidaciones:[],
   };
 }
 async function sbSet(key,value,intentos=3){
@@ -299,8 +300,9 @@ function App({role="full",cerrarSesion}){
   const[pedidosStock,setPedidosStock]=useState([]);
   const[ajustesCajaEfectivo,setAjustesCajaEfectivo]=useState([]);
   const[desperdicios,setDesperdicios]=useState([]);
+  const[liquidaciones,setLiquidaciones]=useState([]);
   const ref=useRef({});
-  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo,desperdicios};
+  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo,desperdicios,liquidaciones};
 
   _toast=msg=>{setToastMsg(msg);setTimeout(()=>setToastMsg(""),2800);};
   const online=()=>{setSyncMsg("● Online");setSyncColor("#40916C");};
@@ -537,7 +539,6 @@ function App({role="full",cerrarSesion}){
     {id:"gerencia",   label:"💼 Gerencia"},
     {id:"cajaefectivo",label:"💵 Caja Disponible"},
     {id:"cajadigital",label:"💳 Caja Digital"},
-    {id:"resumen",    label:"📊 Resumen"},
     {id:"admin",      label:"⚙️ Admin"},
   ];
   const stockBajoCount=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo)).length;
@@ -587,7 +588,7 @@ function App({role="full",cerrarSesion}){
         {tab==="admin-lock"&&(
           <div style={{padding:"20px 0"}}>
             <p style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",marginBottom:4}}>Administración</p>
-            <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>Ingresá la contraseña para acceder a Resumen, Admin y Pagos Digitales.</p>
+            <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>Ingresá la contraseña para acceder a Admin y Pagos Digitales.</p>
             <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
               <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Contraseña</label>
               <input type="password" value={adminPassInput} autoFocus
@@ -611,7 +612,6 @@ function App({role="full",cerrarSesion}){
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
-        {tab==="resumen"&&adminUnlocked&&<TabResumen boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} proveedores={proveedores} calcDeuda={calcDeuda}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
@@ -632,88 +632,6 @@ function App({role="full",cerrarSesion}){
 }
 
 
-
-function TabResumen({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,proveedores,calcDeuda}){
-  const hoy=new Date().toDateString();
-  const mismaFecha=(iso,d)=>new Date(iso).toDateString()===d;
-
-  // HOY
-  const cierresHoy=[...cierres.filter(c=>mismaFecha(c.fecha,hoy)),...(cierresCaja||[]).filter(c=>mismaFecha(c.fecha,hoy))];
-  const pagosHoy=pagos.filter(p=>mismaFecha(p.fecha,hoy));
-  const sueldosHoy=sueldos.filter(s=>mismaFecha(s.fecha,hoy));
-  const gastosHoy=gastos.filter(g=>mismaFecha(g.fecha,hoy));
-  const boletasHoy=boletas.filter(b=>mismaFecha(b.fecha,hoy));
-
-  const totalCierresHoy=cierresHoy.reduce((s,c)=>s+Number(c.total||c.monto||0),0);
-  const totalPagosHoy=pagosHoy.reduce((s,p)=>s+Number(p.monto||0),0);
-  // Los sueldos pagados con forma "Retiro" no son un egreso nuevo — esa plata ya se contó como
-  // egreso cuando se retiró (Gasto "Retiro para sueldos"). Si se sumaran acá también, se contaría dos veces.
-  const totalSueldosHoy=sueldosHoy.filter(x=>x.forma!=="Retiro").reduce((s,x)=>s+Number(x.monto||0),0);
-  const totalGastosHoy=gastosHoy.reduce((s,g)=>s+Number(g.monto||0),0);
-  const totalEgresosHoy=totalPagosHoy+totalSueldosHoy+totalGastosHoy;
-  const netoHoy=totalCierresHoy-totalEgresosHoy;
-
-  // MES ACTUAL
-  const now=new Date();
-  const esMes=iso=>{const d=new Date(iso);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();};
-  const totalCierresMes=[
-    ...cierres.filter(c=>esMes(c.fecha)).map(c=>Number(c.monto||0)),
-    ...(cierresCaja||[]).filter(c=>esMes(c.fecha)).map(c=>Number(c.total||0)),
-  ].reduce((s,v)=>s+v,0);
-  const totalPagosMes=pagos.filter(p=>esMes(p.fecha)).reduce((s,p)=>s+Number(p.monto||0),0);
-  const totalSueldosMes=sueldos.filter(s=>esMes(s.fecha)&&s.forma!=="Retiro").reduce((s,x)=>s+Number(x.monto||0),0);
-  const totalGastosMes=gastos.filter(g=>esMes(g.fecha)).reduce((s,g)=>s+Number(g.monto||0),0);
-  const totalEgresosMes=totalPagosMes+totalSueldosMes+totalGastosMes;
-  const netoMes=totalCierresMes-totalEgresosMes;
-
-  // DEUDA TOTAL PROVEEDORES
-  const deudaTotal=proveedores.reduce((s,p)=>{const d=calcDeuda(p.nombre);return s+Math.max(0,d?d.pendiente:0);},0);
-
-  const mesNombre=now.toLocaleDateString("es-AR",{month:"long",year:"numeric"});
-
-  const Row=({label,value,color})=>(
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid #F9F6F1"}}>
-      <span style={{fontSize:".85rem",color:"#7B7063"}}>{label}</span>
-      <span style={{fontWeight:700,fontSize:".9rem",color:color||"#2C1A0E"}}>{fmt(value)}</span>
-    </div>
-  );
-
-  return(<>
-    <ST>Resumen</ST><SS>Vista rápida del día y del mes.</SS>
-
-    {/* HOY */}
-    <Card title={`Hoy · ${new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}`}>
-      <Row label="💵 Cierres de caja" value={totalCierresHoy} color="#2D6A4F"/>
-      <Row label="🧾 Boletas recibidas" value={boletasHoy.reduce((s,b)=>s+Number(b.monto||0),0)}/>
-      <Row label="💸 Pagos a proveedores" value={totalPagosHoy} color="#C0392B"/>
-      <Row label="👥 Sueldos pagados" value={totalSueldosHoy} color="#C0392B"/>
-      <Row label="🏠 Pagos Digitales" value={totalGastosHoy} color="#C0392B"/>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0 0",marginTop:4}}>
-        <span style={{fontWeight:700,fontSize:".9rem"}}>Neto del día</span>
-        <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:netoHoy>=0?"#2D6A4F":"#C0392B"}}>{fmt(netoHoy)}</span>
-      </div>
-    </Card>
-
-    {/* MES */}
-    <Card title={`Mes · ${mesNombre}`}>
-      <Row label="💵 Total cierres" value={totalCierresMes} color="#2D6A4F"/>
-      <Row label="💸 Pagos a proveedores" value={totalPagosMes} color="#C0392B"/>
-      <Row label="👥 Sueldos" value={totalSueldosMes} color="#C0392B"/>
-      <Row label="🏠 Pagos Digitales" value={totalGastosMes} color="#C0392B"/>
-      <Row label="📦 Total egresos" value={totalEgresosMes} color="#C0392B"/>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0 0",marginTop:4}}>
-        <span style={{fontWeight:700,fontSize:".9rem"}}>Neto del mes</span>
-        <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:netoMes>=0?"#2D6A4F":"#C0392B"}}>{fmt(netoMes)}</span>
-      </div>
-    </Card>
-
-    {/* DEUDA PROVEEDORES */}
-    <Card title="🏪 Deuda total a proveedores">
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#C0392B",margin:"4px 0 2px"}}>{fmt(deudaTotal)}</div>
-      <div style={{fontSize:".78rem",color:"#7B7063"}}>Suma de deuda pendiente con todos los proveedores</div>
-    </Card>
-  </>);
-}
 
 function NotasTurno({cierres}){
   const[nota,setNota]=useState("");
@@ -2723,8 +2641,10 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
         {[
           ["💵 Efectivo ingresado",fmt(efectivoHoy),"#2D6A4F"],
           ["💳 Digital ingresado",fmt(digitalHoy),"#B7860B"],
+          ["🧾 Boletas recibidas",fmt(boletasHoy.reduce((s,b)=>s+Number(b.monto||0),0)),"#2C1A0E"],
           ["💸 Pagos a proveedores",fmt(pagosHoyTotal),"#C0392B"],
           ["👥 Sueldos",fmt(sueldosHoyTot),"#C0392B"],
+          ["🏠 Pagos Digitales",fmt(gastosHoyTot),"#C0392B"],
         ].map(([l,v,c])=>(
           <div key={l} style={{background:"#F9F6F1",borderRadius:10,padding:"10px 12px"}}>
             <div style={{fontSize:".68rem",color:"#7B7063",marginBottom:2}}>{l}</div>
@@ -2783,6 +2703,13 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
         <span style={{fontWeight:700,fontSize:".85rem",color:netoMes>=0?"#2D6A4F":"#C0392B"}}>Neto del mes</span>
         <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:netoMes>=0?"#2D6A4F":"#C0392B"}}>{netoMes>=0?"+":""}{fmt(netoMes)}</span>
       </div>
+    </div>
+
+    {/* DEUDA TOTAL PROVEEDORES */}
+    <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:12}}>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:8}}>🏪 Deuda total a proveedores</div>
+      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#C0392B",margin:"4px 0 2px"}}>{fmt(deudaTotal)}</div>
+      <div style={{fontSize:".78rem",color:"#7B7063"}}>Suma de deuda pendiente con todos los proveedores</div>
     </div>
 
     {/* TOP DEUDORES */}
