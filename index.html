@@ -4399,11 +4399,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <Card title="Haberes">
         <Field label="Sueldo básico"><Inp type="number" value={form.sueldoBasico} onChange={v=>setForm(f=>({...f,sueldoBasico:v}))} placeholder="0"/></Field>
 
-        <Field label="Horas extras (cantidad de horas)"><Inp type="number" value={form.hsExtrasCant!==undefined?form.hsExtrasCant:""} onChange={v=>setForm(f=>({...f,hsExtrasCant:v}))} placeholder="0"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"-10px 0 0"}}>Valor hora: {fmt(valorHsExtraHora)} · Total horas extras: <strong style={{color:"#2C1A0E"}}>{fmt(hsExtrasMonto)}</strong></p>
+        <Field label={<>Horas extras <span style={{fontWeight:400,color:"#7B7063"}}>(cantidad de horas · valor hora {fmt(valorHsExtraHora)})</span></>}><Inp type="number" value={form.hsExtrasCant!==undefined?form.hsExtrasCant:""} onChange={v=>setForm(f=>({...f,hsExtrasCant:v}))} placeholder="0"/></Field>
+        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Total horas extras: <strong style={{color:"#2C1A0E"}}>{fmt(hsExtrasMonto)}</strong></p>
 
         <Field label="Bono base"><Inp type="number" value={form.bonoBase!==undefined?form.bonoBase:""} onChange={v=>setForm(f=>({...f,bonoBase:v}))} placeholder="0"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"-10px 0 0"}}>Bono a liquidar: <strong style={{color:"#2C1A0E"}}>{fmt(bonoMonto)}</strong></p>
+        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Bono a liquidar: <strong style={{color:"#2C1A0E"}}>{fmt(bonoMonto)}</strong></p>
 
         {CAMPOS_HABER.filter(([k])=>k!=="sueldoBasico").map(([k,label])=>(
           <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
@@ -4418,7 +4418,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         <Field label="Ausencias"><Inp type="number" value={form.ausencias} onChange={v=>setForm(f=>({...f,ausencias:v}))} placeholder="0"/></Field>
 
         <Field label={<>Penalidades <span style={{color:"#C0392B"}}>X</span></>}><Inp type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={v=>setForm(f=>({...f,bonoCant:v}))} placeholder="0 = bono x2"/></Field>
-        <p style={{fontSize:".74rem",color:"#7B7063",margin:"-10px 0 0"}}>
+        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>
           {bonoCantVacio?"Sin cargar → se toma el bono base tal cual.":(num(form.bonoCant)===0?"0 llegadas tarde/faltas → bono base x2.":(num(form.bonoCant)+" × $5.000 de descuento (tope: el bono base)."))}
         </p>
 
