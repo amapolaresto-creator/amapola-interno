@@ -4301,7 +4301,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const num=v=>Number(v)||0;
 
   // Horas extras: cantidad de horas × valor hora (básico/208×2). Bono: 0 llegadas tarde/faltas = bono base x2;
-  // ≥1 = bono base - (cantidad×5000), con tope en el propio bono base (nunca negativo).
+  // 1 a 4 = sin cambios (tolerancia); ≥5 = bono base - (cantidad×5000), con tope en el propio bono base (nunca negativo).
   // Ausencias: cantidad de días × valor día (básico/208×8).
   const haberesCalc=f=>{
     const basico=num(f.sueldoBasico);
@@ -4312,7 +4312,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const bonoBase=bonoBaseSet?num(f.bonoBase):num(f.bono);
     const bonoCantSet=f.bonoCant!==undefined&&f.bonoCant!=="";
     const bonoCant=bonoCantSet?num(f.bonoCant):null;
-    const bonoMonto=bonoCant===null?bonoBase:(bonoCant===0?bonoBase*2:Math.max(0,bonoBase-Math.min(bonoCant*5000,bonoBase)));
+    const bonoMonto=bonoCant===null?bonoBase:(bonoCant===0?bonoBase*2:(bonoCant<5?bonoBase:Math.max(0,bonoBase-Math.min(bonoCant*5000,bonoBase))));
     const otros=num(f.feriados)+num(f.plusVacacional)+num(f.plusSac);
     const subtotal=basico+hsExtrasMonto+bonoMonto+otros;
     const valorAusenciaDia=Math.round((basico/208*8)*100)/100;
@@ -4423,7 +4423,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
         <Field label={<>Penalidades <span style={{color:"#C0392B"}}>X</span></>}><Inp type="number" value={form.bonoCant!==undefined?form.bonoCant:""} onChange={v=>setForm(f=>({...f,bonoCant:v}))} placeholder="0 = bono x2"/></Field>
         <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>
-          {bonoCantVacio?"Sin cargar → se toma el bono base tal cual.":(num(form.bonoCant)===0?"0 llegadas tarde/faltas → bono base x2.":(num(form.bonoCant)+" × $5.000 de descuento (tope: el bono base)."))}
+          {bonoCantVacio?"Sin cargar → se toma el bono base tal cual.":(num(form.bonoCant)===0?"0 llegadas tarde/faltas → bono base x2.":(num(form.bonoCant)<5?"1 a 4 → sin cambios en el bono.":(num(form.bonoCant)+" × $5.000 de descuento (tope: el bono base).")))}
         </p>
 
         {CAMPOS_DESCUENTO.map(([k,label])=>(
