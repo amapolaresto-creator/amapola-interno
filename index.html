@@ -4396,10 +4396,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <ST help={"Calculá el sueldo de cada empleado por mes: haberes menos descuentos = neto a cobrar. Al confirmar generás un recibo imprimible.\n\nEsto NO registra un pago ni descuenta la Caja Disponible — el pago real se sigue cargando en la pestaña Sueldos como siempre."}>Liquidación de sueldos</ST>
       <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
-
-      <div style={{margin:"14px 0"}}>
-        <SmBtn onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar sueldos básicos agendados":"📌 Ver sueldos básicos agendados"}</SmBtn>
-      </div>
+      <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
