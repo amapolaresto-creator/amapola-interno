@@ -4276,7 +4276,7 @@ function reciboHTML(reg,emp){
     +fila("Feriados",reg.feriados)+fila("Plus vacacional",reg.plusVacacional)+fila("Plus SAC",reg.plusSac)
     +"<tr><td class=\"tot\">Subtotal</td><td class=\"tot\" style=\"text-align:right\">"+fmt(reg.subtotal)+"</td></tr></table>"
     +"<table>"
-    +fila("Ausencias",reg.ausencias)+fila("Penalidad",reg.penalidad)+fila("Adelantos",reg.adelantos)+fila("Consumos",reg.consumos)
+    +fila("Ausencias",reg.ausencias)+fila("Desperdicios",reg.desperdicios)+fila("Adelantos",reg.adelantos)+fila("Consumos",reg.consumos)
     +"<tr><td class=\"tot\">Total descuentos</td><td class=\"tot\" style=\"text-align:right\">-"+fmt(reg.totalDescuentos)+"</td></tr></table>"
     +"<div class=\"neto\">NETO A COBRAR: "+fmt(reg.neto)+"</div>"
     +(reg.obs?("<p style=\"font-size:.8rem;color:#7B7063;margin-top:16px;\">"+reg.obs+"</p>"):"")
@@ -4320,8 +4320,13 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const valorAusenciaDia=Math.round((basico/208*8)*100)/100;
     const ausenciasCantSet=f.ausenciasCant!==undefined&&f.ausenciasCant!=="";
     const ausenciasMonto=ausenciasCantSet?Math.round(num(f.ausenciasCant)*valorAusenciaDia*100)/100:num(f.ausencias);
-    const totalDescuentos=ausenciasMonto+num(f.adelantos)+num(f.consumos);
-    return{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,totalDescuentos};
+    // Desperdicios: descuenta solo lo que quede disponible del bono (bonoMonto, ya neto de Penalidades X). Tope: ese remanente.
+    const bonoDisponible=Math.max(0,bonoMonto);
+    const desperdiciosInputSet=f.desperdiciosInput!==undefined&&f.desperdiciosInput!=="";
+    const desperdiciosRaw=desperdiciosInputSet?num(f.desperdiciosInput):num(f.desperdicios);
+    const desperdiciosMonto=Math.min(desperdiciosRaw,bonoDisponible);
+    const totalDescuentos=ausenciasMonto+num(f.adelantos)+num(f.consumos)+desperdiciosMonto;
+    return{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,bonoDisponible,desperdiciosMonto,totalDescuentos};
   };
 
   const abrirLiquidacion=emp=>{
@@ -4337,6 +4342,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         bonoCant:existente.bonoCant!==undefined?existente.bonoCant:"",
         ausenciasCant:existente.ausenciasCant!==undefined?existente.ausenciasCant:"",
         feriadosCant:existente.feriadosCant!==undefined?existente.feriadosCant:"",
+        desperdiciosInput:existente.desperdiciosInput!==undefined?existente.desperdiciosInput:"",
       });
     }else{
       setForm({
@@ -4348,7 +4354,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         feriadosCant:"",
         plusVacacional:"",plusSac:"",
         ausenciasCant:"",
-        penalidad:"",adelantos:"",consumos:"",
+        penalidad:"",adelantos:"",consumos:"",desperdiciosInput:"",
         obs:"",estado:"borrador",fecha:new Date().toISOString(),fechaConfirmacion:null,
       });
     }
@@ -4366,11 +4372,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   };
 
   const guardar=async confirmar=>{
-    const{hsExtrasMonto,bonoMonto,feriadosMonto,subtotal,ausenciasMonto,totalDescuentos}=haberesCalc(form);
+    const{hsExtrasMonto,bonoMonto,feriadosMonto,subtotal,ausenciasMonto,desperdiciosMonto,totalDescuentos}=haberesCalc(form);
     if(subtotal<=0){toast("Cargá al menos un haber (ej. sueldo básico)");return null;}
     setBusy(true);
     const registro={...form,empleadoId:editando.id,empleadoNombre:(editando.nombre+" "+(editando.apellido||"")).trim(),periodo,
-      hsExtras:hsExtrasMonto,bono:bonoMonto,ausencias:ausenciasMonto,feriados:feriadosMonto,
+      hsExtras:hsExtrasMonto,bono:bonoMonto,ausencias:ausenciasMonto,feriados:feriadosMonto,desperdicios:desperdiciosMonto,
       subtotal,totalDescuentos,neto:subtotal-totalDescuentos,
       estado:confirmar?"confirmada":(form.estado||"borrador"),
       fechaConfirmacion:confirmar?new Date().toISOString():(form.fechaConfirmacion||null),
@@ -4394,7 +4400,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   };
 
   if(editando&&form){
-    const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,totalDescuentos}=haberesCalc(form);
+    const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,bonoDisponible,desperdiciosMonto,totalDescuentos}=haberesCalc(form);
     const neto=subtotal-totalDescuentos;
     const bonoCantVacio=form.bonoCant===undefined||form.bonoCant==="";
     return(<>
@@ -4431,6 +4437,9 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>
           {bonoCantVacio?"Sin cargar → se toma el bono base tal cual.":(num(form.bonoCant)===0?"0 llegadas tarde/faltas → bono base x2.":(num(form.bonoCant)<5?"1 a 4 → sin cambios en el bono.":(num(form.bonoCant)+" × $5.000 de descuento (tope: el bono base).")))}
         </p>
+
+        <Field label="Desperdicios"><Inp type="number" value={form.desperdiciosInput!==undefined?form.desperdiciosInput:""} onChange={v=>setForm(f=>({...f,desperdiciosInput:v}))} placeholder="0"/></Field>
+        <p style={{fontSize:".74rem",color:"#7B7063",margin:"6px 0 0"}}>Descuenta solo lo que quede disponible del bono (después de Penalidades X) — bono disponible: {fmt(bonoDisponible)}. Se descuenta: <strong style={{color:"#C0392B"}}>{fmt(desperdiciosMonto)}</strong></p>
 
         {CAMPOS_DESCUENTO.map(([k,label])=>(
           <Field key={k} label={label}><Inp type="number" value={form[k]} onChange={v=>setForm(f=>({...f,[k]:v}))} placeholder="0"/></Field>
