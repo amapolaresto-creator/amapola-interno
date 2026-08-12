@@ -637,7 +637,7 @@ function App({role="full",cerrarSesion}){
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
-        {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados}/>}
+        {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={cocinaOnly?"Cocina":"Administración"}/>}
@@ -1566,8 +1566,25 @@ function TabFichajes(){
 
 const RETIRO_SUELDOS_CAT="Retiro para sueldos";
 
-function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados}){
+function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liquidaciones}){
   const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
+  // Chequeo anti-duplicado: si el empleado ya tiene la liquidación de ese período pagada del todo,
+  // avisar antes de cargar otro "Sueldo" manual (podría ser un pago repetido sin querer).
+  const nombreCoincideSueldo=(sNombre,empNombre)=>{
+    const a=(sNombre||"").trim().toLowerCase();
+    const b=(empNombre||"").trim().toLowerCase();
+    if(!a||!b)return false;
+    if(a===b)return true;
+    return b.startsWith(a)||a.startsWith(b);
+  };
+  const liquidacionYaPagada=(nombreEmp,per)=>{
+    const empMatch=(empleados||[]).find(e=>nombreCoincideSueldo(nombreEmp,e.nombre));
+    if(!empMatch)return null;
+    const liq=(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada");
+    if(!liq)return null;
+    const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
+    return pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)?{liq,pagado}:null;
+  };
   const[emp,setEmp]=useState("");const[monto,setMonto]=useState("");
   const[forma,setForma]=useState("Efectivo");const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
@@ -1600,6 +1617,11 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados}){
   const guardar=async()=>{
     if(!emp||!monto){toast("Elegí un empleado e ingresá el monto");return;}
     if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
+    if(concepto==="Sueldo"){
+      const per=(fecha||hoyLocal()).slice(0,7);
+      const chk=liquidacionYaPagada(emp,per);
+      if(chk&&!confirm("⚠️ "+emp+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(chk.pagado)+"). ¿Registrar este pago de todas formas?"))return;
+    }
     setBusy(true);
     await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:emp,concepto,hsExtras:concepto==="HS Extras"?Number(hsExtras)||0:null,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
     setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setConcepto("Sueldo");setHsExtras("");toast("Sueldo registrado ✓");
@@ -4539,7 +4561,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const bonoBaseSet=f.bonoBase!==undefined&&f.bonoBase!=="";
     const bonoBase=bonoBaseSet?num(f.bonoBase):num(f.bono);
     const bonoCantSet=f.bonoCant!==undefined&&f.bonoCant!=="";
-    const bonoCant=bonoCantSet?num(f.bonoCant):null;
+    const bonoCant=bonoCantSet?Math.max(0,num(f.bonoCant)):null;
     const bonoMonto=bonoCant===null?bonoBase:(bonoCant===0?bonoBase*2:(bonoCant<5?bonoBase:Math.max(0,bonoBase-Math.min(bonoCant*5000,bonoBase))));
     const valorFeriado=Math.round((basico/208*8)*100)/100;
     const feriadosCantSet=f.feriadosCant!==undefined&&f.feriadosCant!=="";
@@ -4649,11 +4671,18 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const{valorHsExtraHora,hsExtrasMonto,bonoBase,bonoMonto,valorFeriado,feriadosMonto,subtotal,valorAusenciaDia,ausenciasMonto,bonoDisponible,desperdiciosMonto,totalDescuentos}=haberesCalc(form);
     const neto=subtotal-totalDescuentos;
     const bonoCantVacio=form.bonoCant===undefined||form.bonoCant==="";
+    const yaPagadoForm=form.id?pagadoDe(form.id):0;
     const inpCell={width:86,border:"1px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".72rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
     return(<>
       <button onClick={()=>{setEditando(null);setForm(null);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>← Volver a la nómina</button>
       <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",marginBottom:2}}>{editando.nombre} {editando.apellido||""}</div>
       <div style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>{mesLabel(periodo)}{form.estado==="confirmada"&&<span style={{marginLeft:8,color:"#2D6A4F",fontWeight:700}}>✓ Confirmada</span>}</div>
+
+      {yaPagadoForm>0&&(
+        <div style={{background:"#FBEAEA",border:"1px solid #F3C7C2",borderRadius:10,padding:"10px 14px",marginBottom:16,fontSize:".78rem",color:"#C0392B"}}>
+          ⚠️ Ya se registró un pago de {fmt(yaPagadoForm)} para esta liquidación. Si cambiás los montos y guardás de nuevo, el neto puede quedar desalineado con lo ya pagado — revisalo antes de confirmar.
+        </div>
+      )}
 
       <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
       <div style={{flex:"1 1 440px",minWidth:0}}>
@@ -4679,7 +4708,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
                 <tr key={r.label} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
                   <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{r.label}{r.sub&&<div style={{fontSize:".63rem",color:"#7B7063",fontWeight:400}}>{r.sub}</div>}</td>
                   <td style={{padding:"6px 4px",textAlign:"right"}}>
-                    <input type="number" value={r.val} onChange={e=>r.onVal(e.target.value)} placeholder="0" style={inpCell}/>
+                    <input type="number" min="0" value={r.val} onChange={e=>r.onVal(e.target.value)} placeholder="0" style={inpCell}/>
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#2C1A0E",fontWeight:600,whiteSpace:"nowrap"}}>{r.imp||"—"}</td>
                 </tr>
@@ -4709,7 +4738,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
               {[
                 {label:"Ausencias",sub:"valor día "+fmt(valorAusenciaDia),val:form.ausenciasCant!==undefined?form.ausenciasCant:"",onVal:v=>setForm(f=>({...f,ausenciasCant:v})),imp:fmt(ausenciasMonto)},
                 {label:<>Penalidades <span style={{color:"#C0392B"}}>X</span></>,sub:null,val:form.bonoCant!==undefined?form.bonoCant:"",onVal:v=>setForm(f=>({...f,bonoCant:v})),ph:"0 = x2",
-                  imp:bonoCantVacio?"—":(num(form.bonoCant)===0?"bono x2":(num(form.bonoCant)<5?"sin cambios":"-$"+(num(form.bonoCant)*5000).toLocaleString("es-AR")+" del bono"))},
+                  imp:bonoCantVacio?"—":(num(form.bonoCant)===0?"bono x2":(num(form.bonoCant)<5?"sin cambios":"-"+fmt(Math.min(Math.max(0,num(form.bonoCant))*5000,bonoBase))+" del bono"))},
                 {label:"Desperdicios",sub:"disponible del bono: "+fmt(bonoDisponible),val:form.desperdiciosInput!==undefined?form.desperdiciosInput:"",onVal:v=>setForm(f=>({...f,desperdiciosInput:v})),imp:fmt(desperdiciosMonto)},
                 {label:"Adelantos",sub:null,val:form.adelantos,onVal:v=>setForm(f=>({...f,adelantos:v})),imp:null},
                 {label:"Consumos",sub:null,val:form.consumos,onVal:v=>setForm(f=>({...f,consumos:v})),imp:null},
@@ -4717,7 +4746,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
                 <tr key={i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
                   <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{r.label}{r.sub&&<div style={{fontSize:".63rem",color:"#7B7063",fontWeight:400}}>{r.sub}</div>}</td>
                   <td style={{padding:"6px 4px",textAlign:"right"}}>
-                    <input type="number" value={r.val} onChange={e=>r.onVal(e.target.value)} placeholder={r.ph||"0"} style={inpCell}/>
+                    <input type="number" min="0" value={r.val} onChange={e=>r.onVal(e.target.value)} placeholder={r.ph||"0"} style={inpCell}/>
                   </td>
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:600,whiteSpace:"nowrap"}}>{r.imp||"—"}</td>
                 </tr>
