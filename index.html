@@ -637,7 +637,7 @@ function App({role="full",cerrarSesion}){
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
-        {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos}/>}
+        {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={cocinaOnly?"Cocina":"Administración"}/>}
@@ -1566,8 +1566,8 @@ function TabFichajes(){
 
 const RETIRO_SUELDOS_CAT="Retiro para sueldos";
 
-function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos}){
-  const EMPS=['Micaela', 'Priscila', 'Catalina', 'Valentina', 'Ludmila', 'Prueba', 'Mike', 'Rocio', 'Omar', 'Pedro', 'Denilson'];
+function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados}){
+  const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
   const[emp,setEmp]=useState("");const[monto,setMonto]=useState("");
   const[forma,setForma]=useState("Efectivo");const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
@@ -1576,6 +1576,12 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos}){
   const[hsExtras,setHsExtras]=useState("");
   const[crearModal,setCrearModal]=useState(false);const[nuevoEmp,setNuevoEmp]=useState("");
   const[listaEmps,setListaEmps]=useState(EMPS);
+  useEffect(()=>{
+    setListaEmps(l=>{
+      const extra=l.filter(n=>!EMPS.includes(n));
+      return[...EMPS,...extra];
+    });
+  },[JSON.stringify(EMPS)]);
   const[retiroModal,setRetiroModal]=useState(false);
   const[retiroMonto,setRetiroMonto]=useState("");
   const[retiroObs,setRetiroObs]=useState("");
@@ -4447,6 +4453,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[legajoAbierto,setLegajoAbierto]=useState(null);
   const[verNomina,setVerNomina]=useState(false);
   const[verPenalidadesAdmin,setVerPenalidadesAdmin]=useState(false);
+  const[verAdelantosAdmin,setVerAdelantosAdmin]=useState(false);
   const[pagoModal,setPagoModal]=useState(null);
   const[pagoMontos,setPagoMontos]=useState({reservado:"",efectivo:"",digital:""});
   const[pagoObs,setPagoObs]=useState("");
@@ -4456,6 +4463,20 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
   const liqDe=(empId,per)=>(liquidaciones||[]).find(l=>l.empleadoId===empId&&l.periodo===per);
   const num=v=>Number(v)||0;
+
+  // Adelantos: se cargan en la pestaña Sueldos (concepto "Adelanto") con el nombre del empleado como texto
+  // libre. Alias conocidos de nombres viejos que no coinciden tal cual con el nombre real del empleado.
+  const ALIAS_ADELANTOS={mike:"michael"};
+  const nombreCoincide=(sNombre,empNombre)=>{
+    const a=(sNombre||"").trim().toLowerCase();
+    const b=(empNombre||"").trim().toLowerCase();
+    if(!a||!b)return false;
+    if(a===b)return true;
+    if(ALIAS_ADELANTOS[a]&&b.startsWith(ALIAS_ADELANTOS[a]))return true;
+    return b.startsWith(a)||a.startsWith(b);
+  };
+  const adelantosDe=(emp,per)=>(sueldos||[]).filter(s=>s.concepto==="Adelanto"&&(s.fecha||"").slice(0,7)===per&&nombreCoincide(s.empleado,emp.nombre));
+  const adelantosSinEmparejar=per=>(sueldos||[]).filter(s=>s.concepto==="Adelanto"&&(s.fecha||"").slice(0,7)===per&&!empleadosActivos.some(e=>nombreCoincide(s.empleado,e.nombre)));
 
   // Pago de una liquidación confirmada: puede salir de lo Reservado (retiro para sueldos, forma "Retiro"),
   // de Efectivo (forma "Efectivo", descuenta Caja Disponible) o de Digital (forma "Transferencia").
@@ -4554,6 +4575,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       });
     }else{
       const xDelMes=(penalidades||[]).filter(p=>p.empleadoId===emp.id&&p.periodo===periodo).length;
+      const adelantosMes=adelantosDe(emp,periodo).reduce((s,x)=>s+Number(x.monto||0),0);
       setForm({
         id:uid(),empleadoId:emp.id,periodo,
         sueldoBasico:basicoRef?String(basicoRef):"",
@@ -4563,7 +4585,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         feriadosCant:"",
         plusVacacional:"",plusSac:"",
         ausenciasCant:"",
-        penalidad:"",adelantos:"",consumos:"",desperdiciosInput:"",
+        penalidad:"",adelantos:adelantosMes>0?String(adelantosMes):"",consumos:"",desperdiciosInput:"",
         obs:"",estado:"borrador",fecha:new Date().toISOString(),fechaConfirmacion:null,
       });
     }
@@ -4731,10 +4753,43 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
       <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
       <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
+      <Btn bg="#B7860B" onClick={()=>setVerAdelantosAdmin(v=>!v)}>{verAdelantosAdmin?"Ocultar Adelantos":"💵 Adelantos"}</Btn>
 
       {verPenalidadesAdmin&&(
         <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
       )}
+
+      {verAdelantosAdmin&&(()=>{
+        const sinEmparejar=adelantosSinEmparejar(periodo);
+        const conAdelanto=empleadosActivos.filter(e=>adelantosDe(e,periodo).length>0);
+        return(
+          <Card title={"Adelantos · "+mesLabel(periodo)}>
+            <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Adelantos cargados en la pestaña Sueldos para {mesLabel(periodo)}. El total de cada empleado se usa como punto de partida en "Adelantos" al liquidar el sueldo (se puede corregir a mano ahí).</p>
+            {conAdelanto.length===0&&sinEmparejar.length===0&&<Empty icon="✅">Sin adelantos cargados en {mesLabel(periodo)}.</Empty>}
+            {conAdelanto.map(e=>{
+              const log=adelantosDe(e,periodo).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+              const total=log.reduce((s,x)=>s+Number(x.monto||0),0);
+              return(
+                <div key={e.id} style={{marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontWeight:600,fontSize:".82rem",color:"#2C1A0E",marginBottom:4}}>
+                    <span>{e.nombre}</span><span>{fmt(total)}</span>
+                  </div>
+                  {log.map(s=>(
+                    <div key={s.id} style={{display:"flex",justifyContent:"space-between",fontSize:".76rem",color:"#7B7063",padding:"4px 0",borderBottom:"1px solid #F2EAE0"}}>
+                      <span>{fmtF(s.fecha)} · {s.forma}{s.obs?(" · "+s.obs):""}</span><span>{fmt(s.monto)}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            {sinEmparejar.length>0&&(
+              <div style={{marginTop:10,fontSize:".72rem",color:"#C0392B",background:"#FBEAEA",border:"1px solid #F3C7C2",borderRadius:8,padding:"8px 10px"}}>
+                ⚠️ {sinEmparejar.length===1?"Hay 1 adelanto":"Hay "+sinEmparejar.length+" adelantos"} de {mesLabel(periodo)} que no pude relacionar con ningún empleado activo: {sinEmparejar.map(s=>"\""+s.empleado+"\" ("+fmt(s.monto)+")").join(", ")}. Revisalo en la pestaña Sueldos.
+              </div>
+            )}
+          </Card>
+        );
+      })()}
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
