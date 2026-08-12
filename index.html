@@ -4252,16 +4252,15 @@ function reciboHTML(reg,emp){
   const subtotalSueldo=Number(reg.subtotal||0)-Number(reg.bono||0);
   const bonoBaseSet=reg.bonoBase!==undefined&&reg.bonoBase!=="";
   const bonoCantSet=reg.bonoCant!==undefined&&reg.bonoCant!=="";
-  let bonoDetalle="";
+  const bonoMonto=Number(reg.bono||0);
+  let motivo="";
   if(bonoBaseSet&&bonoCantSet){
     const bb=Number(reg.bonoBase),bc=Number(reg.bonoCant);
-    const efecto=bc===0?(fmt(bb)+" ×2"):(bc<5?fmt(bb):(fmt(bb)+" · Penalidades X ("+bc+"): -"+fmt(Math.min(bc*5000,bb))));
-    bonoDetalle="Bono base "+efecto+" · No integra el aguinaldo";
-  }else{
-    bonoDetalle="No integra el aguinaldo";
+    motivo=bc===0?("Bono base "+fmt(bb)+" ×2"):(bc<5?("Bono base "+fmt(bb)):("Bono base "+fmt(bb)+" · Penalidades X ("+bc+"): -"+fmt(Math.min(bc*5000,bb))));
   }
-  const bonoBox=Number(reg.bono)?(
-    "<div class=\"bonobox\"><table><tr><td>Bono</td><td style=\"text-align:right\">"+fmt(reg.bono)+"</td></tr></table>"
+  const bonoDetalle=(bonoMonto===0?("No accedió al bono este mes"+(motivo?(" — "+motivo):"")):motivo)+" · No integra el aguinaldo";
+  const bonoBox=(bonoBaseSet||bonoMonto)?(
+    "<div class=\"bonobox\"><table><tr><td>Bono</td><td style=\"text-align:right\">"+fmt(bonoMonto)+"</td></tr></table>"
     +"<div class=\"subrow\">"+bonoDetalle+"</div></div>"
   ):"";
   return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><title>Recibo — "+emp.nombre+" "+(emp.apellido||"")+"</title>"
