@@ -626,7 +626,7 @@ function App({role="full",cerrarSesion}){
           sueldos={sueldos} gastos={gastos} proveedores={proveedores}
           calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
-        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades}/>}
+        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades}/>}
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
@@ -4308,22 +4308,28 @@ function reciboHTML(reg,emp){
     +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar PDF</button>"
     +"</body></html>";
 }
-function TabPenalidades({empleados,penalidades,savePenalidades}){
+function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistorial}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const periodoActual=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");})();
   const[empSel,setEmpSel]=useState(null);
   const[otroTxt,setOtroTxt]=useState("");
+  const[fechaInput,setFechaInput]=useState(hoyLocal());
   const[busy,setBusy]=useState(false);
   const MOTIVOS=["Celular","Llegada tarde","Salió sin avisar"];
 
   const countDe=empId=>(penalidades||[]).filter(p=>p.empleadoId===empId&&p.periodo===periodoActual).length;
 
+  const abrir=empId=>{setEmpSel(empId);setOtroTxt("");setFechaInput(hoyLocal());};
+  const cerrar=()=>{setEmpSel(null);setOtroTxt("");setFechaInput(hoyLocal());};
+
   const agregar=async(emp,motivo)=>{
     if(!motivo||!motivo.trim())return;
     setBusy(true);
-    const registro={id:uid(),empleadoId:emp.id,periodo:periodoActual,motivo:motivo.trim(),fecha:new Date().toISOString()};
+    const fecha=fechaInput?fechaLocalISO(fechaInput):new Date().toISOString();
+    const periodo=(fechaInput||hoyLocal()).slice(0,7);
+    const registro={id:uid(),empleadoId:emp.id,periodo,motivo:motivo.trim(),fecha};
     await savePenalidades([registro,...(penalidades||[])]);
-    setBusy(false);setEmpSel(null);setOtroTxt("");
+    setBusy(false);cerrar();
     toast("X registrada para "+emp.nombre+" ✓");
   };
 
@@ -4334,15 +4340,16 @@ function TabPenalidades({empleados,penalidades,savePenalidades}){
 
   const emp=empSel?empleadosActivos.find(x=>x.id===empSel):null;
   const chipBtn={padding:"8px 14px",borderRadius:20,border:"1px solid #E8DCC8",background:"#F9F6F1",cursor:"pointer",fontSize:".8rem",fontFamily:"inherit"};
+  const inpFecha={border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 10px",fontSize:".82rem",fontFamily:"inherit",boxSizing:"border-box"};
 
   return(<>
     <Card title="⚡ Penalidades rápidas — registrar X">
-      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Tocá el nombre de un empleado para sumarle una X. El acumulado de este mes se usa como punto de partida en "Penalidades X" al liquidar el sueldo (se puede corregir a mano ahí).</p>
+      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Tocá el nombre de un empleado para sumarle una X. El acumulado del mes se usa como punto de partida en "Penalidades X" al liquidar el sueldo (se puede corregir a mano ahí).</p>
       <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
         {empleadosActivos.map(e=>{
           const c=countDe(e.id);
           return(
-            <button key={e.id} onClick={()=>setEmpSel(e.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:104,padding:"14px 10px",borderRadius:12,border:"1px solid #E8DCC8",background:c>0?"#FBEAEA":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+            <button key={e.id} onClick={()=>abrir(e.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:104,padding:"14px 10px",borderRadius:12,border:"1px solid #E8DCC8",background:c>0?"#FBEAEA":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
               <span style={{fontWeight:600,fontSize:".85rem",textAlign:"center",color:"#2C1A0E"}}>{e.nombre}</span>
               <span style={{fontSize:"1rem",fontWeight:700,color:c>0?"#C0392B":"#B8A88E"}}>{c>0?(c+" X"):"—"}</span>
             </button>
@@ -4352,45 +4359,52 @@ function TabPenalidades({empleados,penalidades,savePenalidades}){
     </Card>
 
     {emp&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={()=>{setEmpSel(null);setOtroTxt("");}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={cerrar}>
         <div style={{background:"#fff",borderRadius:12,padding:20,width:"100%",maxWidth:360}} onClick={ev=>ev.stopPropagation()}>
           <h3 style={{margin:"0 0 4px",fontSize:"1rem",color:"#2C1A0E"}}>Nueva X — {emp.nombre}</h3>
-          <p style={{margin:"0 0 14px",fontSize:".78rem",color:"#7B7063"}}>¿Motivo?</p>
+          <p style={{margin:"0 0 12px",fontSize:".78rem",color:"#7B7063"}}>¿Motivo?</p>
           <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
             {MOTIVOS.map(m=>(
               <button key={m} disabled={busy} onClick={()=>agregar(emp,m)} style={chipBtn}>{m}</button>
             ))}
           </div>
-          <div style={{display:"flex",gap:8}}>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
             <input value={otroTxt} onChange={ev=>setOtroTxt(ev.target.value)} placeholder="Otro motivo…" style={{flex:1,border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 10px",fontSize:".82rem",fontFamily:"inherit",boxSizing:"border-box"}}/>
             <SmBtn disabled={busy||!otroTxt.trim()} onClick={()=>agregar(emp,otroTxt)}>Agregar</SmBtn>
           </div>
-          <button onClick={()=>{setEmpSel(null);setOtroTxt("");}} style={{marginTop:16,background:"none",border:"none",color:"#7B7063",fontSize:".78rem",cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+          <label style={{display:"block",fontSize:".65rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:4}}>Fecha (por defecto, hoy)</label>
+          <input type="date" value={fechaInput} onChange={ev=>setFechaInput(ev.target.value)} style={{...inpFecha,width:"100%"}}/>
+          <button onClick={cerrar} style={{marginTop:16,background:"none",border:"none",color:"#7B7063",fontSize:".78rem",cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
         </div>
       </div>
     )}
 
-    <Card title={"Historial de este mes"}>
-      {empleadosActivos.map(e=>{
-        const log=(penalidades||[]).filter(p=>p.empleadoId===e.id&&p.periodo===periodoActual).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-        if(log.length===0)return null;
-        return(
-          <div key={e.id} style={{marginBottom:14}}>
-            <div style={{fontWeight:600,fontSize:".82rem",marginBottom:4,color:"#2C1A0E"}}>{e.nombre} <span style={{color:"#7B7063",fontWeight:400}}>({log.length})</span></div>
-            {log.map(p=>(
-              <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".76rem",color:"#7B7063",padding:"4px 0",borderBottom:"1px solid #F2EAE0"}}>
-                <span>{p.motivo} · {new Date(p.fecha).toLocaleDateString("es-AR")} {new Date(p.fecha).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</span>
-                <button onClick={()=>eliminar(p.id)} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".76rem",fontFamily:"inherit"}}>eliminar</button>
-              </div>
-            ))}
-          </div>
-        );
-      })}
-      {(penalidades||[]).filter(p=>p.periodo===periodoActual).length===0&&<Empty icon="✅">Sin X cargadas este mes.</Empty>}
-    </Card>
+    {mostrarHistorial&&(
+      <Card title={"Historial de este mes"}>
+        {empleadosActivos.map(e=>{
+          const log=(penalidades||[]).filter(p=>p.empleadoId===e.id&&p.periodo===periodoActual).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+          if(log.length===0)return null;
+          return(
+            <div key={e.id} style={{marginBottom:14}}>
+              <div style={{fontWeight:600,fontSize:".82rem",marginBottom:4,color:"#2C1A0E"}}>{e.nombre} <span style={{color:"#7B7063",fontWeight:400}}>({log.length})</span></div>
+              {log.map(p=>(
+                <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".76rem",color:"#7B7063",padding:"4px 0",borderBottom:"1px solid #F2EAE0"}}>
+                  <span>{p.motivo} · {new Date(p.fecha).toLocaleDateString("es-AR")}</span>
+                  <button onClick={()=>eliminar(p.id)} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".76rem",fontFamily:"inherit"}}>eliminar</button>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+        {(penalidades||[]).filter(p=>p.periodo===periodoActual).length===0&&<Empty icon="✅">Sin X cargadas este mes.</Empty>}
+      </Card>
+    )}
   </>);
 }
-function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades}){
+function TabPenalidades({empleados,penalidades,savePenalidades}){
+  return <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={false}/>;
+}
+function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades,savePenalidades}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const[periodo,setPeriodo]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
   const[editando,setEditando]=useState(null);
@@ -4402,6 +4416,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[legajoDraft,setLegajoDraft]=useState({});
   const[legajoAbierto,setLegajoAbierto]=useState(null);
   const[verNomina,setVerNomina]=useState(false);
+  const[verPenalidadesAdmin,setVerPenalidadesAdmin]=useState(false);
   const[pagoModal,setPagoModal]=useState(null);
   const[pagoMontos,setPagoMontos]=useState({reservado:"",efectivo:"",digital:""});
   const[pagoObs,setPagoObs]=useState("");
@@ -4685,6 +4700,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
       <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
+      <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
+
+      {verPenalidadesAdmin&&(
+        <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true}/>
+      )}
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
