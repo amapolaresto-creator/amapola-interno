@@ -2105,11 +2105,12 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
   const[fSector,setFSector]=useState("");
   const[soloBajo,setSoloBajo]=useState(false);
   const[histModal,setHistModal]=useState(null);
+  const[mostrarAgregar,setMostrarAgregar]=useState(false);
 
   const productosDelProv=provSel?catalogo.filter(c=>c.proveedor===provSel):[];
   const catSel=catalogo.find(c=>c.id===catId);
 
-  const limpiar=()=>{setEditId(null);setProvSel("");setCatId("");setCantidad("");setMinimo("");setUnidad("unidades");};
+  const limpiar=()=>{setEditId(null);setProvSel("");setCatId("");setCantidad("");setMinimo("");setUnidad("unidades");setMostrarAgregar(false);};
 
   const guardarProducto=async()=>{
     if(!editId&&!catId){toast("Elegí un producto del catálogo");return;}
@@ -2146,7 +2147,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
   const editar=s=>{
     setEditId(s.id);setProvSel(s.proveedor||"");setCatId(s.catalogoId||"");
     setCantidad(String(s.cantidad));setMinimo(String(s.minimo||""));setUnidad(s.unidad||"unidades");
-    window.scrollTo({top:0,behavior:"smooth"});
+    setMostrarAgregar(true);
   };
 
   const conAlerta=stock.filter(s=>Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0);
@@ -2236,47 +2237,56 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
       </div>
     )}
 
-    <Card title={editId?"Editar producto":"Agregar producto al inventario"}>
-      {!editId&&(
-        <Field label="Proveedor">
-          <select value={provSel} onChange={e=>{setProvSel(e.target.value);setCatId("");}} style={sS}>
-            <option value="">— Elegí un proveedor —</option>
-            {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
-          </select>
-        </Field>
-      )}
-      {!editId&&(
-        <Field label="Producto">
-          <select value={catId} onChange={e=>{const id=e.target.value;setCatId(id);const c=catalogo.find(x=>x.id===id);if(c)setUnidad(c.unidad||"unidades");}} style={sS} disabled={!provSel}>
-            <option value="">{provSel?"— Elegí un producto —":"Elegí primero un proveedor"}</option>
-            {productosDelProv.map(c=><option key={c.id} value={c.id}>{c.producto} ({c.sector})</option>)}
-          </select>
-        </Field>
-      )}
-      {provSel&&!productosDelProv.length&&!editId&&(
-        <p style={{fontSize:".74rem",color:"#7B7063",marginTop:6}}>Este proveedor no tiene productos cargados. Agregalos desde la pestaña 🗂️ Catálogo.</p>
-      )}
-      {editId&&<p style={{fontSize:".82rem",color:"#7B7063",marginTop:8}}>Editando: <strong>{stock.find(s=>s.id===editId)?.nombre}</strong></p>}
-      <div style={{display:"flex",gap:8,marginTop:14}}>
-        <div style={{flex:1}}>
-          <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Cantidad actual</label>
-          <Inp type="number" value={cantidad} onChange={setCantidad} placeholder="0"/>
-        </div>
-        <div style={{flex:1}}>
-          <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Stock mínimo</label>
-          <Inp type="number" value={minimo} onChange={setMinimo} placeholder="0"/>
+    {!mostrarAgregar&&(
+      <button onClick={()=>setMostrarAgregar(true)} style={{width:"100%",padding:13,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".88rem",cursor:"pointer",marginBottom:16}}>+ Agregar producto al inventario</button>
+    )}
+
+    {mostrarAgregar&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:14}}>{editId?"Editar producto":"Agregar producto al inventario"}</p>
+          {!editId&&(
+            <Field label="Proveedor">
+              <select value={provSel} onChange={e=>{setProvSel(e.target.value);setCatId("");}} style={sS}>
+                <option value="">— Elegí un proveedor —</option>
+                {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+            </Field>
+          )}
+          {!editId&&(
+            <Field label="Producto">
+              <select value={catId} onChange={e=>{const id=e.target.value;setCatId(id);const c=catalogo.find(x=>x.id===id);if(c)setUnidad(c.unidad||"unidades");}} style={sS} disabled={!provSel}>
+                <option value="">{provSel?"— Elegí un producto —":"Elegí primero un proveedor"}</option>
+                {productosDelProv.map(c=><option key={c.id} value={c.id}>{c.producto} ({c.sector})</option>)}
+              </select>
+            </Field>
+          )}
+          {provSel&&!productosDelProv.length&&!editId&&(
+            <p style={{fontSize:".74rem",color:"#7B7063",marginTop:6}}>Este proveedor no tiene productos cargados. Agregalos desde la pestaña 🗂️ Catálogo.</p>
+          )}
+          {editId&&<p style={{fontSize:".82rem",color:"#7B7063",marginTop:0}}>Editando: <strong>{stock.find(s=>s.id===editId)?.nombre}</strong></p>}
+          <div style={{display:"flex",gap:8,marginTop:14}}>
+            <div style={{flex:1}}>
+              <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Cantidad actual</label>
+              <Inp type="number" value={cantidad} onChange={setCantidad} placeholder="0"/>
+            </div>
+            <div style={{flex:1}}>
+              <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Stock mínimo</label>
+              <Inp type="number" value={minimo} onChange={setMinimo} placeholder="0"/>
+            </div>
+          </div>
+          <Field label="Unidad de medida">
+            <select value={unidad} onChange={e=>setUnidad(e.target.value)} style={sS}>
+              {["unidades","kg","g","litros","ml","cajas","bolsas","porciones"].map(u=><option key={u} value={u}>{u}</option>)}
+            </select>
+          </Field>
+          <div style={{display:"flex",gap:8,marginTop:18}}>
+            <button onClick={limpiar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <Btn bg={editId?"#555":"#2C1A0E"} onClick={guardarProducto} disabled={busy}>{busy?"Guardando…":editId?"Actualizar":"Agregar al inventario"}</Btn>
+          </div>
         </div>
       </div>
-      <Field label="Unidad de medida">
-        <select value={unidad} onChange={e=>setUnidad(e.target.value)} style={sS}>
-          {["unidades","kg","g","litros","ml","cajas","bolsas","porciones"].map(u=><option key={u} value={u}>{u}</option>)}
-        </select>
-      </Field>
-      <div style={{display:"flex",gap:8,marginTop:18}}>
-        {editId&&<button onClick={limpiar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>}
-        <Btn bg={editId?"#555":"#2C1A0E"} onClick={guardarProducto} disabled={busy}>{busy?"Guardando…":editId?"Actualizar":"Agregar al inventario"}</Btn>
-      </div>
-    </Card>
+    )}
 
     {!stock.length?<Empty icon="📦">Todavía no registraste productos en el inventario</Empty>:(<>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
