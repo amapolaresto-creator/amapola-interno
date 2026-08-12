@@ -557,7 +557,6 @@ function App({role="full",cerrarSesion}){
     {id:"fichajes",   label:"🕐 Fichajes"},
     {id:"stock",      label:"📦 Stock"},
     {id:"penalidades",label:"⚡ Penalidades"},
-    {id:"horasextras",label:"⏱️ HS Extras"},
   ];
   const TABS_ADMIN=[
     {id:"gastos",     label:"🏠 Pagos Digitales"},
@@ -640,7 +639,6 @@ function App({role="full",cerrarSesion}){
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
         {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras}/>}
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
-        {tab==="horasextras"&&<TabHsExtras empleados={empleados} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} liquidaciones={liquidaciones}/>}
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
@@ -4691,9 +4689,6 @@ function HsExtrasPanel({empleados,horasExtras,saveHorasExtras,mostrarHistorial,p
       </Card>
     )}
   </>);
-}
-function TabHsExtras({empleados,horasExtras,saveHorasExtras,liquidaciones}){
-  return <HsExtrasPanel empleados={empleados} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} mostrarHistorial={false} liquidaciones={liquidaciones}/>;
 }
 function TabAmex({amexCuotas,saveAmexCuotas,proveedores}){
   const[showForm,setShowForm]=useState(false);
