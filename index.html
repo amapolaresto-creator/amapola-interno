@@ -627,7 +627,7 @@ function App({role="full",cerrarSesion}){
           calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
         {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades}/>}
-        {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades}/>}
+        {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
@@ -4308,28 +4308,41 @@ function reciboHTML(reg,emp){
     +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar PDF</button>"
     +"</body></html>";
 }
-function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistorial}){
+function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistorial,periodo,liquidaciones}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
   const periodoActual=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");})();
+  const periodoRef=periodo||periodoActual;
   const[empSel,setEmpSel]=useState(null);
   const[otroTxt,setOtroTxt]=useState("");
   const[fechaInput,setFechaInput]=useState(hoyLocal());
   const[busy,setBusy]=useState(false);
+  const[lastAdded,setLastAdded]=useState(null);
   const MOTIVOS=["Celular","Llegada tarde","Salió sin avisar"];
 
-  const countDe=empId=>(penalidades||[]).filter(p=>p.empleadoId===empId&&p.periodo===periodoActual).length;
+  useEffect(()=>{
+    if(!lastAdded)return;
+    const t=setTimeout(()=>setLastAdded(null),8000);
+    return()=>clearTimeout(t);
+  },[lastAdded]);
+
+  const countDe=empId=>(penalidades||[]).filter(p=>p.empleadoId===empId&&p.periodo===periodoRef).length;
 
   const abrir=empId=>{setEmpSel(empId);setOtroTxt("");setFechaInput(hoyLocal());};
   const cerrar=()=>{setEmpSel(null);setOtroTxt("");setFechaInput(hoyLocal());};
+
+  const periodoDeFechaInput=(fechaInput||hoyLocal()).slice(0,7);
+  const liqCerrada=empSel&&(liquidaciones||[]).find(l=>l.empleadoId===empSel&&l.periodo===periodoDeFechaInput&&l.estado==="confirmada");
 
   const agregar=async(emp,motivo)=>{
     if(!motivo||!motivo.trim())return;
     setBusy(true);
     const fecha=fechaInput?fechaLocalISO(fechaInput):new Date().toISOString();
-    const periodo=(fechaInput||hoyLocal()).slice(0,7);
-    const registro={id:uid(),empleadoId:emp.id,periodo,motivo:motivo.trim(),fecha};
+    const periodoNuevo=periodoDeFechaInput;
+    const registro={id:uid(),empleadoId:emp.id,periodo:periodoNuevo,motivo:motivo.trim(),fecha};
     await savePenalidades([registro,...(penalidades||[])]);
     setBusy(false);cerrar();
+    setLastAdded({id:registro.id,nombre:emp.nombre});
     toast("X registrada para "+emp.nombre+" ✓");
   };
 
@@ -4338,13 +4351,20 @@ function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistoria
     toast("Eliminada");
   };
 
+  const deshacerUltimo=async()=>{
+    if(!lastAdded)return;
+    await savePenalidades((penalidades||[]).filter(p=>p.id!==lastAdded.id));
+    toast("X deshecha");
+    setLastAdded(null);
+  };
+
   const emp=empSel?empleadosActivos.find(x=>x.id===empSel):null;
   const chipBtn={padding:"8px 14px",borderRadius:20,border:"1px solid #E8DCC8",background:"#F9F6F1",cursor:"pointer",fontSize:".8rem",fontFamily:"inherit"};
   const inpFecha={border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 10px",fontSize:".82rem",fontFamily:"inherit",boxSizing:"border-box"};
 
   return(<>
     <Card title="⚡ Penalidades rápidas — registrar X">
-      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Tocá el nombre de un empleado para sumarle una X. El acumulado del mes se usa como punto de partida en "Penalidades X" al liquidar el sueldo (se puede corregir a mano ahí).</p>
+      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Tocá el nombre de un empleado para sumarle una X. El acumulado de {mesLabel(periodoRef)} se usa como punto de partida en "Penalidades X" al liquidar el sueldo (se puede corregir a mano ahí).</p>
       <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
         {empleadosActivos.map(e=>{
           const c=countDe(e.id);
@@ -4374,15 +4394,25 @@ function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistoria
           </div>
           <label style={{display:"block",fontSize:".65rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:4}}>Fecha (por defecto, hoy)</label>
           <input type="date" value={fechaInput} onChange={ev=>setFechaInput(ev.target.value)} style={{...inpFecha,width:"100%"}}/>
+          {liqCerrada&&(
+            <p style={{fontSize:".72rem",color:"#C0392B",background:"#FBEAEA",border:"1px solid #F3C7C2",borderRadius:8,padding:"8px 10px",marginTop:10}}>⚠️ {mesLabel(periodoDeFechaInput)} ya fue liquidado y confirmado para {emp.nombre}. Esta X va a quedar registrada pero no se va a sumar sola a esa liquidación — hay que ajustarla a mano si hace falta.</p>
+          )}
           <button onClick={cerrar} style={{marginTop:16,background:"none",border:"none",color:"#7B7063",fontSize:".78rem",cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
         </div>
       </div>
     )}
 
+    {lastAdded&&(
+      <div style={{position:"fixed",left:"50%",bottom:20,transform:"translateX(-50%)",background:"#2C1A0E",color:"#fff",borderRadius:30,padding:"10px 18px",display:"flex",alignItems:"center",gap:12,fontSize:".82rem",zIndex:1100,boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>
+        <span>X registrada para {lastAdded.nombre}</span>
+        <button onClick={deshacerUltimo} style={{background:"none",border:"none",color:"#F2C94C",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Deshacer</button>
+      </div>
+    )}
+
     {mostrarHistorial&&(
-      <Card title={"Historial de este mes"}>
+      <Card title={"Historial de "+mesLabel(periodoRef)}>
         {empleadosActivos.map(e=>{
-          const log=(penalidades||[]).filter(p=>p.empleadoId===e.id&&p.periodo===periodoActual).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+          const log=(penalidades||[]).filter(p=>p.empleadoId===e.id&&p.periodo===periodoRef).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
           if(log.length===0)return null;
           return(
             <div key={e.id} style={{marginBottom:14}}>
@@ -4396,13 +4426,13 @@ function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistoria
             </div>
           );
         })}
-        {(penalidades||[]).filter(p=>p.periodo===periodoActual).length===0&&<Empty icon="✅">Sin X cargadas este mes.</Empty>}
+        {(penalidades||[]).filter(p=>p.periodo===periodoRef).length===0&&<Empty icon="✅">Sin X cargadas en {mesLabel(periodoRef)}.</Empty>}
       </Card>
     )}
   </>);
 }
-function TabPenalidades({empleados,penalidades,savePenalidades}){
-  return <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={false}/>;
+function TabPenalidades({empleados,penalidades,savePenalidades,liquidaciones}){
+  return <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={false} liquidaciones={liquidaciones}/>;
 }
 function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades,savePenalidades}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
@@ -4703,7 +4733,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
 
       {verPenalidadesAdmin&&(
-        <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true}/>
+        <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
       )}
 
       {verBasicos&&(
