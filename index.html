@@ -1574,7 +1574,7 @@ function TabFichajes(){
 const RETIRO_SUELDOS_CAT="Retiro para sueldos";
 
 function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liquidaciones}){
-  const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
+  const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
   // Chequeo anti-duplicado: si el empleado ya tiene la liquidación de ese período pagada del todo,
   // avisar antes de cargar otro "Sueldo" manual (podría ser un pago repetido sin querer).
   const nombreCoincideSueldo=(sNombre,empNombre)=>{
@@ -4344,7 +4344,7 @@ function reciboHTML(reg,emp){
     +"</body></html>";
 }
 function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistorial,periodo,liquidaciones}){
-  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
   const periodoActual=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");})();
   const periodoRef=periodo||periodoActual;
@@ -4470,7 +4470,7 @@ function TabPenalidades({empleados,penalidades,savePenalidades,liquidaciones}){
   return <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={false} liquidaciones={liquidaciones}/>;
 }
 function HsExtrasPanel({empleados,horasExtras,saveHorasExtras,mostrarHistorial,periodo,liquidaciones}){
-  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
   const periodoActual=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");})();
   const periodoRef=periodo||periodoActual;
