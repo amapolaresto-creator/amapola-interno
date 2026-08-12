@@ -4462,6 +4462,83 @@ function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistoria
 function TabPenalidades({empleados,penalidades,savePenalidades,liquidaciones}){
   return <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={false} liquidaciones={liquidaciones}/>;
 }
+function ManualLiquidacionModal({onClose}){
+  const Sec=({title,children})=>(
+    <div style={{marginBottom:18}}>
+      <h4 style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E",margin:"0 0 6px"}}>{title}</h4>
+      <div style={{fontSize:".82rem",color:"#4A3B2C",lineHeight:1.65}}>{children}</div>
+    </div>
+  );
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.55)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
+      <div style={{background:"#fff",borderRadius:16,padding:"24px 22px",width:"100%",maxWidth:640,maxHeight:"88vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#2C1A0E"}}>📖 Manual de uso — Liquidación de sueldos</span>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+        </div>
+
+        <Sec title="Qué hace esta sección">
+          Acá armás el sueldo de cada empleado, mes a mes: cargás lo que suma (Haberes) y lo que resta (Descuentos), el sistema calcula el Neto a cobrar, y al confirmar generás un recibo para imprimir o guardar en PDF. Esto NO registra un pago ni descuenta la Caja Disponible — el pago real se carga aparte, con el botón 💵 Pago (o manualmente en la pestaña Sueldos).
+        </Sec>
+
+        <Sec title="Paso a paso">
+          1. Elegí el Período (mes) arriba de la Nómina.<br/>
+          2. En la fila del empleado, tocá "Liquidar" (o "Editar" si ya existe una liquidación de ese período).<br/>
+          3. Completá los campos de Haberes y Descuentos que correspondan.<br/>
+          4. Revisá el Neto a cobrar al final de la pantalla.<br/>
+          5. "Guardar borrador" guarda sin cerrar — se puede seguir editando después.<br/>
+          6. "Confirmar y generar recibo" cierra la liquidación de ese mes y abre el recibo listo para imprimir.<br/>
+          7. Con la liquidación confirmada, aparece el botón 💵 Pago para registrar cómo se le pagó.
+        </Sec>
+
+        <Sec title="Haberes (lo que suma)">
+          <b>Sueldo básico:</b> el sueldo fijo del mes.<br/>
+          <b>Horas extras:</b> cargás la cantidad de horas — se multiplican solas por el valor hora (básico ÷ 208 × 2).<br/>
+          <b>Bono base:</b> el bono de referencia del empleado. Lo que realmente se liquida depende de "Penalidades X" (ver Descuentos): puede duplicarse, quedar igual, o descontarse.<br/>
+          <b>Feriados:</b> cargás la cantidad de feriados trabajados — se multiplican por el valor feriado (básico ÷ 208 × 8).<br/>
+          <b>Plus vacacional / Plus SAC:</b> montos manuales, cuando corresponda.
+        </Sec>
+
+        <Sec title="Descuentos (lo que resta)">
+          <b>Ausencias:</b> cargás la cantidad de días que faltó — se multiplican por el valor día (básico ÷ 208 × 8).<br/>
+          <b>Penalidades X:</b> cargás un número. 0 → el bono se liquida x2. De 1 a 4 → el bono se liquida sin cambios. 5 o más → se descuenta $5.000 por cada punto, con tope: nunca más que el propio bono base (nunca queda negativo).<br/>
+          <b>Desperdicios:</b> descuenta solo lo que haya quedado disponible del bono después de aplicar Penalidades X. Si el bono ya quedó en $0, Desperdicios no puede descontar nada más.<br/>
+          <b>Adelantos:</b> se autocompleta solo con lo que ese empleado tenga cargado como "Adelanto" en la pestaña Sueldos, en el mismo período que estás liquidando. Se puede corregir a mano.<br/>
+          <b>Consumos:</b> monto manual.
+        </Sec>
+
+        <Sec title="⚡ Penalidades — carga rápida de una X">
+          Hay una pantalla aparte, sin contraseña, pensada para cargar rápido desde el celular: tocás el nombre del empleado, sumás una X con un motivo (Celular, Llegada tarde, Salió sin avisar, u otro a elección) y una fecha (por defecto, hoy). El botón ⚡ Penalidades acá adentro muestra lo mismo, más el historial completo del período con opción de borrar una X cargada por error.<br/><br/>
+          Cuando abrís una liquidación nueva, el campo "Penalidades X" ya viene con la cantidad de X que tiene ese empleado en el período que estás liquidando. Si la liquidación ya existía, respeta el número que ya tenía guardado (no se pisa solo).
+        </Sec>
+
+        <Sec title="💵 Adelantos">
+          Este botón muestra, para el período elegido, todos los adelantos cargados en la pestaña Sueldos (concepto "Adelanto") agrupados por empleado, con el total de cada uno. Si aparece un cartel de "adelantos sin relacionar", es porque el nombre cargado en Sueldos no coincide con ningún empleado activo — conviene revisar y corregir el nombre ahí.
+        </Sec>
+
+        <Sec title="Importante: qué período se está liquidando">
+          Todo (Penalidades, Adelantos, la liquidación en sí) sigue el Período que tengas elegido arriba, no el mes calendario de hoy. Si estás parado en septiembre pero elegiste "agosto" como período, vas a ver y liquidar los datos de agosto.
+        </Sec>
+
+        <Sec title="El recibo">
+          El recibo separa el Sueldo (básico, horas extras, feriados, plus) de los Descuentos, y muestra el Bono en un recuadro aparte justo antes del Neto a cobrar, aclarando que no integra el aguinaldo — para que el empleado entienda que su sueldo es una cosa y el bono es un adicional.
+        </Sec>
+
+        <Sec title="Editar después de confirmar">
+          Se puede reabrir y modificar una liquidación ya confirmada. Si esa liquidación ya tiene un pago registrado, va a aparecer un cartel de advertencia arriba: si cambiás montos después de haber pagado, el neto puede quedar desalineado con lo ya pagado — conviene revisarlo con cuidado.
+        </Sec>
+
+        <Sec title="Registrar el pago">
+          Con la liquidación confirmada, aparece el botón 💵 Pago. Se puede pagar con Reservado (plata ya retirada para sueldos), Efectivo, Digital, o combinar más de una fuente (mixto). También se puede pagar de a partes (pago parcial): el sistema suma todo lo pagado hasta llegar al neto.
+        </Sec>
+
+        <Sec title="Para tener en cuenta">
+          Si cargás un pago "Sueldo" manual en la pestaña Sueldos para alguien que ya tiene esa liquidación pagada del todo, el sistema avisa antes de guardar, para evitar pagar dos veces por error.
+        </Sec>
+      </div>
+    </div>
+  );
+}
 function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades,savePenalidades}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const[periodo,setPeriodo]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
@@ -4476,6 +4553,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verNomina,setVerNomina]=useState(false);
   const[verPenalidadesAdmin,setVerPenalidadesAdmin]=useState(false);
   const[verAdelantosAdmin,setVerAdelantosAdmin]=useState(false);
+  const[verManual,setVerManual]=useState(false);
   const[pagoModal,setPagoModal]=useState(null);
   const[pagoMontos,setPagoMontos]=useState({reservado:"",efectivo:"",digital:""});
   const[pagoObs,setPagoObs]=useState("");
@@ -4777,8 +4855,10 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
   if(!verNomina){
     return(<>
-      <ST help={"Calculá el sueldo de cada empleado por mes: haberes menos descuentos = neto a cobrar. Al confirmar generás un recibo imprimible.\n\nEsto NO registra un pago ni descuenta la Caja Disponible — el pago real se sigue cargando en la pestaña Sueldos como siempre."}>Liquidación de sueldos</ST>
+      <ST>Liquidación de sueldos</ST>
       <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
+      {verManual&&<ManualLiquidacionModal onClose={()=>setVerManual(false)}/>}
+      <Btn bg="#7B7063" onClick={()=>setVerManual(true)}>📖 Manual de uso</Btn>
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
       <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
       <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
@@ -4900,8 +4980,10 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
   return(<>
     <button onClick={()=>setVerNomina(false)} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>← Volver</button>
-    <ST help={"Calculá el sueldo de cada empleado por mes: haberes menos descuentos = neto a cobrar. Al confirmar generás un recibo imprimible.\n\nEsto NO registra un pago ni descuenta la Caja Disponible — el pago real se sigue cargando en la pestaña Sueldos como siempre."}>Liquidación de sueldos</ST>
+    <ST>Liquidación de sueldos</ST>
     <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
+    {verManual&&<ManualLiquidacionModal onClose={()=>setVerManual(false)}/>}
+    <Btn bg="#7B7063" onClick={()=>setVerManual(true)}>📖 Manual de uso</Btn>
 
     <Field label="Período">
       <input type="month" value={periodo} onChange={e=>setPeriodo(e.target.value)} style={iS}/>
