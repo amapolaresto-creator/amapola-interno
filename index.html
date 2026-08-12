@@ -71,6 +71,7 @@ async function sbGetAll(){
     ajustesCajaEfectivo:Array.isArray(m.ajustesCajaEfectivo)?m.ajustesCajaEfectivo:[],
     desperdicios:Array.isArray(m.desperdicios)?m.desperdicios:[],
     liquidaciones:Array.isArray(m.liquidaciones)?m.liquidaciones:[],
+    penalidades:Array.isArray(m.penalidades)?m.penalidades:[],
   };
 }
 async function sbSet(key,value,intentos=3){
@@ -275,7 +276,14 @@ function App({role="full",cerrarSesion}){
   const cocinaOnly=role==="cocina";
   const[phase,setPhase]=useState("init");
   const[errMsg,setErrMsg]=useState("");
-  const[tab,setTab]=useState(()=>cocinaOnly?"stock":"boletas");
+  const[tab,setTab]=useState(()=>{
+    if(cocinaOnly)return"stock";
+    try{
+      const p=new URLSearchParams(window.location.search);
+      if(p.get("ir")==="penalidades")return"penalidades";
+    }catch{}
+    return"boletas";
+  });
   const[toastMsg,setToastMsg]=useState("");
   const[lightbox,setLightbox]=useState(null);
   const[passModal,setPassModal]=useState(null);
@@ -301,8 +309,9 @@ function App({role="full",cerrarSesion}){
   const[ajustesCajaEfectivo,setAjustesCajaEfectivo]=useState([]);
   const[desperdicios,setDesperdicios]=useState([]);
   const[liquidaciones,setLiquidaciones]=useState([]);
+  const[penalidades,setPenalidades]=useState([]);
   const ref=useRef({});
-  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo,desperdicios,liquidaciones};
+  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo,desperdicios,liquidaciones,penalidades};
 
   _toast=msg=>{setToastMsg(msg);setTimeout(()=>setToastMsg(""),2800);};
   const online=()=>{setSyncMsg("● Online");setSyncColor("#40916C");};
@@ -326,6 +335,7 @@ function App({role="full",cerrarSesion}){
       if(d.ajustesCajaEfectivo)setAjustesCajaEfectivo(d.ajustesCajaEfectivo);
       if(d.desperdicios)setDesperdicios(d.desperdicios);
       if(d.liquidaciones)setLiquidaciones(d.liquidaciones);
+      if(d.penalidades)setPenalidades(d.penalidades);
       online();setPhase("ready");
     }catch(e){setErrMsg(e.message);setPhase("error");}
   };
@@ -357,6 +367,7 @@ function App({role="full",cerrarSesion}){
         if(!recentlySaved("ajustesCajaEfectivo")&&JSON.stringify(d.ajustesCajaEfectivo)!==JSON.stringify(c.ajustesCajaEfectivo))setAjustesCajaEfectivo(d.ajustesCajaEfectivo||[]);
         if(!recentlySaved("desperdicios")&&JSON.stringify(d.desperdicios)!==JSON.stringify(c.desperdicios))setDesperdicios(d.desperdicios||[]);
         if(!recentlySaved("liquidaciones")&&JSON.stringify(d.liquidaciones)!==JSON.stringify(c.liquidaciones))setLiquidaciones(d.liquidaciones||[]);
+        if(!recentlySaved("penalidades")&&JSON.stringify(d.penalidades)!==JSON.stringify(c.penalidades))setPenalidades(d.penalidades||[]);
       }catch{offline();}
     },45000);
     return()=>clearInterval(id);
@@ -404,6 +415,7 @@ function App({role="full",cerrarSesion}){
   const saveAjustesCajaEfectivo=v=>save("ajustesCajaEfectivo",v,setAjustesCajaEfectivo);
   const saveDesperdicios=v=>save("desperdicios",v,setDesperdicios);
   const saveLiquidaciones=v=>save("liquidaciones",v,setLiquidaciones);
+  const savePenalidades=v=>save("penalidades",v,setPenalidades);
   const askPass=()=>new Promise(r=>setPassModal({resolve:r}));
 
   const reintentarSave=async()=>{
@@ -534,6 +546,7 @@ function App({role="full",cerrarSesion}){
     {id:"sueldos",    label:"👥 Sueldos"},
     {id:"fichajes",   label:"🕐 Fichajes"},
     {id:"stock",      label:"📦 Stock"},
+    {id:"penalidades",label:"⚡ Penalidades"},
   ];
   const TABS_ADMIN=[
     {id:"gastos",     label:"🏠 Pagos Digitales"},
@@ -613,7 +626,8 @@ function App({role="full",cerrarSesion}){
           sueldos={sueldos} gastos={gastos} proveedores={proveedores}
           calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
-        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos}/>}
+        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades}/>}
+        {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
@@ -4294,7 +4308,89 @@ function reciboHTML(reg,emp){
     +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar PDF</button>"
     +"</body></html>";
 }
-function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos}){
+function TabPenalidades({empleados,penalidades,savePenalidades}){
+  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const periodoActual=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");})();
+  const[empSel,setEmpSel]=useState(null);
+  const[otroTxt,setOtroTxt]=useState("");
+  const[busy,setBusy]=useState(false);
+  const MOTIVOS=["Celular","Llegada tarde","Salió sin avisar"];
+
+  const countDe=empId=>(penalidades||[]).filter(p=>p.empleadoId===empId&&p.periodo===periodoActual).length;
+
+  const agregar=async(emp,motivo)=>{
+    if(!motivo||!motivo.trim())return;
+    setBusy(true);
+    const registro={id:uid(),empleadoId:emp.id,periodo:periodoActual,motivo:motivo.trim(),fecha:new Date().toISOString()};
+    await savePenalidades([registro,...(penalidades||[])]);
+    setBusy(false);setEmpSel(null);setOtroTxt("");
+    toast("X registrada para "+emp.nombre+" ✓");
+  };
+
+  const eliminar=async id=>{
+    await savePenalidades((penalidades||[]).filter(p=>p.id!==id));
+    toast("Eliminada");
+  };
+
+  const emp=empSel?empleadosActivos.find(x=>x.id===empSel):null;
+  const chipBtn={padding:"8px 14px",borderRadius:20,border:"1px solid #E8DCC8",background:"#F9F6F1",cursor:"pointer",fontSize:".8rem",fontFamily:"inherit"};
+
+  return(<>
+    <Card title="⚡ Penalidades rápidas — registrar X">
+      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Tocá el nombre de un empleado para sumarle una X. El acumulado de este mes se usa como punto de partida en "Penalidades X" al liquidar el sueldo (se puede corregir a mano ahí).</p>
+      <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+        {empleadosActivos.map(e=>{
+          const c=countDe(e.id);
+          return(
+            <button key={e.id} onClick={()=>setEmpSel(e.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:104,padding:"14px 10px",borderRadius:12,border:"1px solid #E8DCC8",background:c>0?"#FBEAEA":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+              <span style={{fontWeight:600,fontSize:".85rem",textAlign:"center",color:"#2C1A0E"}}>{e.nombre}</span>
+              <span style={{fontSize:"1rem",fontWeight:700,color:c>0?"#C0392B":"#B8A88E"}}>{c>0?(c+" X"):"—"}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+
+    {emp&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={()=>{setEmpSel(null);setOtroTxt("");}}>
+        <div style={{background:"#fff",borderRadius:12,padding:20,width:"100%",maxWidth:360}} onClick={ev=>ev.stopPropagation()}>
+          <h3 style={{margin:"0 0 4px",fontSize:"1rem",color:"#2C1A0E"}}>Nueva X — {emp.nombre}</h3>
+          <p style={{margin:"0 0 14px",fontSize:".78rem",color:"#7B7063"}}>¿Motivo?</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+            {MOTIVOS.map(m=>(
+              <button key={m} disabled={busy} onClick={()=>agregar(emp,m)} style={chipBtn}>{m}</button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <input value={otroTxt} onChange={ev=>setOtroTxt(ev.target.value)} placeholder="Otro motivo…" style={{flex:1,border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 10px",fontSize:".82rem",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <SmBtn disabled={busy||!otroTxt.trim()} onClick={()=>agregar(emp,otroTxt)}>Agregar</SmBtn>
+          </div>
+          <button onClick={()=>{setEmpSel(null);setOtroTxt("");}} style={{marginTop:16,background:"none",border:"none",color:"#7B7063",fontSize:".78rem",cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+        </div>
+      </div>
+    )}
+
+    <Card title={"Historial de este mes"}>
+      {empleadosActivos.map(e=>{
+        const log=(penalidades||[]).filter(p=>p.empleadoId===e.id&&p.periodo===periodoActual).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+        if(log.length===0)return null;
+        return(
+          <div key={e.id} style={{marginBottom:14}}>
+            <div style={{fontWeight:600,fontSize:".82rem",marginBottom:4,color:"#2C1A0E"}}>{e.nombre} <span style={{color:"#7B7063",fontWeight:400}}>({log.length})</span></div>
+            {log.map(p=>(
+              <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".76rem",color:"#7B7063",padding:"4px 0",borderBottom:"1px solid #F2EAE0"}}>
+                <span>{p.motivo} · {new Date(p.fecha).toLocaleDateString("es-AR")} {new Date(p.fecha).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</span>
+                <button onClick={()=>eliminar(p.id)} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".76rem",fontFamily:"inherit"}}>eliminar</button>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+      {(penalidades||[]).filter(p=>p.periodo===periodoActual).length===0&&<Empty icon="✅">Sin X cargadas este mes.</Empty>}
+    </Card>
+  </>);
+}
+function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const[periodo,setPeriodo]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
   const[editando,setEditando]=useState(null);
@@ -4412,12 +4508,13 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         desperdiciosInput:existente.desperdiciosInput!==undefined?existente.desperdiciosInput:"",
       });
     }else{
+      const xDelMes=(penalidades||[]).filter(p=>p.empleadoId===emp.id&&p.periodo===periodo).length;
       setForm({
         id:uid(),empleadoId:emp.id,periodo,
         sueldoBasico:basicoRef?String(basicoRef):"",
         hsExtrasCant:"",
         bonoBase:bonoRef?String(bonoRef):"",
-        bonoCant:"",
+        bonoCant:xDelMes>0?String(xDelMes):"",
         feriadosCant:"",
         plusVacacional:"",plusSac:"",
         ausenciasCant:"",
