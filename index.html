@@ -2236,7 +2236,9 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
     )}
 
     {!mostrarAgregar&&(
-      <button onClick={()=>setMostrarAgregar(true)} style={{width:"100%",padding:13,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".88rem",cursor:"pointer",marginBottom:16}}>+ Agregar producto al inventario</button>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+        <button onClick={()=>setMostrarAgregar(true)} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer"}}>+ Agregar producto</button>
+      </div>
     )}
 
     {mostrarAgregar&&(
