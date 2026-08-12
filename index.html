@@ -72,6 +72,7 @@ async function sbGetAll(){
     desperdicios:Array.isArray(m.desperdicios)?m.desperdicios:[],
     liquidaciones:Array.isArray(m.liquidaciones)?m.liquidaciones:[],
     penalidades:Array.isArray(m.penalidades)?m.penalidades:[],
+    horasExtras:Array.isArray(m.horasExtras)?m.horasExtras:[],
   };
 }
 async function sbSet(key,value,intentos=3){
@@ -310,8 +311,9 @@ function App({role="full",cerrarSesion}){
   const[desperdicios,setDesperdicios]=useState([]);
   const[liquidaciones,setLiquidaciones]=useState([]);
   const[penalidades,setPenalidades]=useState([]);
+  const[horasExtras,setHorasExtras]=useState([]);
   const ref=useRef({});
-  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo,desperdicios,liquidaciones,penalidades};
+  ref.current={boletas,cierres,pagos,proveedores,cajaInicial,sueldos,gastos,stock,cierresCaja,cajaDigitalSaldo,cajaDigitalAjustes,empleados,catalogoStock,pedidosStock,ajustesCajaEfectivo,desperdicios,liquidaciones,penalidades,horasExtras};
 
   _toast=msg=>{setToastMsg(msg);setTimeout(()=>setToastMsg(""),2800);};
   const online=()=>{setSyncMsg("● Online");setSyncColor("#40916C");};
@@ -336,6 +338,7 @@ function App({role="full",cerrarSesion}){
       if(d.desperdicios)setDesperdicios(d.desperdicios);
       if(d.liquidaciones)setLiquidaciones(d.liquidaciones);
       if(d.penalidades)setPenalidades(d.penalidades);
+      if(d.horasExtras)setHorasExtras(d.horasExtras);
       online();setPhase("ready");
     }catch(e){setErrMsg(e.message);setPhase("error");}
   };
@@ -368,6 +371,7 @@ function App({role="full",cerrarSesion}){
         if(!recentlySaved("desperdicios")&&JSON.stringify(d.desperdicios)!==JSON.stringify(c.desperdicios))setDesperdicios(d.desperdicios||[]);
         if(!recentlySaved("liquidaciones")&&JSON.stringify(d.liquidaciones)!==JSON.stringify(c.liquidaciones))setLiquidaciones(d.liquidaciones||[]);
         if(!recentlySaved("penalidades")&&JSON.stringify(d.penalidades)!==JSON.stringify(c.penalidades))setPenalidades(d.penalidades||[]);
+        if(!recentlySaved("horasExtras")&&JSON.stringify(d.horasExtras)!==JSON.stringify(c.horasExtras))setHorasExtras(d.horasExtras||[]);
       }catch{offline();}
     },45000);
     return()=>clearInterval(id);
@@ -416,6 +420,7 @@ function App({role="full",cerrarSesion}){
   const saveDesperdicios=v=>save("desperdicios",v,setDesperdicios);
   const saveLiquidaciones=v=>save("liquidaciones",v,setLiquidaciones);
   const savePenalidades=v=>save("penalidades",v,setPenalidades);
+  const saveHorasExtras=v=>save("horasExtras",v,setHorasExtras);
   const askPass=()=>new Promise(r=>setPassModal({resolve:r}));
 
   const reintentarSave=async()=>{
@@ -547,6 +552,7 @@ function App({role="full",cerrarSesion}){
     {id:"fichajes",   label:"🕐 Fichajes"},
     {id:"stock",      label:"📦 Stock"},
     {id:"penalidades",label:"⚡ Penalidades"},
+    {id:"horasextras",label:"⏱️ HS Extras"},
   ];
   const TABS_ADMIN=[
     {id:"gastos",     label:"🏠 Pagos Digitales"},
@@ -626,8 +632,9 @@ function App({role="full",cerrarSesion}){
           sueldos={sueldos} gastos={gastos} proveedores={proveedores}
           calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
-        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades}/>}
+        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras}/>}
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
+        {tab==="horasextras"&&<TabHsExtras empleados={empleados} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} liquidaciones={liquidaciones}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
@@ -4462,6 +4469,130 @@ function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistoria
 function TabPenalidades({empleados,penalidades,savePenalidades,liquidaciones}){
   return <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={false} liquidaciones={liquidaciones}/>;
 }
+function HsExtrasPanel({empleados,horasExtras,saveHorasExtras,mostrarHistorial,periodo,liquidaciones}){
+  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
+  const periodoActual=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");})();
+  const periodoRef=periodo||periodoActual;
+  const[empSel,setEmpSel]=useState(null);
+  const[horasInput,setHorasInput]=useState("");
+  const[obsInput,setObsInput]=useState("");
+  const[fechaInput,setFechaInput]=useState(hoyLocal());
+  const[busy,setBusy]=useState(false);
+  const[lastAdded,setLastAdded]=useState(null);
+
+  useEffect(()=>{
+    if(!lastAdded)return;
+    const t=setTimeout(()=>setLastAdded(null),8000);
+    return()=>clearTimeout(t);
+  },[lastAdded]);
+
+  const totalDe=empId=>(horasExtras||[]).filter(h=>h.empleadoId===empId&&h.periodo===periodoRef).reduce((s,h)=>s+Number(h.horas||0),0);
+
+  const abrir=empId=>{setEmpSel(empId);setHorasInput("");setObsInput("");setFechaInput(hoyLocal());};
+  const cerrar=()=>{setEmpSel(null);setHorasInput("");setObsInput("");setFechaInput(hoyLocal());};
+
+  const periodoDeFechaInput=(fechaInput||hoyLocal()).slice(0,7);
+  const liqCerrada=empSel&&(liquidaciones||[]).find(l=>l.empleadoId===empSel&&l.periodo===periodoDeFechaInput&&l.estado==="confirmada");
+
+  const agregar=async emp=>{
+    const h=Number(horasInput);
+    if(!horasInput||!(h>0)){toast("Cargá la cantidad de horas");return;}
+    setBusy(true);
+    const fecha=fechaInput?fechaLocalISO(fechaInput):new Date().toISOString();
+    const registro={id:uid(),empleadoId:emp.id,periodo:periodoDeFechaInput,horas:h,obs:obsInput.trim(),fecha};
+    await saveHorasExtras([registro,...(horasExtras||[])]);
+    setBusy(false);cerrar();
+    setLastAdded({id:registro.id,nombre:emp.nombre,horas:h});
+    toast(h+" hs registradas para "+emp.nombre+" ✓");
+  };
+
+  const eliminar=async id=>{
+    await saveHorasExtras((horasExtras||[]).filter(h=>h.id!==id));
+    toast("Eliminada");
+  };
+
+  const deshacerUltimo=async()=>{
+    if(!lastAdded)return;
+    await saveHorasExtras((horasExtras||[]).filter(h=>h.id!==lastAdded.id));
+    toast("Registro deshecho");
+    setLastAdded(null);
+  };
+
+  const emp=empSel?empleadosActivos.find(x=>x.id===empSel):null;
+  const inpFecha={border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 10px",fontSize:".82rem",fontFamily:"inherit",boxSizing:"border-box"};
+
+  return(<>
+    <Card title="⏱️ HS Extras rápidas — cargar horas">
+      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Tocá el nombre de un empleado para cargarle las horas extra que hizo. El acumulado de {mesLabel(periodoRef)} se usa como cantidad de horas extra al liquidar el sueldo (se puede corregir a mano ahí).</p>
+      <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+        {empleadosActivos.map(e=>{
+          const t=totalDe(e.id);
+          return(
+            <button key={e.id} onClick={()=>abrir(e.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:104,padding:"14px 10px",borderRadius:12,border:"1px solid #E8DCC8",background:t>0?"#EAF3EC":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+              <span style={{fontWeight:600,fontSize:".85rem",textAlign:"center",color:"#2C1A0E"}}>{e.nombre}</span>
+              <span style={{fontSize:"1rem",fontWeight:700,color:t>0?"#2D6A4F":"#B8A88E"}}>{t>0?(t+" hs"):"—"}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+
+    {emp&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={cerrar}>
+        <div style={{background:"#fff",borderRadius:12,padding:20,width:"100%",maxWidth:360}} onClick={ev=>ev.stopPropagation()}>
+          <h3 style={{margin:"0 0 4px",fontSize:"1rem",color:"#2C1A0E"}}>Nuevas horas extra — {emp.nombre}</h3>
+          <p style={{margin:"0 0 12px",fontSize:".78rem",color:"#7B7063"}}>¿Cuántas horas?</p>
+          <input type="number" min="0" step="0.5" value={horasInput} onChange={ev=>setHorasInput(ev.target.value)} placeholder="Ej: 3" autoFocus style={{width:"100%",border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 10px",fontSize:".82rem",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12}}/>
+          <input value={obsInput} onChange={ev=>setObsInput(ev.target.value)} placeholder="Nota (opcional)" style={{width:"100%",border:"1px solid #E8DCC8",borderRadius:8,padding:"8px 10px",fontSize:".82rem",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12}}/>
+          <label style={{display:"block",fontSize:".65rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:4}}>Fecha (por defecto, hoy)</label>
+          <input type="date" value={fechaInput} onChange={ev=>setFechaInput(ev.target.value)} style={{...inpFecha,width:"100%"}}/>
+          {liqCerrada&&(
+            <p style={{fontSize:".72rem",color:"#C0392B",background:"#FBEAEA",border:"1px solid #F3C7C2",borderRadius:8,padding:"8px 10px",marginTop:10}}>⚠️ {mesLabel(periodoDeFechaInput)} ya fue liquidado y confirmado para {emp.nombre}. Estas horas van a quedar registradas pero no se van a sumar solas a esa liquidación — hay que ajustarlas a mano si hace falta.</p>
+          )}
+          <div style={{display:"flex",gap:8,marginTop:14}}>
+            <button onClick={cerrar} style={{flex:1,padding:10,borderRadius:8,border:"1px solid #E8DCC8",background:"#fff",color:"#7B7063",fontSize:".8rem",cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+            <SmBtn disabled={busy} onClick={()=>agregar(emp)}>Agregar</SmBtn>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {lastAdded&&(
+      <div style={{position:"fixed",left:"50%",bottom:20,transform:"translateX(-50%)",background:"#2C1A0E",color:"#fff",borderRadius:30,padding:"10px 18px",display:"flex",alignItems:"center",gap:12,fontSize:".82rem",zIndex:1100,boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>
+        <span>{lastAdded.horas} hs registradas para {lastAdded.nombre}</span>
+        <button onClick={deshacerUltimo} style={{background:"none",border:"none",color:"#F2C94C",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Deshacer</button>
+      </div>
+    )}
+
+    {mostrarHistorial&&(
+      <Card title={"Historial de "+mesLabel(periodoRef)}>
+        {empleadosActivos.map(e=>{
+          const log=(horasExtras||[]).filter(h=>h.empleadoId===e.id&&h.periodo===periodoRef).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+          if(log.length===0)return null;
+          const total=log.reduce((s,h)=>s+Number(h.horas||0),0);
+          return(
+            <div key={e.id} style={{marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontWeight:600,fontSize:".82rem",color:"#2C1A0E",marginBottom:4}}>
+                <span>{e.nombre}</span><span>{total} hs</span>
+              </div>
+              {log.map(h=>(
+                <div key={h.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".76rem",color:"#7B7063",padding:"4px 0",borderBottom:"1px solid #F2EAE0"}}>
+                  <span>{h.horas} hs · {new Date(h.fecha).toLocaleDateString("es-AR")}{h.obs?(" · "+h.obs):""}</span>
+                  <button onClick={()=>eliminar(h.id)} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".76rem",fontFamily:"inherit"}}>eliminar</button>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+        {(horasExtras||[]).filter(h=>h.periodo===periodoRef).length===0&&<Empty icon="✅">Sin horas extra cargadas en {mesLabel(periodoRef)}.</Empty>}
+      </Card>
+    )}
+  </>);
+}
+function TabHsExtras({empleados,horasExtras,saveHorasExtras,liquidaciones}){
+  return <HsExtrasPanel empleados={empleados} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} mostrarHistorial={false} liquidaciones={liquidaciones}/>;
+}
 function ManualLiquidacionModal({onClose}){
   const Sec=({title,children})=>(
     <div style={{marginBottom:18}}>
@@ -4493,7 +4624,7 @@ function ManualLiquidacionModal({onClose}){
 
         <Sec title="Haberes (lo que suma)">
           <b>Sueldo básico:</b> el sueldo fijo del mes.<br/>
-          <b>Horas extras:</b> cargás la cantidad de horas — se multiplican solas por el valor hora (básico ÷ 208 × 2).<br/>
+          <b>Horas extras:</b> se autocompleta con lo cargado en el módulo ⏱️ HS Extras para ese período (se puede corregir a mano) — el sistema multiplica la cantidad de horas por el valor hora (básico ÷ 208 × 2).<br/>
           <b>Bono base:</b> el bono de referencia del empleado. Lo que realmente se liquida depende de "Penalidades X" (ver Descuentos): puede duplicarse, quedar igual, o descontarse.<br/>
           <b>Feriados:</b> cargás la cantidad de feriados trabajados — se multiplican por el valor feriado (básico ÷ 208 × 8).<br/>
           <b>Plus vacacional / Plus SAC:</b> montos manuales, cuando corresponda.
@@ -4516,8 +4647,13 @@ function ManualLiquidacionModal({onClose}){
           Este botón muestra, para el período elegido, todos los adelantos cargados en la pestaña Sueldos (concepto "Adelanto") agrupados por empleado, con el total de cada uno. Si aparece un cartel de "adelantos sin relacionar", es porque el nombre cargado en Sueldos no coincide con ningún empleado activo — conviene revisar y corregir el nombre ahí.
         </Sec>
 
+        <Sec title="⏱️ HS Extras">
+          Igual que Penalidades: hay una pantalla aparte, sin contraseña, para cargar rápido la cantidad de horas extra que hizo cada empleado, con fecha (por defecto, hoy) y una nota opcional. El botón ⏱️ HS Extras acá adentro muestra lo mismo, más el historial completo del período con opción de borrar un registro cargado por error.<br/><br/>
+          Cuando abrís una liquidación nueva, el campo "Horas extras" ya viene con el total de horas cargadas para ese empleado en el período que estás liquidando.
+        </Sec>
+
         <Sec title="Importante: qué período se está liquidando">
-          Todo (Penalidades, Adelantos, la liquidación en sí) sigue el Período que tengas elegido arriba, no el mes calendario de hoy. Si estás parado en septiembre pero elegiste "agosto" como período, vas a ver y liquidar los datos de agosto.
+          Todo (Penalidades, Adelantos, HS Extras, la liquidación en sí) sigue el Período que tengas elegido arriba, no el mes calendario de hoy. Si estás parado en septiembre pero elegiste "agosto" como período, vas a ver y liquidar los datos de agosto.
         </Sec>
 
         <Sec title="El recibo">
@@ -4539,7 +4675,7 @@ function ManualLiquidacionModal({onClose}){
     </div>
   );
 }
-function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades,savePenalidades}){
+function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades,savePenalidades,horasExtras,saveHorasExtras}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const[periodo,setPeriodo]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
   const[editando,setEditando]=useState(null);
@@ -4553,6 +4689,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verNomina,setVerNomina]=useState(false);
   const[verPenalidadesAdmin,setVerPenalidadesAdmin]=useState(false);
   const[verAdelantosAdmin,setVerAdelantosAdmin]=useState(false);
+  const[verHsExtrasAdmin,setVerHsExtrasAdmin]=useState(false);
   const[verManual,setVerManual]=useState(false);
   const[pagoModal,setPagoModal]=useState(null);
   const[pagoMontos,setPagoMontos]=useState({reservado:"",efectivo:"",digital:""});
@@ -4676,10 +4813,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     }else{
       const xDelMes=(penalidades||[]).filter(p=>p.empleadoId===emp.id&&p.periodo===periodo).length;
       const adelantosMes=adelantosDe(emp,periodo).reduce((s,x)=>s+Number(x.monto||0),0);
+      const hsExtrasMes=(horasExtras||[]).filter(h=>h.empleadoId===emp.id&&h.periodo===periodo).reduce((s,h)=>s+Number(h.horas||0),0);
       setForm({
         id:uid(),empleadoId:emp.id,periodo,
         sueldoBasico:basicoRef?String(basicoRef):"",
-        hsExtrasCant:"",
+        hsExtrasCant:hsExtrasMes>0?String(hsExtrasMes):"",
         bonoBase:bonoRef?String(bonoRef):"",
         bonoCant:xDelMes>0?String(xDelMes):"",
         feriadosCant:"",
@@ -4863,9 +5001,14 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
       <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
       <Btn bg="#B7860B" onClick={()=>setVerAdelantosAdmin(v=>!v)}>{verAdelantosAdmin?"Ocultar Adelantos":"💵 Adelantos"}</Btn>
+      <Btn bg="#2D6A4F" onClick={()=>setVerHsExtrasAdmin(v=>!v)}>{verHsExtrasAdmin?"Ocultar HS Extras":"⏱️ HS Extras"}</Btn>
 
       {verPenalidadesAdmin&&(
         <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
+      )}
+
+      {verHsExtrasAdmin&&(
+        <HsExtrasPanel empleados={empleados} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
       )}
 
       {verAdelantosAdmin&&(()=>{
