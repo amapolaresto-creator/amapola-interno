@@ -4611,6 +4611,8 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores}){
   const[obs,setObs]=useState("");
   const[recurrente,setRecurrente]=useState(false);
   const[verFinalizadas,setVerFinalizadas]=useState(false);
+  const[mesExpandido,setMesExpandido]=useState(null);
+  const[cantMeses,setCantMeses]=useState(6);
 
   const mesesEntre=(desde,hasta)=>{
     const[y1,m1]=String(desde).slice(0,7).split("-").map(Number);
@@ -4626,7 +4628,28 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores}){
   const lista=(amexCuotas||[]).slice().sort((a,b)=>new Date(b.fechaCompra)-new Date(a.fechaCompra));
   const activas=lista.filter(c=>!finalizada(c));
   const finalizadas=lista.filter(c=>finalizada(c));
-  const totalMes=activas.reduce((s,c)=>s+montoCuota(c),0);
+
+  // Proyección: cuánto corresponde pagar cada uno de los próximos meses, según las cuotas vigentes en cada uno
+  const mesLabelCorto=m=>{const[y,mm]=m.split("-");return new Date(Number(y),Number(mm)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
+  const nCuotaEnMes=(c,mes)=>mesesEntre(c.fechaCuota1||c.fechaCompra,mes+"-01")+1;
+  const activaEnMes=(c,mes)=>{
+    const n=nCuotaEnMes(c,mes);
+    return c.recurrente?n>=1:(n>=1&&n<=Number(c.cantidadCuotas));
+  };
+  const mesesFuturos=(()=>{
+    const hoy=new Date();
+    const arr=[];
+    for(let i=0;i<cantMeses;i++){
+      const d=new Date(hoy.getFullYear(),hoy.getMonth()+i,1);
+      arr.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));
+    }
+    return arr;
+  })();
+  const proyeccion=mesesFuturos.map(mes=>{
+    const items=(amexCuotas||[]).filter(c=>activaEnMes(c,mes));
+    const total=items.reduce((s,c)=>s+montoCuota(c),0);
+    return{mes,total,items};
+  });
 
   const limpiar=()=>{setEditId(null);setDescripcion("");setProveedor("");setMontoTotal("");setCantidadCuotas("");setFechaCompra(hoyLocal());setObs("");setRecurrente(false);};
   const abrirNuevo=()=>{limpiar();setShowForm(true);};
@@ -4669,16 +4692,36 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores}){
 
   return(
     <div style={{padding:"20px 0"}}>
-      <ST help={"Compras pagadas con Amex en cuotas — no hace falta que estén ligadas a un proveedor de Boletas, pueden ser compras sueltas (equipamiento, insumos grandes, etc.).\n\n• Cargá la descripción, monto total, cantidad de cuotas y la fecha real de compra.\n• La 'cuota actual' se calcula sola según los meses que pasaron desde la fecha de compra — no depende de si ya pagaste o no el resumen de Amex. Por defecto asume que la 1ra cuota se factura el mismo mes de la compra; si en tu caso la tarjeta tarda más en facturar la primera cuota (pasa con algunas compras), avisame para ajustar esa compra puntual y que la cuota actual quede bien.\n• El resumen mensual de Amex seguís cargándolo a mano como Gasto (categoría Amex) igual que siempre — esta pantalla es solo para ver qué compras están vigentes y cuánto corresponde ese mes.\n• Una compra sigue apareciendo como activa mes a mes hasta agotar sus cuotas, aunque ya hayas pagado el resumen de ese mes.\n• Cuando se agotan las cuotas, la compra pasa sola a 'Finalizadas'.\n• Si tildás 'Débito recurrente', no se le pone cantidad de cuotas — se asume que se repite todos los meses sin fecha de fin (ej. un seguro o un servicio), hasta que lo elimines a mano."}>💳 Amex — compras en cuotas</ST>
+      <ST help={"Compras pagadas con Amex en cuotas — no hace falta que estén ligadas a un proveedor de Boletas, pueden ser compras sueltas (equipamiento, insumos grandes, etc.).\n\n• Arriba de todo está 'Próximos meses': te muestra cuánto vas a tener que pagar cada uno de los próximos 3/6/12 meses, sumando todas las cuotas y débitos recurrentes vigentes en cada mes. Tocá un mes para ver el detalle de qué compras lo componen.\n• Cargá la descripción, monto total, cantidad de cuotas y la fecha real de compra.\n• La 'cuota actual' se calcula sola según los meses que pasaron desde la fecha de compra — no depende de si ya pagaste o no el resumen de Amex. Por defecto asume que la 1ra cuota se factura el mismo mes de la compra; si en tu caso la tarjeta tarda más en facturar la primera cuota (pasa con algunas compras), avisame para ajustar esa compra puntual y que la cuota actual quede bien.\n• El resumen mensual de Amex seguís cargándolo a mano como Gasto (categoría Amex) igual que siempre — esta pantalla es solo para ver qué compras están vigentes y cuánto corresponde ese mes.\n• Una compra sigue apareciendo como activa mes a mes hasta agotar sus cuotas, aunque ya hayas pagado el resumen de ese mes.\n• Cuando se agotan las cuotas, la compra pasa sola a 'Finalizadas'.\n• Si tildás 'Débito recurrente', no se le pone cantidad de cuotas — se asume que se repite todos los meses sin fecha de fin (ej. un seguro o un servicio), hasta que lo elimines a mano."}>💳 Amex — compras en cuotas</ST>
       <SS>Compras pagadas con Amex en cuotas, ligadas o no a un proveedor.</SS>
 
-      <Card>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-          <div>
-            <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063"}}>Total en cuotas este mes</div>
-            <div style={{fontSize:"1.5rem",fontWeight:700,color:"#2C1A0E"}}>{fmt(totalMes)}</div>
+      <Card title="Próximos meses — cuánto corresponde pagar">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{display:"flex",gap:6}}>
+            {[3,6,12].map(n=>(
+              <button key={n} onClick={()=>setCantMeses(n)} style={{padding:"5px 12px",borderRadius:20,border:"1px solid "+(cantMeses===n?"#2C1A0E":"#E8DCC8"),background:cantMeses===n?"#2C1A0E":"#fff",color:cantMeses===n?"#fff":"#7B7063",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>{n} meses</button>
+            ))}
           </div>
           <SmBtn onClick={abrirNuevo}>+ Registrar compra</SmBtn>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".8rem"}}>
+            <tbody>
+              {proyeccion.map((p,i)=>(<React.Fragment key={p.mes}>
+                <tr onClick={()=>setMesExpandido(mesExpandido===p.mes?null:p.mes)} style={{cursor:"pointer",background:i===0?"#FBF3E8":(i%2===0?"#fff":"#F9F6F1")}}>
+                  <td style={{padding:"9px 8px",textTransform:"capitalize",fontWeight:i===0?700:500}}>{mesExpandido===p.mes?"▾":"▸"} {mesLabelCorto(p.mes)}{i===0?" (actual)":""}</td>
+                  <td style={{padding:"9px 8px",textAlign:"right",fontWeight:700,color:"#2C1A0E"}}>{fmt(p.total)}</td>
+                  <td style={{padding:"9px 8px",textAlign:"right",color:"#B8A88E",fontSize:".7rem"}}>{p.items.length} compra{p.items.length===1?"":"s"}</td>
+                </tr>
+                {mesExpandido===p.mes&&p.items.map(c=>(
+                  <tr key={c.id} style={{background:"#F2EAE0"}}>
+                    <td colSpan={2} style={{padding:"5px 8px 5px 26px",fontSize:".75rem",color:"#4A3B2C"}}>{c.descripcion}{c.recurrente?" · recurrente":(" · cuota "+nCuotaEnMes(c,p.mes)+"/"+c.cantidadCuotas)}</td>
+                    <td style={{padding:"5px 8px",textAlign:"right",fontSize:".75rem",color:"#4A3B2C"}}>{fmt(montoCuota(c))}</td>
+                  </tr>
+                ))}
+              </React.Fragment>))}
+            </tbody>
+          </table>
         </div>
       </Card>
 
