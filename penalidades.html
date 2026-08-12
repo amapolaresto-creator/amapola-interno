@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2C1A0E">
+<title>Amapola · Penalidades</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,sans-serif;background:#F9F6F1;color:#2C1A0E;}
+input,button{font-family:inherit;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect}=React;
+
+const SB_URL="https://qupcqcbvjxxsghwatxgq.supabase.co/rest/v1";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1cGNxY2J2anh4c2dod2F0eGdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTI3OTcsImV4cCI6MjA5NzkyODc5N30.odc_ywGklknD1hpkX3PSnADXfuNm9Ci4hd550_J-awA";
+const SBH={"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json"};
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const hoyLocal=()=>{const d=new Date();const off=d.getTimezoneOffset();const local=new Date(d.getTime()-off*60000);return local.toISOString().slice(0,10);};
+const fechaLocalISO=fecha=>fecha?`${fecha}T12:00:00.000-03:00`:new Date().toISOString();
+const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
+
+async function sbGetDos(){
+  const r=await fetch(`${SB_URL}/amapola?select=key,value&key=in.(empleados,penalidades)`,{headers:SBH});
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const rows=await r.json();
+  const m={};
+  rows.forEach(x=>{try{m[x.key]=JSON.parse(x.value);}catch{}});
+  return{empleados:Array.isArray(m.empleados)?m.empleados:[],penalidades:Array.isArray(m.penalidades)?m.penalidades:[]};
+}
+async function sbSetPenalidades(value){
+  const body=JSON.stringify({key:"penalidades",value:JSON.stringify(value),updated_at:new Date().toISOString()});
+  const r=await fetch(`${SB_URL}/amapola`,{method:"POST",headers:{...SBH,"Prefer":"resolution=merge-duplicates"},body});
+  if(!r.ok){const t=await r.text().catch(()=>"");throw new Error(`HTTP ${r.status}: ${t.slice(0,80)}`);}
+}
+
+const PIN_CODE="716";
+function App(){
+  const[pinOk,setPinOk]=useState(()=>{try{return localStorage.getItem("amapola_penalidades_pin")==="1";}catch{return false;}});
+  const[pinInput,setPinInput]=useState("");
+  const[pinErr,setPinErr]=useState(false);
+  const[fase,setFase]=useState("cargando");
+  const[empleados,setEmpleados]=useState([]);
+  const[penalidades,setPenalidades]=useState([]);
+  const[empSel,setEmpSel]=useState(null);
+  const[otroTxt,setOtroTxt]=useState("");
+  const[fechaInput,setFechaInput]=useState(hoyLocal());
+  const[busy,setBusy]=useState(false);
+  const[lastAdded,setLastAdded]=useState(null);
+  const[toastMsg,setToastMsg]=useState("");
+  const MOTIVOS=["Celular","Llegada tarde","Salió sin avisar"];
+
+  const toast=msg=>{setToastMsg(msg);setTimeout(()=>setToastMsg(""),2600);};
+
+  const cargar=async()=>{
+    try{
+      const d=await sbGetDos();
+      setEmpleados(d.empleados);setPenalidades(d.penalidades);
+      setFase("listo");
+    }catch(e){setFase("error");}
+  };
+  useEffect(()=>{if(pinOk)cargar();},[pinOk]);
+
+  const checkPin=()=>{
+    if(pinInput.trim()===PIN_CODE){
+      try{localStorage.setItem("amapola_penalidades_pin","1");}catch{}
+      setPinOk(true);
+    }else{setPinErr(true);setPinInput("");}
+  };
+
+  useEffect(()=>{
+    if(!lastAdded)return;
+    const t=setTimeout(()=>setLastAdded(null),8000);
+    return()=>clearTimeout(t);
+  },[lastAdded]);
+
+  const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const periodoActual=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");})();
+  const countDe=empId=>(penalidades||[]).filter(p=>p.empleadoId===empId&&p.periodo===periodoActual).length;
+
+  const abrir=empId=>{setEmpSel(empId);setOtroTxt("");setFechaInput(hoyLocal());};
+  const cerrar=()=>{setEmpSel(null);setOtroTxt("");setFechaInput(hoyLocal());};
+
+  const agregar=async(emp,motivo)=>{
+    if(!motivo||!motivo.trim())return;
+    setBusy(true);
+    try{
+      const fecha=fechaInput?fechaLocalISO(fechaInput):new Date().toISOString();
+      const periodo=(fechaInput||hoyLocal()).slice(0,7);
+      const registro={id:uid(),empleadoId:emp.id,periodo,motivo:motivo.trim(),fecha};
+      const nuevas=[registro,...(penalidades||[])];
+      await sbSetPenalidades(nuevas);
+      setPenalidades(nuevas);
+      setLastAdded({id:registro.id,nombre:emp.nombre});
+      toast("X registrada para "+emp.nombre+" ✓");
+      cerrar();
+    }catch(e){
+      toast("⚠️ No se pudo guardar, revisá la conexión");
+    }
+    setBusy(false);
+  };
+
+  const deshacerUltimo=async()=>{
+    if(!lastAdded)return;
+    const nuevas=(penalidades||[]).filter(p=>p.id!==lastAdded.id);
+    try{
+      await sbSetPenalidades(nuevas);
+      setPenalidades(nuevas);
+      toast("X deshecha");
+    }catch{toast("⚠️ No se pudo deshacer, revisá la conexión");}
+    setLastAdded(null);
+  };
+
+  if(!pinOk){
+    return(
+      <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{width:"100%",maxWidth:320,textAlign:"center"}}>
+          <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.3rem",color:"#2C1A0E",marginBottom:18}}>
+            Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Penalidades
+          </div>
+          <input type="password" inputMode="numeric" placeholder="PIN" value={pinInput} autoFocus
+            onChange={ev=>{setPinInput(ev.target.value);setPinErr(false);}}
+            onKeyDown={ev=>ev.key==="Enter"&&checkPin()}
+            style={{width:"100%",border:`1.5px solid ${pinErr?"#E74C3C":"#E8DCC8"}`,borderRadius:10,padding:"14px 16px",fontSize:"1.1rem",textAlign:"center",letterSpacing:"4px",boxSizing:"border-box",marginBottom:10,outline:"none"}}/>
+          {pinErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:10}}>PIN incorrecto</p>}
+          <button onClick={checkPin} style={{width:"100%",padding:14,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:"1rem"}}>Ingresar</button>
+        </div>
+      </div>
+    );
+  }
+
+  if(fase==="cargando"){
+    return(
+      <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <p style={{color:"#7B7063",fontSize:".9rem"}}>Cargando…</p>
+      </div>
+    );
+  }
+  if(fase==="error"){
+    return(
+      <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:20,textAlign:"center"}}>
+        <p style={{color:"#C0392B",fontWeight:600}}>No se pudo conectar</p>
+        <button onClick={cargar} style={{padding:"12px 24px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Reintentar</button>
+      </div>
+    );
+  }
+
+  const emp=empSel?empleadosActivos.find(x=>x.id===empSel):null;
+  const chipBtn={padding:"12px 18px",borderRadius:22,border:"1px solid #E8DCC8",background:"#F9F6F1",cursor:"pointer",fontSize:".88rem",fontFamily:"inherit"};
+
+  return(
+    <div style={{minHeight:"100dvh",maxWidth:520,margin:"0 auto",padding:"28px 18px 60px"}}>
+      <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.35rem",color:"#2C1A0E",marginBottom:2}}>
+        Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Penalidades
+      </div>
+      <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:22}}>Tocá el nombre del empleado y cargale una X. Rápido, sin contraseña.</p>
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {empleadosActivos.map(e=>{
+          const c=countDe(e.id);
+          return(
+            <button key={e.id} onClick={()=>abrir(e.id)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"16px 18px",borderRadius:14,border:"1px solid #E8DCC8",background:c>0?"#FBEAEA":"#fff",cursor:"pointer",fontFamily:"inherit",boxShadow:"0 1px 3px rgba(44,26,14,.06)"}}>
+              <span style={{fontWeight:600,fontSize:"1rem",color:"#2C1A0E"}}>{e.nombre}</span>
+              <span style={{fontSize:"1rem",fontWeight:700,color:c>0?"#C0392B":"#B8A88E"}}>{c>0?(c+" X"):"—"}</span>
+            </button>
+          );
+        })}
+        {empleadosActivos.length===0&&<p style={{color:"#7B7063",fontSize:".85rem"}}>No hay empleados activos.</p>}
+      </div>
+
+      {emp&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={cerrar}>
+          <div style={{background:"#fff",borderRadius:14,padding:22,width:"100%",maxWidth:380}} onClick={ev=>ev.stopPropagation()}>
+            <h3 style={{margin:"0 0 4px",fontSize:"1.1rem",color:"#2C1A0E"}}>Nueva X — {emp.nombre}</h3>
+            <p style={{margin:"0 0 14px",fontSize:".82rem",color:"#7B7063"}}>¿Motivo?</p>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+              {MOTIVOS.map(m=>(
+                <button key={m} disabled={busy} onClick={()=>agregar(emp,m)} style={chipBtn}>{m}</button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
+              <input value={otroTxt} onChange={ev=>setOtroTxt(ev.target.value)} placeholder="Otro motivo…" style={{flex:1,border:"1px solid #E8DCC8",borderRadius:10,padding:"10px 12px",fontSize:".85rem",fontFamily:"inherit",boxSizing:"border-box"}}/>
+              <button disabled={busy||!otroTxt.trim()} onClick={()=>agregar(emp,otroTxt)} style={{padding:"10px 16px",borderRadius:10,border:"none",background:(busy||!otroTxt.trim())?"#ccc":"#2C1A0E",color:"#fff",fontWeight:600,cursor:(busy||!otroTxt.trim())?"default":"pointer"}}>Agregar</button>
+            </div>
+            <label style={{display:"block",fontSize:".68rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:5}}>Fecha (por defecto, hoy)</label>
+            <input type="date" value={fechaInput} onChange={ev=>setFechaInput(ev.target.value)} style={{width:"100%",border:"1px solid #E8DCC8",borderRadius:10,padding:"10px 12px",fontSize:".85rem",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <button onClick={cerrar} style={{marginTop:18,background:"none",border:"none",color:"#7B7063",fontSize:".82rem",cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {lastAdded&&(
+        <div style={{position:"fixed",left:"50%",bottom:20,transform:"translateX(-50%)",background:"#2C1A0E",color:"#fff",borderRadius:30,padding:"12px 20px",display:"flex",alignItems:"center",gap:14,fontSize:".85rem",zIndex:1100,boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>
+          <span>X registrada para {lastAdded.nombre}</span>
+          <button onClick={deshacerUltimo} style={{background:"none",border:"none",color:"#F2C94C",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Deshacer</button>
+        </div>
+      )}
+
+      {toastMsg&&!lastAdded&&(
+        <div style={{position:"fixed",left:"50%",bottom:20,transform:"translateX(-50%)",background:"#2C1A0E",color:"#fff",borderRadius:30,padding:"10px 18px",fontSize:".82rem",zIndex:1100,boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>{toastMsg}</div>
+      )}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
