@@ -2067,7 +2067,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
   const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
   return(<>
-    <ST help={"El módulo de Stock tiene cinco secciones:\n\n📋 Inventario: listado de productos con cantidad actual, mínimo y alertas de stock bajo.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
+    <ST help={"El módulo de Stock tiene cinco secciones:\n\n📋 Inventario: tabla agrupada por proveedor con buscador, filtro por proveedor/sector y botón 'Solo stock bajo'. + suma entrada, − registra salida, ⋯ abre el historial de movimientos del producto (con Editar y Eliminar adentro).\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
     {stockBajo.length>0&&sub!=="inventario"&&(
       <div onClick={()=>setSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
@@ -2100,6 +2100,11 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
   const[movCant,setMovCant]=useState("");
   const[movTipo,setMovTipo]=useState("entrada");
   const[movObs,setMovObs]=useState("");
+  const[fQuery,setFQuery]=useState("");
+  const[fProv,setFProv]=useState("");
+  const[fSector,setFSector]=useState("");
+  const[soloBajo,setSoloBajo]=useState(false);
+  const[histModal,setHistModal]=useState(null);
 
   const productosDelProv=provSel?catalogo.filter(c=>c.proveedor===provSel):[];
   const catSel=catalogo.find(c=>c.id===catId);
@@ -2145,19 +2150,40 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
   };
 
   const conAlerta=stock.filter(s=>Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0);
+  const sectoresCat=[...new Set(stock.map(s=>s.sector).filter(Boolean))].sort();
+  const ultimoMov=s=>{
+    const fechaMov=(s.movimientos&&s.movimientos[0]&&s.movimientos[0].fecha)||s.fecha;
+    if(!fechaMov)return"—";
+    const d=new Date(fechaMov);const hoy=new Date();const ayer=new Date();ayer.setDate(hoy.getDate()-1);
+    if(d.toDateString()===hoy.toDateString())return"Hoy "+fmtH(fechaMov);
+    if(d.toDateString()===ayer.toDateString())return"Ayer "+fmtH(fechaMov);
+    return fmtF(fechaMov);
+  };
+  const filtradoInv=stock.filter(s=>{
+    if(fProv&&s.proveedor!==fProv)return false;
+    if(fSector&&s.sector!==fSector)return false;
+    if(soloBajo&&!(Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0))return false;
+    if(fQuery&&!norm(s.nombre).includes(norm(fQuery)))return false;
+    return true;
+  });
+  const gruposInv=[];
+  filtradoInv.forEach(s=>{
+    const key=s.proveedor||"Sin proveedor";
+    let g=gruposInv.find(g=>g.proveedor===key);
+    if(!g){g={proveedor:key,items:[]};gruposInv.push(g);}
+    g.items.push(s);
+  });
+  gruposInv.sort((a,b)=>a.proveedor.localeCompare(b.proveedor));
+  gruposInv.forEach(g=>g.items.sort((a,b)=>{
+    const aAl=Number(a.cantidad)<=Number(a.minimo)&&Number(a.minimo)>0;
+    const bAl=Number(b.cantidad)<=Number(b.minimo)&&Number(b.minimo)>0;
+    if(aAl!==bAl)return aAl?-1:1;
+    return a.nombre.localeCompare(b.nombre);
+  }));
+  const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
+  const tdS={padding:"7px 8px"};
 
   return(<>
-    {conAlerta.length>0&&(
-      <div style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"12px 16px",marginBottom:16}}>
-        <div style={{fontWeight:700,fontSize:".82rem",color:"#C0392B",marginBottom:6}}>⚠️ Stock bajo en {conAlerta.length} producto{conAlerta.length!==1?"s":""}</div>
-        {conAlerta.map(s=>(
-          <div key={s.id} style={{fontSize:".78rem",color:"#C0392B",padding:"2px 0"}}>
-            · {s.nombre}: {s.cantidad} {s.unidad} (mín: {s.minimo})
-          </div>
-        ))}
-      </div>
-    )}
-
     {movModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 44px",width:"100%",maxWidth:460}}>
@@ -2175,6 +2201,36 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
           <div style={{display:"flex",gap:10,marginTop:18}}>
             <button onClick={()=>{setMovModal(null);setMovCant("");setMovObs("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
             <button onClick={registrarMovimiento} style={{flex:1,padding:12,borderRadius:10,border:"none",background:movTipo==="entrada"?"#2D6A4F":"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Confirmar</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {histModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"80vh",overflowY:"auto"}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>{histModal.nombre}</p>
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Stock actual: <strong>{histModal.cantidad} {histModal.unidad}</strong>{histModal.proveedor?` · ${histModal.proveedor}`:""}</p>
+          <div style={{fontSize:".68rem",fontWeight:700,color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:8}}>Últimos movimientos</div>
+          {!(histModal.movimientos&&histModal.movimientos.length)?(
+            <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Todavía no hay movimientos registrados.</p>
+          ):(
+            <div style={{marginBottom:18}}>
+              {histModal.movimientos.map(m=>(
+                <div key={m.id} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid #F2EAE0"}}>
+                  <div>
+                    <div style={{fontSize:".8rem",color:"#2C1A0E"}}>{m.tipo==="entrada"?"📥 Entrada":"📤 Salida"}{m.origen==="produccion"?" · producción":m.origen==="desperdicio"?" · desperdicio":""}</div>
+                    <div style={{fontSize:".68rem",color:"#7B7063"}}>{fmtF(m.fecha)} {fmtH(m.fecha)}{m.registradoPor?` · ${m.registradoPor}`:""}{m.obs?` · ${m.obs}`:""}</div>
+                  </div>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:m.tipo==="entrada"?"#2D6A4F":"#C0392B",whiteSpace:"nowrap",marginLeft:10}}>{m.tipo==="entrada"?"+":"−"}{m.cantidad}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{editar(histModal);setHistModal(null);}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",color:"#2C1A0E",fontWeight:600,cursor:"pointer"}}>Editar</button>
+            <button onClick={()=>{eliminar(histModal.id);setHistModal(null);}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#FFF0EF",color:"#C0392B",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+            <button onClick={()=>setHistModal(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Cerrar</button>
           </div>
         </div>
       </div>
@@ -2222,34 +2278,63 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
       </div>
     </Card>
 
-    {!stock.length?<Empty icon="📦">Todavía no registraste productos en el inventario</Empty>:stock.map(s=>{
-      const alerta=Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
-      const pct=s.minimo>0?Math.min(100,(s.cantidad/s.minimo)*100):100;
-      return(
-        <div key={s.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)",border:alerta?"1.5px solid #f5b7b1":"1.5px solid transparent"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                <div style={{fontWeight:700,fontSize:".95rem"}}>{s.nombre}</div>
-                {alerta&&<span style={{background:"#FFF0EF",color:"#C0392B",fontSize:".6rem",fontWeight:700,padding:"2px 6px",borderRadius:20}}>⚠️ BAJO</span>}
-              </div>
-              <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.proveedor?`${s.proveedor} · `:""}Mínimo: {s.minimo} {s.unidad}</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:alerta?"#C0392B":"#2D6A4F"}}>{s.cantidad}</div>
-              <div style={{fontSize:".72rem",color:"#7B7063"}}>{s.unidad}</div>
-            </div>
+    {!stock.length?<Empty icon="📦">Todavía no registraste productos en el inventario</Empty>:(<>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+        <input value={fQuery} onChange={e=>setFQuery(e.target.value)} placeholder="Buscar producto..." style={{flex:"2 1 160px",padding:"9px 12px",border:"1.5px solid #E8DCC8",borderRadius:10,fontSize:".82rem",background:"#fff",color:"#2C1A0E"}}/>
+        <select value={fProv} onChange={e=>setFProv(e.target.value)} style={{...sS,flex:"1 1 120px"}}>
+          <option value="">Todos los proveedores</option>
+          {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={fSector} onChange={e=>setFSector(e.target.value)} style={{...sS,flex:"1 1 110px"}}>
+          <option value="">Todos los sectores</option>
+          {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
+        </select>
+        <button onClick={()=>setSoloBajo(!soloBajo)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:soloBajo?"#C0392B":"#FFF0EF",color:soloBajo?"#fff":"#C0392B",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⚠️ Solo stock bajo ({conAlerta.length})</button>
+      </div>
+
+      {!gruposInv.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposInv.map(g=>(
+        <div key={g.proveedor} style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden",marginBottom:14}}>
+          <div style={{background:"#F4EEE3",padding:"9px 16px",fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:".88rem",color:"#2C1A0E",borderBottom:"1px solid #E8DCC8",display:"flex",justifyContent:"space-between"}}>
+            <span>{g.proveedor}</span>
+            <span style={{fontSize:".65rem",color:"#7B7063",fontStyle:"normal"}}>{g.items.length} producto{g.items.length!==1?"s":""}</span>
           </div>
-          {s.minimo>0&&<div style={{margin:"10px 0 0",background:"#F9F6F1",borderRadius:4,height:5,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,pct)+"%",background:alerta?"#C0392B":"#2D6A4F",borderRadius:4}}/></div>}
-          <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
-            <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{padding:"6px 12px",border:"none",borderRadius:8,background:"#EAF5F0",color:"#2D6A4F",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>📥 Entrada</button>
-            <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{padding:"6px 12px",border:"none",borderRadius:8,background:"#FFF0EF",color:"#C0392B",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>📤 Salida</button>
-            <SmBtn onClick={()=>editar(s)}>Editar</SmBtn>
-            <SmBtn color="#C0392B" onClick={()=>eliminar(s.id)}>Eliminar</SmBtn>
+          <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:520}}>
+            <thead>
+              <tr style={{background:"#F9F6F1"}}>
+                <th style={thS}>Producto</th>
+                <th style={thS}>Sector</th>
+                <th style={{...thS,textAlign:"right"}}>Stock</th>
+                <th style={{...thS,width:90}}>Nivel</th>
+                <th style={thS}>Últ. mov.</th>
+                <th style={{...thS,textAlign:"right"}}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {g.items.map((s,i)=>{
+                const alerta=Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
+                const pct=s.minimo>0?Math.min(100,(s.cantidad/s.minimo)*100):100;
+                return(
+                  <tr key={s.id} style={{background:alerta?"#FFF0EF":(i%2===0?"#fff":"#F9F6F1")}}>
+                    <td style={tdS}>{s.nombre}{alerta&&<span style={{background:"#F09595",color:"#501313",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>BAJO</span>}</td>
+                    <td style={{...tdS,color:"#7B7063"}}>{s.sector||"—"}</td>
+                    <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:alerta?"#C0392B":"#2D6A4F"}}>{s.cantidad} <span style={{color:"#7B7063",fontWeight:400,fontSize:".7rem"}}>{s.unidad}</span></td>
+                    <td style={tdS}>{s.minimo>0?<div style={{background:"#F2EAE0",borderRadius:4,height:5,overflow:"hidden",width:70}}><div style={{height:"100%",width:Math.min(100,pct)+"%",background:alerta?"#C0392B":"#2D6A4F"}}/></div>:<span style={{color:"#B7A98F",fontSize:".68rem"}}>sin mín.</span>}</td>
+                    <td style={{...tdS,color:"#7B7063",fontSize:".72rem"}}>{ultimoMov(s)}</td>
+                    <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
+                      <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{background:"#EAF5F0",color:"#2D6A4F",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>+</button>
+                      <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>−</button>
+                      <button onClick={()=>setHistModal(s)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>⋯</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
           </div>
         </div>
-      );
-    })}
+      ))}
+    </>)}
   </>);
 }
 
