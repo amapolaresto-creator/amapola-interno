@@ -2807,6 +2807,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
   const[editMinimo,setEditMinimo]=useState("");
   const[editMaximo,setEditMaximo]=useState("");
   const[editBusy,setEditBusy]=useState(false);
+  const[mostrarForm,setMostrarForm]=useState(false);
   const UNIDADES=["unidades","kg","g","litros","ml","cajas","bolsas","porciones","paquetes"];
   const sectoresCat=[...new Set(catalogo.map(c=>c.sector).filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
@@ -2828,7 +2829,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
       await saveProveedores([...(proveedores||[]),nuevoProv]);
     }
     toast(yaEsProveedor?"Producto agregado al catálogo ✓":"Producto agregado y proveedor creado ✓");
-    setBusy(false);setProducto("");setProvNuevo("");setMostrarNuevoProv(false);setUnidad("unidades");setMinimo("");setMaximo("");
+    setBusy(false);setProducto("");setProvNuevo("");setMostrarNuevoProv(false);setUnidad("unidades");setMinimo("");setMaximo("");setMostrarForm(false);
   };
 
   const cambiarUnidad=async(id,nuevaUnidad)=>{
@@ -2879,6 +2880,13 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
   });
 
   return(<>
+    {!mostrarForm&&(
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+        <button onClick={()=>setMostrarForm(true)} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer"}}>+ Nuevo producto</button>
+      </div>
+    )}
+
+    {mostrarForm&&(
     <Card title="Agregar producto al catálogo">
       <Field label="Proveedor">
         {!mostrarNuevoProv?(
@@ -2914,8 +2922,12 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
           <Field label="Máximo"><Inp type="number" value={maximo} onChange={setMaximo} placeholder="0"/></Field>
         </div>
       </div>
-      <Btn onClick={agregar} disabled={busy}>{busy?"Guardando…":"Agregar al catálogo"}</Btn>
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button onClick={()=>setMostrarForm(false)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+        <Btn onClick={agregar} disabled={busy}>{busy?"Guardando…":"Agregar al catálogo"}</Btn>
+      </div>
     </Card>
+    )}
 
     <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
       <input value={fQuery} onChange={e=>setFQuery(e.target.value)} placeholder="Buscar producto..." style={{flex:"2 1 160px",padding:"9px 12px",border:"1.5px solid #E8DCC8",borderRadius:10,fontSize:".82rem",background:"#fff",color:"#2C1A0E"}}/>
