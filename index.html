@@ -2065,12 +2065,12 @@ function LibroDiarioGastos({gastos,saveGastos}){
 
 function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor}){
   const[sub,setSub]=useState(subInicial||"inventario");
-  const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"semana",label:"📅 Semana"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
+  const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
   const proveedoresCat=[...new Set(catalogo.map(c=>c.proveedor))].sort();
   const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
   return(<>
-    <ST help={"El módulo de Stock tiene siete secciones:\n\n📋 Control de stock: tabla agrupada por proveedor (colapsable) con buscador, filtro por proveedor/sector y botón 'Solo stock bajo'. + suma entrada, − registra salida, ⋯ abre el historial de movimientos del producto (con Editar y Eliminar adentro).\n\n🧮 Conteo: la herramienta para saber cuánto hay REALMENTE. Como acá no se descuentan las ventas de Fudo, el número de Control de stock es 'teórico' (solo compras + producción cargadas). Al hacer un conteo, contás lo que hay físicamente y la app calcula la diferencia contra el teórico — esa diferencia es, por lógica, lo que se vendió/consumió (comparalo después con lo que dice Fudo). Al guardar, el stock se ajusta al valor contado y la diferencia queda en el historial de cada producto como 'ajuste por conteo'. Podés elegir contar todo el inventario o filtrar por proveedor/sector para conteos parciales.\n\n📅 Semana: resumen de lunes a domingo (con flechas para ver otras semanas) que muestra qué día entraron compras, qué día se cargó producción y qué día se hizo un conteo.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
+    <ST help={"El módulo de Stock tiene seis secciones:\n\n📋 Control de stock: tabla agrupada por proveedor (colapsable) con buscador y filtro por proveedor/sector. Tiene dos vistas con un botón arriba: 'Vista actual' (Stock, Nivel, Últ. mov., botón 'Solo stock bajo' y Acciones — + suma entrada, − registra salida, ⋯ abre el historial del producto con Editar y Eliminar) y 'Vista semana' (lunes a domingo, con flechas para cambiar de semana, mostrando qué día entraron compras/producción — 🧮 marca los días con conteo — y una columna de Cierre semana con el último conteo de esa semana).\n\n🧮 Conteo: la herramienta para saber cuánto hay REALMENTE. Como acá no se descuentan las ventas de Fudo, el número de Control de stock es 'teórico' (solo compras + producción cargadas). Al hacer un conteo, contás lo que hay físicamente y la app calcula la diferencia contra el teórico — esa diferencia es, por lógica, lo que se vendió/consumió (comparalo después con lo que dice Fudo). Pide confirmación antes de guardar. Al confirmar, el stock se ajusta al valor contado y la diferencia queda en el historial de cada producto como 'ajuste por conteo'. Podés elegir contar todo el inventario o filtrar por proveedor/sector para conteos parciales.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor, mismo formato de tabla colapsable que Control de stock.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
     {stockBajo.length>0&&sub!=="inventario"&&(
       <div onClick={()=>setSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
@@ -2083,9 +2083,8 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
         <button key={s.id} onClick={()=>setSub(s.id)} style={{flex:"1 1 auto",padding:"9px 8px",borderRadius:10,border:"none",background:sub===s.id?"#2C1A0E":"#E8DCC8",color:sub===s.id?"#fff":"#2C1A0E",fontSize:".74rem",fontWeight:600,cursor:"pointer"}}>{s.label}</button>
       ))}
     </div>
-    {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} registradoPor={registradoPor}/>}
+    {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} conteos={conteos} registradoPor={registradoPor}/>}
     {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor}/>}
-    {sub==="semana"&&<StockSemana stock={stock} conteos={conteos} proveedoresCat={proveedoresCat}/>}
     {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor}/>}
     {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
     {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat}/>}
@@ -2093,7 +2092,9 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
   </>);
 }
 
-function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}){
+function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,registradoPor}){
+  const[vista,setVista]=useState("actual");
+  const[offset,setOffset]=useState(0);
   const[provSel,setProvSel]=useState("");
   const[catId,setCatId]=useState("");
   const[cantidad,setCantidad]=useState("");
@@ -2169,7 +2170,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
   const filtradoInv=stock.filter(s=>{
     if(fProv&&s.proveedor!==fProv)return false;
     if(fSector&&s.sector!==fSector)return false;
-    if(soloBajo&&!(Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0))return false;
+    if(vista==="actual"&&soloBajo&&!(Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0))return false;
     if(fQuery&&!norm(s.nombre).includes(norm(fQuery)))return false;
     return true;
   });
@@ -2189,6 +2190,39 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
   }));
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
   const tdS={padding:"7px 8px"};
+
+  const DIAS=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+  const monday=(()=>{
+    const d=new Date();
+    const day=d.getDay();
+    const diff=d.getDate()-day+(day===0?-6:1);
+    const m=new Date(d.getFullYear(),d.getMonth(),diff);
+    m.setDate(m.getDate()+offset*7);
+    m.setHours(0,0,0,0);
+    return m;
+  })();
+  const dias=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
+  const hoyDate=new Date();
+  const enDia=(fecha,dia)=>fecha&&new Date(fecha).toDateString()===dia.toDateString();
+  const rangoLabel=`${dias[0].toLocaleDateString("es-AR",{day:"numeric",month:"short"})} – ${dias[6].toLocaleDateString("es-AR",{day:"numeric",month:"short"})}`;
+  const entradasDia=(s,dia)=>(s.movimientos||[]).filter(m=>m.tipo==="entrada"&&m.origen!=="conteo"&&enDia(m.fecha,dia)).reduce((acc,m)=>acc+Number(m.cantidad||0),0);
+  const conteoDeDia=(s,dia)=>{
+    const delDia=(conteos||[]).filter(c=>enDia(c.fecha,dia)&&(c.items||[]).some(it=>it.stockId===s.id))
+      .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    if(!delDia.length)return null;
+    const it=delDia[0].items.find(it=>it.stockId===s.id);
+    return it?it.contado:null;
+  };
+  const finSemana=new Date(dias[6].getFullYear(),dias[6].getMonth(),dias[6].getDate(),23,59,59);
+  const cierreDe=s=>{
+    const delItem=(conteos||[]).filter(c=>{
+      const f=new Date(c.fecha);
+      return f>=dias[0]&&f<=finSemana&&(c.items||[]).some(it=>it.stockId===s.id);
+    }).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    if(!delItem.length)return null;
+    const it=delItem[0].items.find(it=>it.stockId===s.id);
+    return it?it.contado:null;
+  };
 
   return(<>
     {movModal&&(
@@ -2297,6 +2331,22 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
     )}
 
     {!stock.length?<Empty icon="📦">Todavía no registraste productos en el inventario</Empty>:(<>
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        <button onClick={()=>setVista("actual")} style={{flex:1,padding:"9px 8px",borderRadius:10,border:"none",background:vista==="actual"?"#2C1A0E":"#E8DCC8",color:vista==="actual"?"#fff":"#2C1A0E",fontSize:".78rem",fontWeight:600,cursor:"pointer"}}>Vista actual</button>
+        <button onClick={()=>setVista("semana")} style={{flex:1,padding:"9px 8px",borderRadius:10,border:"none",background:vista==="semana"?"#2C1A0E":"#E8DCC8",color:vista==="semana"?"#fff":"#2C1A0E",fontSize:".78rem",fontWeight:600,cursor:"pointer"}}>Vista semana</button>
+      </div>
+
+      {vista==="semana"&&(
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E"}}>{rangoLabel}</div>
+            {offset!==0&&<button onClick={()=>setOffset(0)} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".72rem",fontWeight:600,cursor:"pointer",padding:0,marginTop:2}}>Volver a esta semana</button>}
+          </div>
+          <button onClick={()=>setOffset(offset+1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>Semana siguiente →</button>
+        </div>
+      )}
+
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
         <input value={fQuery} onChange={e=>setFQuery(e.target.value)} placeholder="Buscar producto..." style={{flex:"2 1 160px",padding:"9px 12px",border:"1.5px solid #E8DCC8",borderRadius:10,fontSize:".82rem",background:"#fff",color:"#2C1A0E"}}/>
         <select value={fProv} onChange={e=>setFProv(e.target.value)} style={{...sS,flex:"1 1 120px"}}>
@@ -2307,7 +2357,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
           <option value="">Todos los sectores</option>
           {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
-        <button onClick={()=>setSoloBajo(!soloBajo)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:soloBajo?"#C0392B":"#FFF0EF",color:soloBajo?"#fff":"#C0392B",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⚠️ Solo stock bajo ({conAlerta.length})</button>
+        {vista==="actual"&&<button onClick={()=>setSoloBajo(!soloBajo)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:soloBajo?"#C0392B":"#FFF0EF",color:soloBajo?"#fff":"#C0392B",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⚠️ Solo stock bajo ({conAlerta.length})</button>}
       </div>
 
       {!gruposInv.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposInv.map(g=>{
@@ -2320,21 +2370,56 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
           </div>
           {!cerrado&&(
           <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:520}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:vista==="actual"?520:720}}>
             <thead>
-              <tr style={{background:"#F9F6F1"}}>
-                <th style={thS}>Producto</th>
-                <th style={thS}>Sector</th>
-                <th style={{...thS,textAlign:"right"}}>Stock</th>
-                <th style={{...thS,width:90}}>Nivel</th>
-                <th style={thS}>Últ. mov.</th>
-                <th style={{...thS,textAlign:"right"}}>Acciones</th>
-              </tr>
+              {vista==="actual"?(
+                <tr style={{background:"#F9F6F1"}}>
+                  <th style={thS}>Producto</th>
+                  <th style={thS}>Sector</th>
+                  <th style={{...thS,textAlign:"right"}}>Stock</th>
+                  <th style={{...thS,width:90}}>Nivel</th>
+                  <th style={thS}>Últ. mov.</th>
+                  <th style={{...thS,textAlign:"right"}}>Acciones</th>
+                </tr>
+              ):(
+                <tr style={{background:"#F9F6F1"}}>
+                  <th style={thS}>Producto</th>
+                  {dias.map((d,i)=>{
+                    const esHoy=d.toDateString()===hoyDate.toDateString();
+                    return(
+                      <th key={i} style={{...thS,textAlign:"center",background:esHoy?"#EAF5F0":"#F9F6F1",color:esHoy?"#2D6A4F":"#7B7063"}}>
+                        {DIAS[i]}<br/><span style={{fontWeight:400,textTransform:"none",fontSize:".62rem"}}>{d.getDate()}/{d.getMonth()+1}</span>
+                      </th>
+                    );
+                  })}
+                  <th style={{...thS,textAlign:"center"}}>Cierre semana</th>
+                </tr>
+              )}
             </thead>
             <tbody>
               {g.items.map((s,i)=>{
                 const alerta=Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
                 const pct=s.minimo>0?Math.min(100,(s.cantidad/s.minimo)*100):100;
+                if(vista==="semana"){
+                  const cierre=cierreDe(s);
+                  return(
+                    <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                      <td style={tdS}>{s.nombre}</td>
+                      {dias.map((d,j)=>{
+                        const v=entradasDia(s,d);
+                        const c=conteoDeDia(s,d);
+                        return(
+                          <td key={j} style={{...tdS,textAlign:"center"}}>
+                            {v===0&&c===null&&<span style={{color:"#D8CFC0"}}>—</span>}
+                            {v>0&&<div style={{color:"#2D6A4F"}}>+{v}</div>}
+                            {c!==null&&<div style={{color:"#B7860B",fontWeight:700}}>🧮{c}</div>}
+                          </td>
+                        );
+                      })}
+                      <td style={{...tdS,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,color:cierre!==null?"#2C1A0E":"#D8CFC0"}}>{cierre!==null?`${cierre} ${s.unidad}`:"—"}</td>
+                    </tr>
+                  );
+                }
                 return(
                   <tr key={s.id} style={{background:alerta?"#FFF0EF":(i%2===0?"#fff":"#F9F6F1")}}>
                     <td style={tdS}>{s.nombre}{alerta&&<span style={{background:"#F09595",color:"#501313",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>BAJO</span>}</td>
@@ -2357,6 +2442,12 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,registradoPor}
         </div>
         );
       })}
+      {vista==="semana"&&gruposInv.length>0&&(
+        <div style={{display:"flex",gap:16,marginTop:6,fontSize:".68rem",color:"#7B7063",flexWrap:"wrap"}}>
+          <span><span style={{color:"#2D6A4F",fontWeight:700}}>+N</span> compra o producción cargada ese día</span>
+          <span><span style={{color:"#B7860B",fontWeight:700}}>🧮N</span> conteo hecho ese día (parcial o completo)</span>
+        </div>
+      )}
     </>)}
   </>);
 }
@@ -2533,134 +2624,6 @@ function StockConteo({stock,saveStock,catalogo,proveedoresCat,conteos,saveConteo
           </div>
         );
       })}
-    </div>
-  </>);
-}
-function StockSemana({stock,conteos,proveedoresCat}){
-  const[offset,setOffset]=useState(0);
-  const[fProv,setFProv]=useState("");
-  const[fSector,setFSector]=useState("");
-  const[fQuery,setFQuery]=useState("");
-  const DIAS=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
-  const sectoresCat=[...new Set((stock||[]).map(s=>s.sector).filter(Boolean))].sort();
-  const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
-  const tdS={padding:"7px 8px"};
-
-  const monday=(()=>{
-    const d=new Date();
-    const day=d.getDay();
-    const diff=d.getDate()-day+(day===0?-6:1);
-    const m=new Date(d.getFullYear(),d.getMonth(),diff);
-    m.setDate(m.getDate()+offset*7);
-    m.setHours(0,0,0,0);
-    return m;
-  })();
-  const dias=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
-  const hoy=new Date();
-  const enDia=(fecha,dia)=>fecha&&new Date(fecha).toDateString()===dia.toDateString();
-  const rangoLabel=`${dias[0].toLocaleDateString("es-AR",{day:"numeric",month:"short"})} – ${dias[6].toLocaleDateString("es-AR",{day:"numeric",month:"short"})}`;
-
-  const filtrado=(stock||[]).filter(s=>{
-    if(fProv&&s.proveedor!==fProv)return false;
-    if(fSector&&s.sector!==fSector)return false;
-    if(fQuery&&!norm(s.nombre).includes(norm(fQuery)))return false;
-    return true;
-  }).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
-
-  const entradasDia=(s,dia)=>(s.movimientos||[]).filter(m=>m.tipo==="entrada"&&m.origen!=="conteo"&&enDia(m.fecha,dia)).reduce((acc,m)=>acc+Number(m.cantidad||0),0);
-
-  const conteoDeDia=(s,dia)=>{
-    const delDia=(conteos||[]).filter(c=>enDia(c.fecha,dia)&&(c.items||[]).some(it=>it.stockId===s.id))
-      .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-    if(!delDia.length)return null;
-    const it=delDia[0].items.find(it=>it.stockId===s.id);
-    return it?it.contado:null;
-  };
-
-  const finSemana=new Date(dias[6].getFullYear(),dias[6].getMonth(),dias[6].getDate(),23,59,59);
-  const cierreDe=s=>{
-    const delItem=(conteos||[]).filter(c=>{
-      const f=new Date(c.fecha);
-      return f>=dias[0]&&f<=finSemana&&(c.items||[]).some(it=>it.stockId===s.id);
-    }).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-    if(!delItem.length)return null;
-    const it=delItem[0].items.find(it=>it.stockId===s.id);
-    return it?it.contado:null;
-  };
-
-  return(<>
-    <Card>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
-        <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E"}}>{rangoLabel}</div>
-          {offset!==0&&<button onClick={()=>setOffset(0)} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".72rem",fontWeight:600,cursor:"pointer",padding:0,marginTop:2}}>Volver a esta semana</button>}
-        </div>
-        <button onClick={()=>setOffset(offset+1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>Semana siguiente →</button>
-      </div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <input value={fQuery} onChange={e=>setFQuery(e.target.value)} placeholder="Buscar producto..." style={{flex:"2 1 160px",padding:"9px 12px",border:"1.5px solid #E8DCC8",borderRadius:10,fontSize:".82rem",background:"#fff",color:"#2C1A0E"}}/>
-        <select value={fProv} onChange={e=>setFProv(e.target.value)} style={{...sS,flex:"1 1 120px"}}>
-          <option value="">Todos los proveedores</option>
-          {(proveedoresCat||[]).map(p=><option key={p} value={p}>{p}</option>)}
-        </select>
-        <select value={fSector} onChange={e=>setFSector(e.target.value)} style={{...sS,flex:"1 1 110px"}}>
-          <option value="">Todos los sectores</option>
-          {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
-    </Card>
-
-    <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden"}}>
-      <div style={{overflowX:"auto"}}>
-      <table style={{width:"100%",borderCollapse:"collapse",fontSize:".76rem",minWidth:760}}>
-        <thead>
-          <tr style={{background:"#F9F6F1"}}>
-            <th style={thS}>Producto</th>
-            {dias.map((d,i)=>{
-              const esHoy=d.toDateString()===hoy.toDateString();
-              return(
-                <th key={i} style={{...thS,textAlign:"center",background:esHoy?"#EAF5F0":"#F9F6F1",color:esHoy?"#2D6A4F":"#7B7063"}}>
-                  {DIAS[i]}<br/><span style={{fontWeight:400,textTransform:"none",fontSize:".62rem"}}>{d.getDate()}/{d.getMonth()+1}</span>
-                </th>
-              );
-            })}
-            <th style={{...thS,textAlign:"center"}}>Cierre semana</th>
-          </tr>
-        </thead>
-        <tbody>
-          {!filtrado.length?(
-            <tr><td colSpan={9} style={{padding:24,textAlign:"center",color:"#7B7063"}}>Ningún producto coincide con el filtro</td></tr>
-          ):filtrado.map((s,i)=>{
-            const cierre=cierreDe(s);
-            return(
-              <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                <td style={tdS}>
-                  <div style={{fontWeight:600,color:"#2C1A0E"}}>{s.nombre}</div>
-                  <div style={{fontSize:".65rem",color:"#B7A98F"}}>{s.proveedor}</div>
-                </td>
-                {dias.map((d,j)=>{
-                  const v=entradasDia(s,d);
-                  const c=conteoDeDia(s,d);
-                  return(
-                    <td key={j} style={{...tdS,textAlign:"center"}}>
-                      {v===0&&c===null&&<span style={{color:"#D8CFC0"}}>—</span>}
-                      {v>0&&<div style={{color:"#2D6A4F"}}>+{v}</div>}
-                      {c!==null&&<div style={{color:"#B7860B",fontWeight:700}}>🧮{c}</div>}
-                    </td>
-                  );
-                })}
-                <td style={{...tdS,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,color:cierre!==null?"#2C1A0E":"#D8CFC0"}}>{cierre!==null?`${cierre} ${s.unidad}`:"—"}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      </div>
-    </div>
-    <div style={{display:"flex",gap:16,marginTop:10,fontSize:".68rem",color:"#7B7063",flexWrap:"wrap"}}>
-      <span><span style={{color:"#2D6A4F",fontWeight:700}}>+N</span> compra o producción cargada ese día</span>
-      <span><span style={{color:"#B7860B",fontWeight:700}}>🧮N</span> conteo hecho ese día (parcial o completo)</span>
     </div>
   </>);
 }
