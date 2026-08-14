@@ -657,7 +657,7 @@ function App({role="full",cerrarSesion}){
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
         {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"}/>}
+        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
@@ -2063,7 +2063,7 @@ function LibroDiarioGastos({gastos,saveGastos}){
   );
 }
 
-function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor}){
+function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor,proveedores,saveProveedores}){
   const[sub,setSub]=useState(subInicial||"inventario");
   const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
   const proveedoresCat=[...new Set(catalogo.map(c=>c.proveedor))].sort();
@@ -2083,16 +2083,16 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
         <button key={s.id} onClick={()=>setSub(s.id)} style={{flex:"1 1 auto",padding:"9px 8px",borderRadius:10,border:"none",background:sub===s.id?"#2C1A0E":"#E8DCC8",color:sub===s.id?"#fff":"#2C1A0E",fontSize:".74rem",fontWeight:600,cursor:"pointer"}}>{s.label}</button>
       ))}
     </div>
-    {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} conteos={conteos} registradoPor={registradoPor}/>}
+    {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} registradoPor={registradoPor} proveedores={proveedores} saveProveedores={saveProveedores}/>}
     {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor}/>}
     {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor}/>}
     {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
-    {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat}/>}
+    {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores}/>}
     {sub==="pedidos"&&<StockPedidos catalogo={catalogo} proveedoresCat={proveedoresCat} pedidos={pedidos} savePedidos={savePedidos} registradoPor={registradoPor}/>}
   </>);
 }
 
-function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,registradoPor}){
+function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conteos,registradoPor,proveedores,saveProveedores}){
   const[offset,setOffset]=useState(0);
   const[provSel,setProvSel]=useState("");
   const[catId,setCatId]=useState("");
@@ -2112,24 +2112,55 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
   const[histModal,setHistModal]=useState(null);
   const[mostrarAgregar,setMostrarAgregar]=useState(false);
   const[colapsados,setColapsados]=useState({});
+  const[modoAgregar,setModoAgregar]=useState("crear");
+  const[provNuevo,setProvNuevo]=useState("");
+  const[mostrarNuevoProv,setMostrarNuevoProv]=useState(false);
+  const[sector,setSector]=useState("COCINA");
+  const[nombreProducto,setNombreProducto]=useState("");
 
-  const productosDelProv=provSel?catalogo.filter(c=>c.proveedor===provSel):[];
-  const catSel=catalogo.find(c=>c.id===catId);
+  const limpiar=()=>{setEditId(null);setProvSel("");setCatId("");setCantidad("");setMinimo("");setUnidad("unidades");setMostrarAgregar(false);setModoAgregar("crear");setProvNuevo("");setMostrarNuevoProv(false);setSector("COCINA");setNombreProducto("");};
 
-  const limpiar=()=>{setEditId(null);setProvSel("");setCatId("");setCantidad("");setMinimo("");setUnidad("unidades");setMostrarAgregar(false);};
+  const abrirCrear=()=>{setEditId(null);setModoAgregar("crear");setProvSel("");setProvNuevo("");setMostrarNuevoProv(false);setSector("COCINA");setNombreProducto("");setCatId("");setCantidad("");setMinimo("");setUnidad("unidades");setMostrarAgregar(true);};
+
+  const abrirCargar=c=>{setEditId(null);setModoAgregar("cargar");setProvSel(c.proveedor);setCatId(c.catalogoId);setCantidad("");setMinimo("");setUnidad(c.unidad||"unidades");setMostrarAgregar(true);};
 
   const guardarProducto=async()=>{
-    if(!editId&&!catId){toast("Elegí un producto del catálogo");return;}
-    if(!cantidad){toast("Completá la cantidad");return;}
-    setBusy(true);
     if(editId){
+      if(!cantidad){toast("Completá la cantidad");return;}
+      setBusy(true);
       const nuevos=stock.map(s=>s.id===editId?{...s,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad}:s);
       await saveStock(nuevos);toast("Producto actualizado ✓");
-    }else{
-      const nuevo={id:uid(),catalogoId:catSel.id,nombre:catSel.producto,proveedor:catSel.proveedor,sector:catSel.sector,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad,movimientos:[],fecha:new Date().toISOString(),registradoPor:registradoPor||null};
-      await saveStock([...stock,nuevo]);
-      toast("Producto agregado ✓");
+      setBusy(false);limpiar();
+      return;
     }
+    if(modoAgregar==="cargar"){
+      if(!catId){toast("Elegí un producto del catálogo");return;}
+      if(!cantidad){toast("Completá la cantidad");return;}
+      setBusy(true);
+      const c=catalogo.find(x=>x.id===catId);
+      const nuevo={id:uid(),catalogoId:c.id,nombre:c.producto,proveedor:c.proveedor,sector:c.sector,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad,movimientos:[],fecha:new Date().toISOString(),registradoPor:registradoPor||null};
+      await saveStock([...stock,nuevo]);
+      toast("Producto cargado al inventario ✓");
+      setBusy(false);limpiar();
+      return;
+    }
+    const proveedorFinal=mostrarNuevoProv?provNuevo.trim().toUpperCase():provSel;
+    if(!proveedorFinal){toast("Elegí o ingresá un proveedor");return;}
+    if(!nombreProducto.trim()){toast("Ingresá el nombre del producto");return;}
+    if(!cantidad){toast("Completá la cantidad");return;}
+    const yaExiste=catalogo.some(c=>norm(c.proveedor)===norm(proveedorFinal)&&norm(c.producto)===norm(nombreProducto));
+    if(yaExiste){toast("Ese producto ya existe en el catálogo para ese proveedor");return;}
+    setBusy(true);
+    const nuevoCat={id:uid(),proveedor:proveedorFinal,sector,producto:nombreProducto.trim().toUpperCase(),unidad};
+    await saveCatalogo([...catalogo,nuevoCat]);
+    const nuevoStock={id:uid(),catalogoId:nuevoCat.id,nombre:nuevoCat.producto,proveedor:proveedorFinal,sector,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad,movimientos:[],fecha:new Date().toISOString(),registradoPor:registradoPor||null};
+    await saveStock([...stock,nuevoStock]);
+    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
+    if(!yaEsProveedor){
+      const nuevoProv={id:uid(),nombre:proveedorFinal,deudaInicial:0,obs:"",fecha:new Date().toISOString()};
+      await saveProveedores([...(proveedores||[]),nuevoProv]);
+    }
+    toast(yaEsProveedor?"Producto creado ✓":"Producto y proveedor creados ✓");
     setBusy(false);limpiar();
   };
 
@@ -2157,8 +2188,20 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
   };
 
   const conAlerta=stock.filter(s=>Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0);
-  const sectoresCat=[...new Set(stock.map(s=>s.sector).filter(Boolean))].sort();
-  const filtradoInv=stock.filter(s=>{
+  const sectoresCat=[...new Set([...stock.map(s=>s.sector),...catalogo.map(c=>c.sector)].filter(Boolean))].sort();
+
+  const catalogoIds=new Set(catalogo.map(c=>c.id));
+  const stockPorCatId={};
+  stock.forEach(s=>{if(s.catalogoId)stockPorCatId[s.catalogoId]=s;});
+  const combinado=[];
+  catalogo.forEach(c=>{
+    const s=stockPorCatId[c.id];
+    if(s)combinado.push(s);
+    else combinado.push({id:"sc_"+c.id,sinCargar:true,catalogoId:c.id,nombre:c.producto,proveedor:c.proveedor,sector:c.sector,unidad:c.unidad||"unidades",cantidad:0,minimo:0,movimientos:[]});
+  });
+  stock.forEach(s=>{if(!s.catalogoId||!catalogoIds.has(s.catalogoId))combinado.push(s);});
+
+  const filtradoInv=combinado.filter(s=>{
     if(fProv&&s.proveedor!==fProv)return false;
     if(fSector&&s.sector!==fSector)return false;
     if(soloBajo&&!(Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0))return false;
@@ -2270,37 +2313,44 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
 
     {!mostrarAgregar&&(
       <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
-        <button onClick={()=>setMostrarAgregar(true)} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer"}}>+ Agregar producto</button>
+        <button onClick={abrirCrear} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer"}}>+ Crear producto</button>
       </div>
     )}
 
     {mostrarAgregar&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:14}}>{editId?"Editar producto":"Agregar producto al inventario"}</p>
-          {!editId&&(
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:14}}>{editId?"Editar producto":modoAgregar==="crear"?"Crear producto nuevo":"Cargar al inventario"}</p>
+          {!editId&&modoAgregar==="crear"&&(<>
             <Field label="Proveedor">
-              <select value={provSel} onChange={e=>{setProvSel(e.target.value);setCatId("");}} style={sS}>
-                <option value="">— Elegí un proveedor —</option>
-                {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
+              {!mostrarNuevoProv?(
+                <select value={provSel} onChange={e=>setProvSel(e.target.value)} style={sS}>
+                  <option value="">— Elegí un proveedor —</option>
+                  {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
+                </select>
+              ):(
+                <Inp value={provNuevo} onChange={setProvNuevo} placeholder="Nombre del nuevo proveedor"/>
+              )}
+            </Field>
+            <div style={{marginTop:-8,marginBottom:6}}>
+              <button onClick={()=>{setMostrarNuevoProv(!mostrarNuevoProv);setProvSel("");setProvNuevo("");}} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".74rem",fontWeight:600,cursor:"pointer",padding:0}}>
+                {mostrarNuevoProv?"← Elegir de la lista":"+ Es un proveedor nuevo"}
+              </button>
+            </div>
+            <Field label="Sector">
+              <select value={sector} onChange={e=>setSector(e.target.value)} style={sS}>
+                {["COCINA","FRONT","OTRO"].map(x=><option key={x} value={x}>{x}</option>)}
               </select>
             </Field>
-          )}
-          {!editId&&(
-            <Field label="Producto">
-              <select value={catId} onChange={e=>{const id=e.target.value;setCatId(id);const c=catalogo.find(x=>x.id===id);if(c)setUnidad(c.unidad||"unidades");}} style={sS} disabled={!provSel}>
-                <option value="">{provSel?"— Elegí un producto —":"Elegí primero un proveedor"}</option>
-                {productosDelProv.map(c=><option key={c.id} value={c.id}>{c.producto} ({c.sector})</option>)}
-              </select>
-            </Field>
-          )}
-          {provSel&&!productosDelProv.length&&!editId&&(
-            <p style={{fontSize:".74rem",color:"#7B7063",marginTop:6}}>Este proveedor no tiene productos cargados. Agregalos desde la pestaña 🗂️ Catálogo.</p>
+            <Field label="Nombre del producto"><Inp value={nombreProducto} onChange={setNombreProducto} placeholder="Ej: ACEITE X LITRO"/></Field>
+          </>)}
+          {!editId&&modoAgregar==="cargar"&&(
+            <p style={{fontSize:".82rem",color:"#7B7063",marginTop:0}}>Cargando: <strong>{catalogo.find(c=>c.id===catId)?.producto}</strong>{provSel?` · ${provSel}`:""}</p>
           )}
           {editId&&<p style={{fontSize:".82rem",color:"#7B7063",marginTop:0}}>Editando: <strong>{stock.find(s=>s.id===editId)?.nombre}</strong></p>}
           <div style={{display:"flex",gap:8,marginTop:14}}>
             <div style={{flex:1}}>
-              <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>Cantidad actual</label>
+              <label style={{display:"block",fontSize:".78rem",fontWeight:600,color:"#2C1A0E",marginBottom:5}}>{editId?"Cantidad actual":"Cantidad inicial"}</label>
               <Inp type="number" value={cantidad} onChange={setCantidad} placeholder="0"/>
             </div>
             <div style={{flex:1}}>
@@ -2315,13 +2365,13 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
           </Field>
           <div style={{display:"flex",gap:8,marginTop:18}}>
             <button onClick={limpiar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <Btn bg={editId?"#555":"#2C1A0E"} onClick={guardarProducto} disabled={busy}>{busy?"Guardando…":editId?"Actualizar":"Agregar al inventario"}</Btn>
+            <Btn bg={editId?"#555":"#2C1A0E"} onClick={guardarProducto} disabled={busy}>{busy?"Guardando…":editId?"Actualizar":modoAgregar==="crear"?"Crear producto":"Cargar al inventario"}</Btn>
           </div>
         </div>
       </div>
     )}
 
-    {!stock.length?<Empty icon="📦">Todavía no registraste productos en el inventario</Empty>:(<>
+    {!combinado.length?<Empty icon="📦">Todavía no hay productos cargados. Usá "+ Crear producto" para agregar el primero.</Empty>:(<>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
         <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
         <div style={{textAlign:"center"}}>
@@ -2373,15 +2423,15 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
             </thead>
             <tbody>
               {g.items.map((s,i)=>{
-                const alerta=Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
-                const cierre=cierreDe(s);
+                const alerta=!s.sinCargar&&Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
+                const cierre=s.sinCargar?null:cierreDe(s);
                 return(
                   <tr key={s.id} style={{background:alerta?"#FFF0EF":(i%2===0?"#fff":"#F9F6F1")}}>
                     <td style={tdS}>
-                      <div>{s.nombre}{alerta&&<span style={{background:"#F09595",color:"#501313",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>BAJO</span>}</div>
+                      <div>{s.nombre}{alerta&&<span style={{background:"#F09595",color:"#501313",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>BAJO</span>}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN CARGAR</span>}</div>
                       <div style={{fontSize:".65rem",color:"#B7A98F"}}>{s.sector||"—"}</div>
                     </td>
-                    <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:alerta?"#C0392B":"#2D6A4F",whiteSpace:"nowrap"}}>{s.cantidad} <span style={{color:"#7B7063",fontWeight:400,fontSize:".7rem"}}>{s.unidad}</span></td>
+                    <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:s.sinCargar?"#B7A98F":(alerta?"#C0392B":"#2D6A4F"),whiteSpace:"nowrap"}}>{s.sinCargar?"Sin cargar":(<>{s.cantidad} <span style={{color:"#7B7063",fontWeight:400,fontSize:".7rem"}}>{s.unidad}</span></>)}</td>
                     {dias.map((d,j)=>{
                       const v=entradasDia(s,d);
                       const c=conteoDeDia(s,d);
@@ -2395,9 +2445,13 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
                     })}
                     <td style={{...tdS,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,color:cierre!==null?"#2C1A0E":"#D8CFC0",whiteSpace:"nowrap"}}>{cierre!==null?`${cierre} ${s.unidad}`:"—"}</td>
                     <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
-                      <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{background:"#EAF5F0",color:"#2D6A4F",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>+</button>
-                      <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>−</button>
-                      <button onClick={()=>setHistModal(s)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>⋯</button>
+                      {s.sinCargar?(
+                        <button onClick={()=>abrirCargar(s)} style={{background:"#2C1A0E",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>Cargar</button>
+                      ):(<>
+                        <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{background:"#EAF5F0",color:"#2D6A4F",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>+</button>
+                        <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>−</button>
+                        <button onClick={()=>setHistModal(s)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>⋯</button>
+                      </>)}
                     </td>
                   </tr>
                 );
@@ -2674,7 +2728,7 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
   </>);
 }
 
-function StockCatalogo({catalogo,saveCatalogo,proveedoresCat}){
+function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,saveProveedores}){
   const[provSel,setProvSel]=useState("");
   const[provNuevo,setProvNuevo]=useState("");
   const[mostrarNuevoProv,setMostrarNuevoProv]=useState(false);
@@ -2701,7 +2755,12 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat}){
     setBusy(true);
     const nuevo={id:uid(),proveedor:proveedorFinal,sector,producto:producto.trim().toUpperCase(),unidad};
     await saveCatalogo([...catalogo,nuevo]);
-    toast("Producto agregado al catálogo ✓");
+    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
+    if(!yaEsProveedor){
+      const nuevoProv={id:uid(),nombre:proveedorFinal,deudaInicial:0,obs:"",fecha:new Date().toISOString()};
+      await saveProveedores([...(proveedores||[]),nuevoProv]);
+    }
+    toast(yaEsProveedor?"Producto agregado al catálogo ✓":"Producto agregado y proveedor creado ✓");
     setBusy(false);setProducto("");setProvNuevo("");setMostrarNuevoProv(false);setUnidad("unidades");
   };
 
