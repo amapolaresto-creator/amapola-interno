@@ -2126,14 +2126,81 @@ function LibroDiarioGastos({gastos,saveGastos,proveedores}){
   );
 }
 
+function ManualStockModal({onClose}){
+  const Sec=({title,children})=>(
+    <div style={{marginBottom:18}}>
+      <h4 style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E",margin:"0 0 6px"}}>{title}</h4>
+      <div style={{fontSize:".82rem",color:"#4A3B2C",lineHeight:1.65}}>{children}</div>
+    </div>
+  );
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.55)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
+      <div style={{background:"#fff",borderRadius:16,padding:"24px 22px",width:"100%",maxWidth:640,maxHeight:"88vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#2C1A0E"}}>📖 Manual de uso — Stock</span>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+        </div>
+
+        <Sec title="Qué es este módulo">
+          Acá se lleva el control de todos los insumos y productos del local: cuánto hay de cada uno, a qué proveedor se le compra, qué se produjo en cocina, qué se tiró, y los pedidos que se le hacen a cada proveedor. Tiene seis secciones (los botones de arriba): 📋 Control de stock, 🧮 Conteo, 🍳 Producción, 🗑️ Desperdicios, 🗂️ Catálogo y 🧾 Pedidos.
+        </Sec>
+
+        <Sec title="Importante: stock 'teórico' vs. stock real">
+          Acá NO se descuentan automáticamente las ventas que salen por Fudo. El número que ves en Control de stock es <b>teórico</b>: sube con las compras que cargás y con lo que se produce en cocina, pero no baja solo cuando se vende un plato. Por eso existe 🧮 Conteo: sirve para contar lo que hay REALMENTE en la góndola/heladera/depósito de vez en cuando, y ajustar el número al real. La diferencia entre lo teórico y lo contado es, por lógica, lo que se vendió o se consumió — comparalo con lo que dice Fudo si querés chequear que cierre.
+        </Sec>
+
+        <Sec title="📋 Control de stock">
+          Es la pantalla principal: una tabla agrupada por proveedor (tocá el nombre del proveedor para abrir/cerrar el grupo), con una fila por producto. Cada fila muestra el stock actual, una columna por cada día de la semana (con lo que se cargó ese día — compra o producción — y un 🧮 si ese día se hizo un conteo), el cierre de semana (último conteo) y botones de acción: <b>+</b> para sumar una entrada (llegó mercadería), <b>−</b> para registrar una salida, y <b>⋯</b> para abrir el historial completo del producto (ahí también podés editarlo o eliminarlo).<br/><br/>
+          Arriba tenés flechas ← → para moverte de semana, un buscador, y filtros por proveedor, sector y "Solo stock bajo". Los productos con stock bajo el mínimo que definiste quedan marcados en rojo con la palabra <b>BAJO</b>, y también suman al numerito rojo que aparece al lado de "Stock" en el menú de la izquierda.
+        </Sec>
+
+        <Sec title="🧮 Conteo">
+          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial del producto como "ajuste por conteo" — no se pierde el dato de qué tan cerca (o lejos) estaba lo teórico de lo real.
+        </Sec>
+
+        <Sec title="🍳 Producción">
+          Exclusivo para productos que se elaboran en la propia cocina (los que en el Catálogo tienen proveedor <b>INTERNO</b> — ej. salsas, masas, cosas que se preparan acá y no se compran hechas). Elegís el producto, cuánto se produjo, quién lo hizo y la fecha, y esa cantidad se suma directo al stock de ese producto. Si un producto que se elabora en cocina no aparece en la lista, hay que agregarlo primero en 🗂️ Catálogo con proveedor <b>INTERNO</b>.
+        </Sec>
+
+        <Sec title="🗑️ Desperdicios">
+          Para registrar lo que se tira, se rompe o se vence, y así saber cuánto se está perdiendo. Elegís el producto del inventario, la cantidad, el motivo (Vencido, Roto/dañado, Quemado/error de cocina, Devolución de cliente, u Otro) y la fecha. Al guardar, esa cantidad se descuenta del stock del producto — el registro queda en la lista de abajo, con opción de eliminarlo si se cargó por error (ojo: eliminar el registro NO repone el stock solo, hay que sumarlo de nuevo a mano si corresponde).
+        </Sec>
+
+        <Sec title="🗂️ Catálogo">
+          Es la base de TODOS los productos e insumos que se compran o se elaboran, organizados por proveedor (mismo formato de tabla colapsable que Control de stock). Acá se define qué existe, con qué proveedor va y en qué sector se usa (Cocina/Front) — no lleva cantidad, es solo la "ficha" del producto. Desde acá también se pueden generar 🧾 Pedidos, y cada producto se puede marcar como inactivo si se dejó de usar (sin borrarlo, para no perder el historial).
+        </Sec>
+
+        <Sec title="🧾 Pedidos">
+          Para armar una nota de pedido a un proveedor: elegís el proveedor, cargás la cantidad que necesitás de cada producto de su catálogo, y opcionalmente una observación (ej. "pedir para el jueves"). El pedido queda con estado <b>Pendiente</b>, y se puede pasar a <b>Enviado</b> o <b>Recibido</b> a medida que avanza. Cada pedido tiene un botón ✏️ Editar por si hay que corregir cantidades o el proveedor después de creado, 📄 Nota de pedido para abrir una versión imprimible, y ✕ Eliminar.
+        </Sec>
+
+        <Sec title="Cómo agregar un producto o un proveedor nuevo">
+          Se puede hacer desde Control de stock o desde Catálogo, con el botón para agregar un producto. Ahí elegís un proveedor ya existente de la lista, o tocás "+ Es un proveedor nuevo" y escribís el nombre — si ese proveedor todavía no existía, el sistema lo da de alta automáticamente (así después ya aparece también en 🏪 Proveedores para llevarle la cuenta). Conviene siempre revisar primero si el proveedor ya está en la lista antes de escribirlo de nuevo, para no duplicarlo con otro nombre o mayúsculas distintas.
+        </Sec>
+
+        <Sec title="Para tener en cuenta">
+          Si entraste con el usuario de <b>Cocina</b>, solo vas a ver la pestaña de Stock (arranca directo en Control de stock) — no vas a poder ver el resto de la app.<br/><br/>
+          El stock bajo se define producto por producto: si cargaste un "mínimo" para un producto y la cantidad actual es igual o menor, se marca como BAJO automáticamente — no hace falta hacer nada más para que se active la alerta.
+        </Sec>
+      </div>
+    </div>
+  );
+}
+
 function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor,proveedores,saveProveedores}){
   const[sub,setSub]=useState(subInicial||"inventario");
+  const[verManual,setVerManual]=useState(false);
   const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
   const proveedoresCat=[...new Set([...catalogo.map(c=>c.proveedor),...(proveedores||[]).map(p=>p.nombre)].filter(Boolean))].sort();
   const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
   return(<>
-    <ST help={"El módulo de Stock tiene seis secciones:\n\n📋 Control de stock: una sola tabla agrupada por proveedor (colapsable), con navegación de semana (← →) arriba, buscador y filtro por proveedor/sector/'Solo stock bajo'. Cada fila muestra: Producto (con sector debajo y BAJO si corresponde), Stock actual, una columna por cada día de la semana (compras/producción cargadas ese día, y 🧮 si hubo un conteo — parcial o completo), Cierre semana (el último conteo de esa semana) y Acciones (+ suma entrada, − registra salida, ⋯ abre el historial del producto con Editar y Eliminar).\n\n🧮 Conteo: la herramienta para saber cuánto hay REALMENTE. Como acá no se descuentan las ventas de Fudo, el número de Control de stock es 'teórico' (solo compras + producción cargadas). Al hacer un conteo, contás lo que hay físicamente y la app calcula la diferencia contra el teórico — esa diferencia es, por lógica, lo que se vendió/consumió (comparalo después con lo que dice Fudo). Pide confirmación antes de guardar. Al confirmar, el stock se ajusta al valor contado y la diferencia queda en el historial de cada producto como 'ajuste por conteo'. Podés elegir contar todo el inventario o filtrar por proveedor/sector para conteos parciales.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor, mismo formato de tabla colapsable que Control de stock.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
+    {verManual&&<ManualStockModal onClose={()=>setVerManual(false)}/>}
+    <p style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
+      Stock
+      <button onClick={()=>setVerManual(true)} title="Manual de uso" style={{background:"none",border:"1px solid #E8DCC8",borderRadius:20,padding:"3px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",color:"#7B7063",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>📖 Manual de uso</button>
+    </p>
+    <SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
     {stockBajo.length>0&&sub!=="inventario"&&(
       <div onClick={()=>setSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
