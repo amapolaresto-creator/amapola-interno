@@ -3567,6 +3567,14 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
   const {saldoReal} = calcDigital();
   const totalConsolidado = saldo + saldoReal;
 
+  // Cruce de movimientos digitales (desde siempre)
+  const pagosTrDash   = (pagos||[]).filter(p=>p.forma==="Transferencia");
+  const sueldosTrDash = (sueldos||[]).filter(s=>s.forma==="Transferencia");
+  const gastosTrDash  = (gastos||[]).filter(g=>g.forma==="Transferencia");
+  const totalIngresosGlobal=(cierresCaja||[]).reduce((s,c)=>s+Number(c.totalDigital||0),0);
+  const totalEgresosGlobal=[...pagosTrDash,...sueldosTrDash,...gastosTrDash].reduce((s,m)=>s+Number(m.monto||0),0);
+  const diferenciaGlobal=totalIngresosGlobal-totalEgresosGlobal;
+
   const PanelNum=({label,value,color,sub})=>(
     <div style={{flex:1,background:color||"#2C1A0E",borderRadius:12,padding:"14px 16px"}}>
       <div style={{fontSize:".62rem",color:"#E8DCC8",opacity:.7,textTransform:"uppercase",letterSpacing:".06em"}}>{label}</div>
@@ -3585,6 +3593,27 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
       <div style={{display:"flex",gap:8}}>
         <PanelNum label="💵 Caja Disponible" value={saldo}/>
         <PanelNum label="💳 Banco" value={saldoReal} color="#1a3a2a"/>
+      </div>
+    </div>
+
+    {/* CRUCE DE MOVIMIENTOS DIGITALES */}
+    <div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:12,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📊 Cruce de movimientos digitales (desde siempre)</div>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1,background:"#EAF5F0",borderRadius:10,padding:"12px 14px"}}>
+          <div style={{fontSize:".62rem",color:"#2D6A4F",fontWeight:700,textTransform:"uppercase",letterSpacing:".05em",marginBottom:4}}>📥 Ingresos digitales</div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#2D6A4F"}}>{fmt(totalIngresosGlobal)}</div>
+          <div style={{fontSize:".62rem",color:"#7B7063",marginTop:2}}>Suma de cierres de caja</div>
+        </div>
+        <div style={{flex:1,background:"#FFF0EF",borderRadius:10,padding:"12px 14px"}}>
+          <div style={{fontSize:".62rem",color:"#C0392B",fontWeight:700,textTransform:"uppercase",letterSpacing:".05em",marginBottom:4}}>📤 Egresos transferencia</div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#C0392B"}}>{fmt(totalEgresosGlobal)}</div>
+          <div style={{fontSize:".62rem",color:"#7B7063",marginTop:2}}>Pagos + sueldos + gastos</div>
+        </div>
+      </div>
+      <div style={{marginTop:10,padding:"10px 14px",background:diferenciaGlobal>=0?"#EAF5F0":"#FFF0EF",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:".78rem",fontWeight:600,color:"#2C1A0E"}}>Diferencia neta</span>
+        <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:diferenciaGlobal>=0?"#2D6A4F":"#C0392B"}}>{diferenciaGlobal>=0?"+":""}{fmt(diferenciaGlobal)}</span>
       </div>
     </div>
 
@@ -4029,13 +4058,8 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     toast("Eliminado ✓");
   };
 
-  // Cruce global (desde siempre)
-  const totalIngresosGlobal=(cierresCaja||[]).reduce((s,c)=>s+Number(c.totalDigital||0),0);
-  const totalEgresosGlobal=[...pagosTr,...sueldosTr,...gastosTr].reduce((s,m)=>s+Number(m.monto||0),0);
-  const diferenciaGlobal=totalIngresosGlobal-totalEgresosGlobal;
-
   return(<>
-    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce te muestra el flujo total acumulado desde el inicio."}>Caja Digital</ST><SS>Saldo del banco y cruce de movimientos digitales.</SS>
+    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
@@ -4098,27 +4122,6 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
         <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que pagués el resumen de la tarjeta.</div>
       </div>
     )}
-
-    {/* CRUCE GLOBAL */}
-    <div style={{background:"#fff",borderRadius:14,padding:18,marginBottom:16,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📊 Cruce de movimientos digitales (desde siempre)</div>
-      <div style={{display:"flex",gap:8}}>
-        <div style={{flex:1,background:"#EAF5F0",borderRadius:10,padding:"12px 14px"}}>
-          <div style={{fontSize:".62rem",color:"#2D6A4F",fontWeight:700,textTransform:"uppercase",letterSpacing:".05em",marginBottom:4}}>📥 Ingresos digitales</div>
-          <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#2D6A4F"}}>{fmt(totalIngresosGlobal)}</div>
-          <div style={{fontSize:".62rem",color:"#7B7063",marginTop:2}}>Suma de cierres de caja</div>
-        </div>
-        <div style={{flex:1,background:"#FFF0EF",borderRadius:10,padding:"12px 14px"}}>
-          <div style={{fontSize:".62rem",color:"#C0392B",fontWeight:700,textTransform:"uppercase",letterSpacing:".05em",marginBottom:4}}>📤 Egresos transferencia</div>
-          <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#C0392B"}}>{fmt(totalEgresosGlobal)}</div>
-          <div style={{fontSize:".62rem",color:"#7B7063",marginTop:2}}>Pagos + sueldos + gastos</div>
-        </div>
-      </div>
-      <div style={{marginTop:10,padding:"10px 14px",background:diferenciaGlobal>=0?"#EAF5F0":"#FFF0EF",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontSize:".78rem",fontWeight:600,color:"#2C1A0E"}}>Diferencia neta</span>
-        <span style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",fontWeight:700,color:diferenciaGlobal>=0?"#2D6A4F":"#C0392B"}}>{diferenciaGlobal>=0?"+":""}{fmt(diferenciaGlobal)}</span>
-      </div>
-    </div>
 
     {/* LIBRO DIGITAL */}
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
