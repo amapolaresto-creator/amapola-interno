@@ -2107,7 +2107,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor}/>}
     {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor}/>}
     {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
-    {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores}/>}
+    {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores} stock={stock} saveStock={saveStock}/>}
     {sub==="pedidos"&&<StockPedidos catalogo={catalogo} proveedoresCat={proveedoresCat} pedidos={pedidos} savePedidos={savePedidos} registradoPor={registradoPor}/>}
   </>);
 }
@@ -2805,7 +2805,7 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
   </>);
 }
 
-function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,saveProveedores}){
+function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,saveProveedores,stock,saveStock}){
   const[provSel,setProvSel]=useState("");
   const[provNuevo,setProvNuevo]=useState("");
   const[mostrarNuevoProv,setMostrarNuevoProv]=useState(false);
@@ -2824,6 +2824,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
   const[editProvNuevo,setEditProvNuevo]=useState("");
   const[editMostrarNuevoProv,setEditMostrarNuevoProv]=useState(false);
   const[editSector,setEditSector]=useState("COCINA");
+  const[editProducto,setEditProducto]=useState("");
   const[editMinimo,setEditMinimo]=useState("");
   const[editMaximo,setEditMaximo]=useState("");
   const[editBusy,setEditBusy]=useState(false);
@@ -2868,14 +2869,23 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
 
   const abrirEditar=c=>{
     setEditModal(c);setEditProv(c.proveedor);setEditProvNuevo("");setEditMostrarNuevoProv(false);
-    setEditSector(c.sector||"COCINA");setEditMinimo(String(c.minimo||""));setEditMaximo(String(c.maximo||""));
+    setEditSector(c.sector||"COCINA");setEditProducto(c.producto||"");setEditMinimo(String(c.minimo||""));setEditMaximo(String(c.maximo||""));
   };
 
   const guardarEdicion=async()=>{
     const proveedorFinal=editMostrarNuevoProv?editProvNuevo.trim().toUpperCase():editProv;
     if(!proveedorFinal){toast("Elegí o ingresá un proveedor");return;}
+    if(!editProducto.trim()){toast("Ingresá el nombre del producto");return;}
+    const nombreFinal=editProducto.trim().toUpperCase();
+    const dup=catalogo.some(c=>c.id!==editModal.id&&norm(c.proveedor)===norm(proveedorFinal)&&norm(c.producto)===norm(nombreFinal));
+    if(dup){toast("Ya existe un producto con ese nombre para ese proveedor");return;}
     setEditBusy(true);
-    await saveCatalogo(catalogo.map(c=>c.id===editModal.id?{...c,proveedor:proveedorFinal,sector:editSector,minimo:Number(editMinimo)||0,maximo:Number(editMaximo)||0}:c));
+    await saveCatalogo(catalogo.map(c=>c.id===editModal.id?{...c,proveedor:proveedorFinal,sector:editSector,producto:nombreFinal,minimo:Number(editMinimo)||0,maximo:Number(editMaximo)||0}:c));
+    if(stock&&saveStock){
+      const stockActualizado=stock.map(s=>s.catalogoId===editModal.id?{...s,nombre:nombreFinal,proveedor:proveedorFinal,sector:editSector}:s);
+      const cambio=stockActualizado.some((s,i)=>s.nombre!==stock[i].nombre||s.proveedor!==stock[i].proveedor||s.sector!==stock[i].sector);
+      if(cambio)await saveStock(stockActualizado);
+    }
     const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
     if(!yaEsProveedor){
       const nuevoProv={id:uid(),nombre:proveedorFinal,deudaInicial:0,obs:"",fecha:new Date().toISOString()};
@@ -3037,6 +3047,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
               {["COCINA","FRONT","OTRO"].map(s=><option key={s} value={s}>{s}</option>)}
             </select>
           </Field>
+          <Field label="Nombre del producto"><Inp value={editProducto} onChange={setEditProducto} placeholder="Ej: ACEITE X LITRO"/></Field>
           <div style={{display:"flex",gap:8,marginTop:6}}>
             <div style={{flex:1}}>
               <Field label="Mínimo"><Inp type="number" value={editMinimo} onChange={setEditMinimo} placeholder="0"/></Field>
