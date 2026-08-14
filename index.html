@@ -752,6 +752,12 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
 
   const crearProveedor=async()=>{
     if(!nuevoNombre.trim()){toast("Ingresa un nombre");return;}
+    const existente=proveedores.find(p=>norm(p.nombre)===norm(nuevoNombre));
+    if(existente){
+      setProv(existente.nombre);setNuevoNombre("");setCrearModal(false);
+      toast("Ese proveedor ya existía, lo seleccioné");
+      return;
+    }
     const nuevo={id:uid(),nombre:nuevoNombre.trim(),deudaInicial:0,obs:"",fecha:new Date().toISOString()};
     await saveProveedores([...proveedores,nuevo]);
     setProv(nuevoNombre.trim());setNuevoNombre("");setCrearModal(false);
@@ -3139,6 +3145,26 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
   </>);
 }
 
+function notaPedidoHTML(p){
+  const filas=p.items.map(it=>"<tr><td>"+it.producto+"</td><td style=\"text-align:right\">"+it.cantidad+"</td></tr>").join("");
+  return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><title>Nota de pedido — "+p.proveedor+"</title>"
+    +"<style>body{font-family:Georgia,serif;color:#2C1A0E;padding:36px;max-width:560px;margin:0 auto;}"
+    +"h1{font-size:1.3rem;margin:0 0 2px;}.sub{font-size:.8rem;color:#7B7063;margin-bottom:20px;}"
+    +"table{width:100%;border-collapse:collapse;margin-bottom:0;}"
+    +"th{text-align:left;font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:#7B7063;border-bottom:2px solid #2C1A0E;padding:6px 0;}"
+    +"td{padding:8px 0;font-size:.95rem;border-bottom:1px solid #eee;vertical-align:top;}"
+    +".badge{display:inline-block;background:#F2EAE0;padding:3px 10px;border-radius:20px;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px;}"
+    +".foot{font-size:.68rem;color:#999;margin-top:30px;border-top:1px solid #eee;padding-top:10px;}"
+    +"@media print{.noprint{display:none;}}</style></head><body>"
+    +"<h1>Amapola Resto</h1><div class=\"sub\">Nota de pedido</div>"
+    +"<div class=\"badge\">"+fmtF(p.fecha)+"</div>"
+    +"<p style=\"font-size:1.1rem;margin:0 0 16px;\"><strong>Proveedor: "+p.proveedor+"</strong></p>"
+    +"<table><thead><tr><th>Producto</th><th style=\"text-align:right\">Cantidad</th></tr></thead><tbody>"+filas+"</tbody></table>"
+    +(p.obs?("<p style=\"font-size:.85rem;color:#7B7063;margin-top:16px;\"><strong>Nota:</strong> "+p.obs+"</p>"):"")
+    +"<div class=\"foot\">Emitido el "+new Date().toLocaleDateString("es-AR")+" · Amapola Interno</div>"
+    +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar como imagen o PDF</button>"
+    +"</body></html>";
+}
 function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor}){
   const[provSel,setProvSel]=useState("");
   const[cants,setCants]=useState({});
@@ -3166,6 +3192,11 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
   const eliminar=async id=>{
     if(!confirm("¿Eliminar este pedido?"))return;
     await savePedidos(pedidos.filter(p=>p.id!==id));toast("Eliminado");
+  };
+
+  const verNota=p=>{
+    const w=window.open("","_blank");
+    if(w){w.document.write(notaPedidoHTML(p));w.document.close();}
   };
 
   const colorEstado={pendiente:"#B7860B",enviado:"#2980B9",recibido:"#2D6A4F"};
@@ -3206,6 +3237,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
         </div>
         {p.obs&&<div style={{marginTop:8,fontSize:".76rem",color:"#7B7063",fontStyle:"italic"}}>{p.obs}</div>}
         <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
+          <SmBtn color="#2D6A4F" onClick={()=>verNota(p)}>📄 Nota de pedido</SmBtn>
           {p.estado!=="pendiente"&&<SmBtn onClick={()=>cambiarEstado(p.id,"pendiente")}>Marcar pendiente</SmBtn>}
           {p.estado!=="enviado"&&<SmBtn onClick={()=>cambiarEstado(p.id,"enviado")}>Marcar enviado</SmBtn>}
           {p.estado!=="recibido"&&<SmBtn onClick={()=>cambiarEstado(p.id,"recibido")}>Marcar recibido</SmBtn>}
