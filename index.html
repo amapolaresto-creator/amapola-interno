@@ -3997,10 +3997,11 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   // Movimientos digitales
-  const pagosTr   = (pagos||[]).filter(p=>p.forma==="Transferencia").map(p=>({...p,_cat:"pago",  _label:p.proveedor}));
-  const sueldosTr = (sueldos||[]).filter(s=>s.forma==="Transferencia").map(s=>({...s,_cat:"sueldo",_label:s.empleado+" · "+(s.concepto||"Sueldo")}));
-  const gastosTr  = (gastos||[]).filter(g=>g.forma==="Transferencia").map(g=>({...g,_cat:"gasto", _label:g.categoria}));
-  const allMovs   = [...pagosTr,...sueldosTr,...gastosTr].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const pagosTr   = (pagos||[]).filter(p=>p.forma==="Transferencia").map(p=>({...p,_cat:"pago",  _label:p.proveedor,_signo:-1}));
+  const sueldosTr = (sueldos||[]).filter(s=>s.forma==="Transferencia").map(s=>({...s,_cat:"sueldo",_label:s.empleado+" · "+(s.concepto||"Sueldo"),_signo:-1}));
+  const gastosTr  = (gastos||[]).filter(g=>g.forma==="Transferencia").map(g=>({...g,_cat:"gasto", _label:g.categoria,_signo:-1}));
+  const cierresDig= (cierresCaja||[]).filter(c=>Number(c.totalDigital||0)>0).map(c=>({...c,_cat:"cierre",_label:"Cierre "+c.turno,monto:c.totalDigital,_signo:1}));
+  const allMovs   = [...pagosTr,...sueldosTr,...gastosTr,...cierresDig].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   // Filtro fechas
   const desdeF = filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
@@ -4012,25 +4013,25 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     .filter(m=>!buscar||(m._label||"").toLowerCase().includes(buscar.toLowerCase())||fmtF(m.fecha).includes(buscar));
 
   // Saldo acumulado desde el saldo real del banco
-  // saldoReal = saldo del banco al momento de la última actualización
-  // Para el libro: empezamos desde saldoReal y restamos todos los egresos del período
-  // (los egresos son los movimientos digitales posteriores al corte)
+  // saldoReal = saldo del banco actual (ya incluye todos los movimientos hasta hoy)
+  // Para el libro: deshacemos los movimientos desde el inicio del período hacia atrás para
+  // hallar el saldo base, y desde ahí avanzamos sumando ingresos y restando egresos del período.
   const filtradosAsc=[...filtrados].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   let saldoAcum = Number(saldoReal)||0;
-  // Restar los egresos anteriores al período para calcular el saldo base
   allMovs.filter(m=>!desdeF||m.fecha.slice(0,10)<desdeF).forEach(m=>{
-    saldoAcum -= Number(m.monto||0);
+    saldoAcum -= m._signo*Number(m.monto||0);
   });
   const saldoBase=saldoAcum;
   const filasAsc=filtradosAsc.map(m=>{
-    saldoAcum -= Number(m.monto||0);
+    saldoAcum += m._signo*Number(m.monto||0);
     return{...m,_saldo:saldoAcum};
   });
   const filas=[...filasAsc].reverse();
 
-  const totalEgresos=filtradosAsc.reduce((s,m)=>s+Number(m.monto||0),0);
+  const totalEgresos=filtradosAsc.filter(m=>m._signo<0).reduce((s,m)=>s+Number(m.monto||0),0);
+  const totalIngresos=filtradosAsc.filter(m=>m._signo>0).reduce((s,m)=>s+Number(m.monto||0),0);
 
-  const iconoCat=c=>c==="pago"?"💸":c==="sueldo"?"👤":"🏠";
+  const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":"🏠";
 
   const abrirEditar=m=>{
     setEditItem(m);
@@ -4146,7 +4147,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 
       {/* FILTROS TIPO */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["todo","Todo"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([v,l])=>(
+        {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([v,l])=>(
           <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#2C1A0E":"transparent",color:filtroTipo===v?"#E8DCC8":"#7B7063"}}>{l}</button>
         ))}
       </div>
@@ -4156,10 +4157,10 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 
       {!filas.length?<Empty icon="💳">Sin movimientos digitales en el período</Empty>:(
         <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:380}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:420}}>
             <thead>
               <tr style={{background:"#F9F6F1"}}>
-                {["Fecha","Concepto","Debe","Saldo"].map(h=>(
+                {["Fecha","Concepto","Debe","Haber","Saldo"].map(h=>(
                   <th key={h} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Concepto"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
                 ))}
                 <th style={{padding:"7px 8px",borderBottom:"2px solid #E8DCC8"}}></th>
@@ -4180,20 +4181,24 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
                       </div>
                     </div>
                   </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(m.monto)}</td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo<0?fmt(m.monto):""}</td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo>0?fmt(m.monto):""}</td>
                   <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(m._saldo)}</td>
                   <td style={{padding:"6px 8px"}}>
-                    <div style={{display:"flex",gap:4}}>
-                      <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
-                      <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
-                    </div>
+                    {m._cat!=="cierre"&&(
+                      <div style={{display:"flex",gap:4}}>
+                        <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
+                        <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
               <tr style={{background:"#2C1A0E"}}>
-                <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTAL EGRESOS</td>
+                <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
                 <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalEgresos)}</td>
-                <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:"#E8DCC8"}}>{fmt(saldoBase-totalEgresos)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalIngresos)}</td>
+                <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:"#E8DCC8"}}>{fmt(saldoBase+totalIngresos-totalEgresos)}</td>
                 <td style={{padding:"8px"}}></td>
               </tr>
             </tbody>
