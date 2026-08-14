@@ -652,7 +652,7 @@ function App({role="full",cerrarSesion}){
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores} pagos={pagos}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
-        {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados}/>}
+        {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
@@ -3952,7 +3952,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   </>);
 }
 
-function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaDigitalAjustes,saveCajaDigitalAjustes,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,cierresCaja,proveedores,pagarConExcedente,empleados,saveEmpleados}){
+function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaDigitalAjustes,saveCajaDigitalAjustes,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,cierresCaja,proveedores,pagarConExcedente,empleados,saveEmpleados,liquidaciones}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -3970,8 +3970,9 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   const[editForm,setEditForm]=useState({});
   const[confElim,setConfElim]=useState(null);
 
-  // Registrar pago (agrupado acá, igual que en Pagos, pero pensado para pagos digitales)
+  // Registrar pago (agrupado acá: proveedor, sueldo o gasto/pago digital, todo lo que se pueda pagar en digital)
   const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
+  const[tipoPago,setTipoPago]=useState("proveedor"); // "proveedor" | "sueldo" | "gasto"
   const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
   const[montoPago,setMontoPago]=useState("");const[formaPago,setFormaPago]=useState("Transferencia");
   const[obsPago,setObsPago]=useState("");const[fechaPago,setFechaPago]=useState(hoyLocal());
@@ -3979,6 +3980,26 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   const[nuevoRegModal,setNuevoRegModal]=useState(false);
   const[nuevoRegNombre,setNuevoRegNombre]=useState("");
   const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
+  // Sueldo
+  const[empSueldo,setEmpSueldo]=useState("");
+  const[conceptoSueldo,setConceptoSueldo]=useState("Sueldo");
+  const[hsExtrasSueldo,setHsExtrasSueldo]=useState("");
+  const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  // Gasto (pago digital)
+  const CATS_BASE_DIG=['Alquiler','Contadora','Abogada','Conciliaciones','Amex','Impuestos','Carta Documento','Disney','FUDO','Fumigador','Mantenimiento','Movistar','Rapiboy','Retiro para sueldos'];
+  const[catsGasto,setCatsGasto]=useState(()=>{
+    try{
+      const s=localStorage.getItem("amapola_cats_gastos");
+      const guardadas=s?JSON.parse(s):[];
+      return Array.from(new Set([...CATS_BASE_DIG,...guardadas]));
+    }catch{return CATS_BASE_DIG;}
+  });
+  const[modoProvGasto,setModoProvGasto]=useState(false);
+  const[catGasto,setCatGasto]=useState("");
+  const[provSelGasto,setProvSelGasto]=useState("");
+  const[nuevaCatModal,setNuevaCatModal]=useState(false);
+  const[nuevaCat,setNuevaCat]=useState("");
+  const proveedoresActivos=(proveedores||[]).filter(p=>p.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
 
   const{ingresos,egTransf,saldoReal,deducciones}=calcDigital();
 
@@ -3992,14 +4013,70 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     toast("Agregado ✓");
   };
 
+  const agregarCategoriaGasto=()=>{
+    if(!nuevaCat.trim()){toast("Ingresá el nombre de la categoría");return;}
+    if(catsGasto.includes(nuevaCat.trim())){toast("Ya existe esa categoría");return;}
+    const nuevas=[...catsGasto,nuevaCat.trim()];
+    setCatsGasto(nuevas);
+    localStorage.setItem("amapola_cats_gastos",JSON.stringify(nuevas));
+    setCatGasto(nuevaCat.trim());
+    setNuevaCat("");setNuevaCatModal(false);
+    toast("Categoría creada ✓");
+  };
+
+  const limpiarFormPago=()=>{
+    setProv("");setEmp("");setEmpSueldo("");setConceptoSueldo("Sueldo");setHsExtrasSueldo("");
+    setCatGasto("");setProvSelGasto("");setModoProvGasto(false);
+    setMontoPago("");setObsPago("");setFechaPago(hoyLocal());
+  };
+
   const guardarPago=async()=>{
-    if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
     if(formaPago==="Transferencia"&&Number(montoPago)>saldoReal){toast("⚠️ Supera el disponible digital");return false;}
+
+    if(tipoPago==="proveedor"){
+      if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
+      setBusyPago(true);
+      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
+      await pagarConExcedente(pagoBase,pagos,savePagos);
+      setBusyPago(false);limpiarFormPago();
+      toast("Pago registrado ✓");
+      return true;
+    }
+
+    if(tipoPago==="sueldo"){
+      if(!empSueldo||!montoPago){toast("Elegí un empleado e ingresá el monto");return false;}
+      if(conceptoSueldo==="Sueldo"){
+        const per=(fechaPago||hoyLocal()).slice(0,7);
+        const empMatch=(empleados||[]).find(e=>norm(e.nombre)===norm(empSueldo)||norm(e.nombre).startsWith(norm(empSueldo))||norm(empSueldo).startsWith(norm(e.nombre)));
+        const liq=empMatch?(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada"):null;
+        if(liq){
+          const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
+          if(pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)){
+            if(!confirm("⚠️ "+empSueldo+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(pagado)+"). ¿Registrar este pago de todas formas?"))return false;
+          }
+        }
+      }
+      setBusyPago(true);
+      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO}]);
+      setBusyPago(false);limpiarFormPago();
+      toast("Sueldo registrado ✓");
+      return true;
+    }
+
+    // gasto (pago digital)
+    if(modoProvGasto){
+      if(!provSelGasto||!montoPago){toast("Elegí un proveedor e ingresá el monto");return false;}
+    }else{
+      if(!catGasto||!montoPago){toast("Elegí una categoría e ingresá el monto");return false;}
+    }
     setBusyPago(true);
     const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
-    const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
-    await pagarConExcedente(pagoBase,pagos,savePagos);
-    setBusyPago(false);setProv("");setEmp("");setMontoPago("");setObsPago("");setFechaPago(hoyLocal());
+    const registro={id:uid(),tipo:"gasto",categoria:modoProvGasto?provSelGasto:catGasto,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
+    if(modoProvGasto)registro.proveedor=provSelGasto;
+    await saveGastos([...(gastos||[]),registro]);
+    setBusyPago(false);limpiarFormPago();
     toast("Pago registrado ✓");
     return true;
   };
@@ -4087,7 +4164,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   return(<>
-    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar un pago a proveedor directo desde acá (queda igual que si lo cargaras en Pagos) — por defecto en Transferencia, pero también podés elegir Efectivo o Amex.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
+    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague en digital: un pago a Proveedor, un Sueldo o un Gasto (Pagos Digitales) — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Pagos Digitales. Por defecto la forma de pago es Transferencia, pero también podés elegir Efectivo (o Amex/Retiro según el tipo) si hace falta.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
     <div style={{display:"flex",alignItems:"stretch",gap:10,marginBottom:12,flexWrap:"wrap"}}>
@@ -4106,32 +4183,109 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
             <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nuevo pago</p>
             <button onClick={()=>setNuevoPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
           </div>
-          <Field label="Proveedor">
-            <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
-              <option value="">— Elegí un proveedor —</option>
-              {(proveedores||[]).filter(p=>p.estado!=="Inactivo").map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-            </select>
-          </Field>
-          <Field label="Registrado por">
-            <div style={{display:"flex",gap:8}}>
-              <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
-                <option value="">— Elegí —</option>
-                {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
-              </select>
-              <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+
+          {nuevaCatModal&&(
+            <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+              <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+                <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
+                <input value={nuevaCat} onChange={e=>setNuevaCat(e.target.value)} placeholder="Ej: Seguro, Contador, ..."
+                  autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCategoriaGasto()}
+                  style={{...iS,marginBottom:16}}/>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+                  <button onClick={agregarCategoriaGasto} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+                </div>
+              </div>
             </div>
-          </Field>
+          )}
+
+          {/* TIPO DE PAGO */}
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            {[["proveedor","Proveedor"],["sueldo","Sueldo"],["gasto","Gasto"]].map(([v,l])=>(
+              <button key={v} type="button" onClick={()=>setTipoPago(v)}
+                style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:tipoPago===v?"#2C1A0E":"#F9F6F1",color:tipoPago===v?"#fff":"#7B7063"}}>{l}</button>
+            ))}
+          </div>
+
+          {tipoPago==="proveedor"&&(<>
+            <Field label="Proveedor">
+              <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
+                <option value="">— Elegí un proveedor —</option>
+                {proveedoresActivos.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Registrado por">
+              <div style={{display:"flex",gap:8}}>
+                <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí —</option>
+                  {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
+                </select>
+                <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+          </>)}
+
+          {tipoPago==="sueldo"&&(<>
+            <Field label="Empleado">
+              <select value={empSueldo} onChange={e=>setEmpSueldo(e.target.value)} style={sS}>
+                <option value="">— Elegí un empleado —</option>
+                {EMPS.map(e=><option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Concepto">
+              <select value={conceptoSueldo} onChange={e=>{setConceptoSueldo(e.target.value);setHsExtrasSueldo("");}} style={sS}>
+                {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </Field>
+            {conceptoSueldo==="HS Extras"&&(
+              <Field label="Cantidad de horas extras">
+                <Inp type="number" value={hsExtrasSueldo} onChange={setHsExtrasSueldo} placeholder="Ej: 4"/>
+              </Field>
+            )}
+          </>)}
+
+          {tipoPago==="gasto"&&(<>
+            <div style={{display:"flex",gap:6,marginBottom:12}}>
+              <button type="button" onClick={()=>{setModoProvGasto(false);setProvSelGasto("");}}
+                style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:!modoProvGasto?"#2C1A0E":"#F9F6F1",color:!modoProvGasto?"#fff":"#7B7063"}}>Categoría</button>
+              <button type="button" onClick={()=>{setModoProvGasto(true);setCatGasto("");}}
+                style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:modoProvGasto?"#2C1A0E":"#F9F6F1",color:modoProvGasto?"#fff":"#7B7063"}}>Proveedor</button>
+            </div>
+            {!modoProvGasto?(
+              <Field label="Categoría">
+                <div style={{display:"flex",gap:8}}>
+                  <select value={catGasto} onChange={e=>setCatGasto(e.target.value)} style={{...sS,flex:1}}>
+                    <option value="">— Elegí una categoría —</option>
+                    {catsGasto.map(c=><option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
+                    style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+                </div>
+              </Field>
+            ):(
+              <Field label="Proveedor">
+                <select value={provSelGasto} onChange={e=>setProvSelGasto(e.target.value)} style={sS}>
+                  <option value="">— Elegí un proveedor —</option>
+                  {proveedoresActivos.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                </select>
+                <div style={{fontSize:".72rem",color:"#7B7063",marginTop:6}}>Este pago se descuenta de la deuda pendiente de {provSelGasto||"ese proveedor"} (se ve reflejado en 🏪 Proveedores).</div>
+              </Field>
+            )}
+          </>)}
+
           <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
           <Field label="Forma de pago">
             <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
               <option value="Transferencia">Transferencia (descuenta disponible digital)</option>
               <option value="Efectivo">Efectivo (descuenta de caja)</option>
-              <option value="Amex">Amex</option>
+              {tipoPago==="proveedor"&&<option value="Amex">Amex</option>}
+              {tipoPago==="sueldo"&&<option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>}
             </select>
           </Field>
           {formaPago==="Transferencia"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🏦 Este pago descontará del disponible digital.</div>}
           {formaPago==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible (efectivo), no del disponible digital.</div>}
           {formaPago==="Amex"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💳 No descuenta caja ni banco — queda cargado al resumen de la tarjeta.</div>}
+          {formaPago==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta caja ni banco — se paga con efectivo ya retirado antes (cargado como Gasto "Retiro para sueldos").</div>}
           <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: pago parcial, boleta #..."/></Field>
           <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
 
