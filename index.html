@@ -1153,7 +1153,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
   };
 
   return(<>
-    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Amex: solo descuenta la deuda del proveedor, no toca la caja ni el banco.\n• Amex es nuestra tarjeta de crédito — un pago con Amex queda cargado al resumen, no sale plata todavía. Cuando pagás el resumen de la tarjeta, eso se registra como un Gasto (Pagos Digitales) en la categoría Amex, en efectivo o transferencia según corresponda.\n• Si pagás de más a Avenida o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
+    <ST help={"Registrá acá cuando pagás una deuda a un proveedor.\n\n• Efectivo: descuenta de la caja disponible Y de la deuda del proveedor.\n• Transferencia / Amex: solo descuenta la deuda del proveedor, no toca la caja ni el banco.\n• Amex es nuestra tarjeta de crédito — un pago con Amex queda cargado al resumen, no sale plata todavía. Cuando pagás el resumen de la tarjeta, eso se registra como un Gasto (Pagos Digitales) en la categoría Amex, en efectivo o transferencia según corresponda.\n• Si pagás de más a Avenida o Avenida Digital, el excedente se transfiere automáticamente al otro Avenida.\n• El historial de pagos está al final de esta pantalla — ahí también aparecen mezclados, solo como referencia (🏦), los pagos por Transferencia: no suman a Debe/Haber ni al saldo corrido porque no son movimientos de efectivo."}>Registrar pago</ST><SS>Descuenta la deuda del proveedor. Efectivo también descuenta de caja.</SS>
 
     {nuevoRegModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -1272,6 +1272,10 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
   // Ajustes manuales de caja (ver Admin > Ajuste de caja disponible). Sin esto, el saldo de este libro
   // diario quedaba desincronizado del número de "Caja Disponible" (que sí los suma en calcSaldo()).
   const ajustesEf  = (ajustesCajaEfectivo||[]).map(a=>({...a,_cat:"ajuste",_signo:Number(a.monto||0)>=0?1:-1,proveedor:"Ajuste de caja",obs:a.motivo,monto:Math.abs(Number(a.monto||0))}));
+  // Pagos a proveedores hechos por Transferencia (digital): solo para visualizar acá mezclados con el
+  // resto — NO son movimientos de efectivo, así que _signo:0 hace que no sumen a Debe/Haber ni al saldo
+  // corrido de este libro (que es 100% de Caja Disponible en efectivo).
+  const pagosDig   = (pagos||[]).filter(p=>p.forma==="Transferencia").map(p=>({...p,_cat:"pagoDigital",_signo:0}));
 
   const egresos = [
     ...pagosEf.map(p=>({...p,_cat:"pago",  _signo:-1})),
@@ -1279,7 +1283,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
     ...gastosEf.map(g=>({...g,_cat:"gasto", _signo:-1,proveedor:g.categoria})),
   ];
   const ingresos = [...cierresEf,...cierresNEf].map(c=>({...c,_signo:1}));
-  const allMovs  = [...egresos,...ingresos,...ajustesEf].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const allMovs  = [...egresos,...ingresos,...ajustesEf,...pagosDig].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   // Aplicar filtro de fechas
   const desdeF = filtroFecha==="mes" ? iso(inicioMes) : filtroFecha==="hoy" ? iso(hoy) : desde;
@@ -1304,8 +1308,8 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
     return {...m,_delta:delta,_saldo:saldoAcum};
   });
   const filas = [...filasAsc].reverse().filter(f=>{
-    if(filtroTipo==="debe") return f._signo<0&&f._cat!=="ajuste";
-    if(filtroTipo==="haber") return f._signo>0&&f._cat!=="ajuste";
+    if(filtroTipo==="debe") return f._signo<0&&f._cat!=="ajuste"&&f._cat!=="pagoDigital";
+    if(filtroTipo==="haber") return f._signo>0&&f._cat!=="ajuste"&&f._cat!=="pagoDigital";
     return true;
   });
 
@@ -1315,7 +1319,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
   const totalEgresos  = filasAsc.filter(f=>f._signo<0&&f._cat!=="ajuste").reduce((s,f)=>s+Math.abs(f._delta),0);
   const totalAjustes  = filasAsc.filter(f=>f._cat==="ajuste").reduce((s,f)=>s+f._delta,0);
   const neto = totalIngresos - totalEgresos + totalAjustes;
-  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="ajuste"?"⚖️":"💸";
+  const iconoCat = c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="ajuste"?"⚖️":c==="pagoDigital"?"🏦":"💸";
 
   return(
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
@@ -1376,6 +1380,8 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
                         <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
                         {f._cat==="ajuste"?(
                           <div style={{fontSize:".63rem",color:f._signo>0?"#2D6A4F":"#C0392B",fontWeight:700}}>{f._signo>0?"+":"-"}{fmt(Math.abs(f._delta))} · corrección de saldo{f.obs?" · "+f.obs:""}</div>
+                        ):f._cat==="pagoDigital"?(
+                          <div style={{fontSize:".63rem",color:"#B7860B",fontWeight:700}}>🏦 {fmt(f.monto)} por transferencia · no afecta el efectivo{f.obs?" · "+f.obs:""}</div>
                         ):(f.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.obs}</div>)}
                       </div>
                     </div>
