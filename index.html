@@ -527,7 +527,11 @@ function App({role="full",cerrarSesion}){
     if(!p)return null;
     const deudaIni=Number(p.deudaInicial)||0;
     const sumaBoletas=boletas.filter(b=>norm(b.proveedor)===norm(nombre)&&Number(b.monto)!==0).reduce((s,b)=>s+Number(b.monto||0),0);
-    const pagado=pagos.filter(x=>norm(x.proveedor)===norm(nombre)).reduce((s,x)=>s+Number(x.monto||0),0);
+    const pagadoPagos=pagos.filter(x=>norm(x.proveedor)===norm(nombre)).reduce((s,x)=>s+Number(x.monto||0),0);
+    // Pagos Digitales (gastos) también pueden tener un proveedor asignado (ej: pagarle a un proveedor
+    // desde Pagos Digitales en vez de Pagos) — esos montos descuentan la deuda igual que un pago normal.
+    const pagadoGastos=(gastos||[]).filter(g=>g.proveedor&&norm(g.proveedor)===norm(nombre)).reduce((s,g)=>s+Number(g.monto||0),0);
+    const pagado=pagadoPagos+pagadoGastos;
     const totalDeuda=deudaIni+sumaBoletas;
     return{deudaInicial:deudaIni,sumaBoletas,totalDeuda,pagado,pendiente:totalDeuda-pagado};
   };
@@ -651,11 +655,11 @@ function App({role="full",cerrarSesion}){
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
-        {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} askPass={askPass}/>}
+        {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} gastos={gastos} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
-        {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial}/>}
+        {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
@@ -1385,7 +1389,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
   );
 }
 
-function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,askPass}){
+function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gastos,askPass}){
   const[nombre,setNombre]=useState("");const[deuda,setDeuda]=useState("");
   const[obs,setObs]=useState("");const[busy,setBusy]=useState(false);
   const[filtroNombre,setFiltroNombre]=useState("");
@@ -1419,7 +1423,8 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
   const infoSel=provObj?calcDeuda(provObj.nombre):null;
   const boletasSel=provSel?boletas.filter(b=>norm(b.proveedor)===norm(provSel)).map(b=>({...b,_tipo:"boleta"})):[];
   const pagosSel=provSel?pagos.filter(p=>norm(p.proveedor)===norm(provSel)).map(p=>({...p,_tipo:"pago"})):[];
-  const movSel=[...boletasSel,...pagosSel]
+  const gastosSel=provSel?(gastos||[]).filter(g=>g.proveedor&&norm(g.proveedor)===norm(provSel)).map(g=>({...g,_tipo:"gasto",obs:g.obs||`Pago digital · ${g.categoria||""}`})):[];
+  const movSel=[...boletasSel,...pagosSel,...gastosSel]
     .filter(m=>{
       const f=m.fecha.slice(0,10);
       return(!desdeDet||f>=desdeDet)&&(!hastaDet||f<=hastaDet);
@@ -1452,7 +1457,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
   };
 
   return(<>
-    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − suma de pagos.\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
+    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
 
     <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
       <button onClick={abrirNuevo} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer"}}>+ Nuevo proveedor</button>
@@ -1787,7 +1792,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
 }
 
 
-function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
+function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores}){
   const CATS_BASE=['Alquiler','Contadora','Abogada','Conciliaciones','Amex','Impuestos','Carta Documento','Disney','FUDO','Fumigador','Mantenimiento','Movistar','Rapiboy','Retiro para sueldos'];
   // Combina las categorías base (que pueden crecer con el tiempo) con las que el usuario haya
   // agregado a mano en este dispositivo, para que una categoría nueva agregada al código no quede
@@ -1805,6 +1810,9 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
   const[nuevaCatModal,setNuevaCatModal]=useState(false);
   const[nuevaCat,setNuevaCat]=useState("");
   const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
+  const[modoProv,setModoProv]=useState(false);
+  const[provSel,setProvSel]=useState("");
+  const proveedoresOrd=(proveedores||[]).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
 
   const agregarCategoria=()=>{
     if(!nuevaCat.trim()){toast("Ingresá el nombre de la categoría");return;}
@@ -1819,11 +1827,17 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
   const[fecha,setFecha]=useState(hoyLocal());
 
   const guardar=async()=>{
-    if(!cat||!monto){toast("Elegí una categoría e ingresá el monto");return false;}
+    if(modoProv){
+      if(!provSel||!monto){toast("Elegí un proveedor e ingresá el monto");return false;}
+    }else{
+      if(!cat||!monto){toast("Elegí una categoría e ingresá el monto");return false;}
+    }
     if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return false;}
     setBusy(true);
-    await saveGastos([...gastos,{id:uid(),tipo:"gasto",categoria:cat,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
-    setBusy(false);setCat("");setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
+    const registro={id:uid(),tipo:"gasto",categoria:modoProv?provSel:cat,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()};
+    if(modoProv)registro.proveedor=provSel;
+    await saveGastos([...gastos,registro]);
+    setBusy(false);setCat("");setProvSel("");setModoProv(false);setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
     return true;
   };
 
@@ -1861,16 +1875,32 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
               </div>
             </div>
           )}
-          <Field label="Categoría">
-            <div style={{display:"flex",gap:8}}>
-              <select value={cat} onChange={e=>setCat(e.target.value)} style={{...sS,flex:1}}>
-                <option value="">— Elegí una categoría —</option>
-                {cats.map(c=><option key={c} value={c}>{c}</option>)}
+          <div style={{display:"flex",gap:6,marginBottom:12}}>
+            <button type="button" onClick={()=>{setModoProv(false);setProvSel("");}}
+              style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:!modoProv?"#2C1A0E":"#F9F6F1",color:!modoProv?"#fff":"#7B7063"}}>Categoría</button>
+            <button type="button" onClick={()=>{setModoProv(true);setCat("");}}
+              style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:modoProv?"#2C1A0E":"#F9F6F1",color:modoProv?"#fff":"#7B7063"}}>Proveedor</button>
+          </div>
+          {!modoProv?(
+            <Field label="Categoría">
+              <div style={{display:"flex",gap:8}}>
+                <select value={cat} onChange={e=>setCat(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí una categoría —</option>
+                  {cats.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+                <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
+                  style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+          ):(
+            <Field label="Proveedor">
+              <select value={provSel} onChange={e=>setProvSel(e.target.value)} style={sS}>
+                <option value="">— Elegí un proveedor —</option>
+                {proveedoresOrd.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
               </select>
-              <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
-                style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
-            </div>
-          </Field>
+              <div style={{fontSize:".72rem",color:"#7B7063",marginTop:6}}>Este pago se descuenta de la deuda pendiente de {provSel||"ese proveedor"} (se ve reflejado en 🏪 Proveedores).</div>
+            </Field>
+          )}
           <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
           <Field label="Forma de pago">
             <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
@@ -1886,13 +1916,13 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial}){
       </div>
     )}
 
-    <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos}/>
+    <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos} proveedores={proveedores}/>
   </>);
 }
 
 
 
-function LibroDiarioGastos({gastos,saveGastos}){
+function LibroDiarioGastos({gastos,saveGastos,proveedores}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -1908,13 +1938,13 @@ function LibroDiarioGastos({gastos,saveGastos}){
 
   const abrirEditar=g=>{
     setEditItem(g);
-    setEditForm({categoria:g.categoria||"",monto:String(g.monto),forma:g.forma||"Efectivo",obs:g.obs||"",fecha:g.fecha.slice(0,10)});
+    setEditForm({categoria:g.categoria||"",proveedor:g.proveedor||"",monto:String(g.monto),forma:g.forma||"Efectivo",obs:g.obs||"",fecha:g.fecha.slice(0,10)});
   };
   const guardarEdicion=async()=>{
     if(!editForm.categoria||!editForm.monto){toast("Completá categoría y monto");return;}
     setBusyEdit(true);
     const nf=editForm.fecha?fechaLocalISO(editForm.fecha):editItem.fecha;
-    await saveGastos(gastos.map(g=>g.id===editItem.id?{...g,categoria:editForm.categoria,monto:Number(editForm.monto),forma:editForm.forma,obs:editForm.obs,fecha:nf}:g));
+    await saveGastos(gastos.map(g=>g.id===editItem.id?{...g,categoria:editForm.categoria,proveedor:editForm.proveedor||"",monto:Number(editForm.monto),forma:editForm.forma,obs:editForm.obs,fecha:nf}:g));
     setBusyEdit(false);setEditItem(null);toast("Actualizado ✓");
   };
   const eliminar=async()=>{
@@ -2019,6 +2049,7 @@ function LibroDiarioGastos({gastos,saveGastos}){
                   </td>
                   <td style={{padding:"6px 8px"}}>
                     <div style={{fontWeight:600,fontSize:".78rem"}}>{g.categoria}</div>
+                    {g.proveedor&&g.proveedor!==g.categoria&&<div style={{fontSize:".64rem",color:"#2D6A4F"}}>🏪 {g.proveedor}</div>}
                     {g.obs&&<div style={{fontSize:".65rem",color:"#7B7063"}}>{g.obs}</div>}
                   </td>
                   <td style={{padding:"6px 8px"}}>
@@ -2055,6 +2086,12 @@ function LibroDiarioGastos({gastos,saveGastos}){
             <Field label="Categoría">
               <input list="cats-libro-gastos" value={editForm.categoria||""} onChange={e=>setEditForm(f=>({...f,categoria:e.target.value}))} style={iS}/>
               <datalist id="cats-libro-gastos">{categoriasPresentes.map(c=><option key={c} value={c}/>)}</datalist>
+            </Field>
+            <Field label="Proveedor (opcional — si corresponde, descuenta su deuda)">
+              <select value={editForm.proveedor||""} onChange={e=>setEditForm(f=>({...f,proveedor:e.target.value}))} style={sS}>
+                <option value="">— Ninguno —</option>
+                {(proveedores||[]).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
             </Field>
             <Field label="Monto ($)"><Inp type="number" value={editForm.monto||""} onChange={v=>setEditForm(f=>({...f,monto:v}))}/></Field>
             <Field label="Forma de pago">
