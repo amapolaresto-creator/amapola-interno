@@ -2329,8 +2329,8 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
     )}
 
     {mostrarAgregar&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{background:"#fff",borderRadius:20,padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:14}}>{editId?"Editar producto":modoAgregar==="crear"?"Crear producto nuevo":"Cargar al inventario"}</p>
           {!editId&&modoAgregar==="crear"&&(<>
             <Field label="Proveedor">
