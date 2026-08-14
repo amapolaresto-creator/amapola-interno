@@ -652,7 +652,7 @@ function App({role="full",cerrarSesion}){
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores} pagos={pagos}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
-        {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja}/>}
+        {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo}/>}
@@ -3952,7 +3952,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   </>);
 }
 
-function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaDigitalAjustes,saveCajaDigitalAjustes,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,cierresCaja}){
+function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaDigitalAjustes,saveCajaDigitalAjustes,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,cierresCaja,proveedores,pagarConExcedente,empleados,saveEmpleados}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -3970,7 +3970,39 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   const[editForm,setEditForm]=useState({});
   const[confElim,setConfElim]=useState(null);
 
+  // Registrar pago (agrupado acá, igual que en Pagos, pero pensado para pagos digitales)
+  const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
+  const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
+  const[montoPago,setMontoPago]=useState("");const[formaPago,setFormaPago]=useState("Transferencia");
+  const[obsPago,setObsPago]=useState("");const[fechaPago,setFechaPago]=useState(hoyLocal());
+  const[busyPago,setBusyPago]=useState(false);
+  const[nuevoRegModal,setNuevoRegModal]=useState(false);
+  const[nuevoRegNombre,setNuevoRegNombre]=useState("");
+  const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
+
   const{ingresos,egTransf,saldoReal,deducciones}=calcDigital();
+
+  const agregarRegistrador=async()=>{
+    const nombre=nuevoRegNombre.trim();
+    if(!nombre){toast("Ingresá un nombre");return;}
+    if(registradores.some(r=>norm(r.nombre)===norm(nombre))){toast("Ya existe");setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);return;}
+    const nuevo={id:uid(),nombre,apellido:"",dni:"",domicilio:"",telPropio:"",telContacto:"",estado:"Activo"};
+    await saveEmpleados([...(empleados||[]),nuevo]);
+    setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);
+    toast("Agregado ✓");
+  };
+
+  const guardarPago=async()=>{
+    if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
+    if(formaPago==="Transferencia"&&Number(montoPago)>saldoReal){toast("⚠️ Supera el disponible digital");return false;}
+    setBusyPago(true);
+    const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+    const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
+    await pagarConExcedente(pagoBase,pagos,savePagos);
+    setBusyPago(false);setProv("");setEmp("");setMontoPago("");setObsPago("");setFechaPago(hoyLocal());
+    toast("Pago registrado ✓");
+    return true;
+  };
 
   const actualizarBanco=async()=>{
     if(!saldoBanco){toast("Ingresá el saldo real");return;}
@@ -4055,7 +4087,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   return(<>
-    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
+    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar un pago a proveedor directo desde acá (queda igual que si lo cargaras en Pagos) — por defecto en Transferencia, pero también podés elegir Efectivo o Amex.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
     <div style={{display:"flex",alignItems:"stretch",gap:10,marginBottom:12,flexWrap:"wrap"}}>
@@ -4064,7 +4096,62 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
         <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
       </div>
       <button onClick={()=>setVerSaldoBanco(true)} style={{padding:"8px 14px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>⚙️ Saldo banco</button>
+      <button onClick={()=>setNuevoPagoModal(true)} style={{padding:"8px 14px",border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>+ Registrar pago</button>
     </div>
+
+    {nuevoPagoModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nuevo pago</p>
+            <button onClick={()=>setNuevoPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+          </div>
+          <Field label="Proveedor">
+            <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
+              <option value="">— Elegí un proveedor —</option>
+              {(proveedores||[]).filter(p=>p.estado!=="Inactivo").map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+            </select>
+          </Field>
+          <Field label="Registrado por">
+            <div style={{display:"flex",gap:8}}>
+              <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
+                <option value="">— Elegí —</option>
+                {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
+              </select>
+              <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+            </div>
+          </Field>
+          <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
+          <Field label="Forma de pago">
+            <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
+              <option value="Transferencia">Transferencia (descuenta disponible digital)</option>
+              <option value="Efectivo">Efectivo (descuenta de caja)</option>
+              <option value="Amex">Amex</option>
+            </select>
+          </Field>
+          {formaPago==="Transferencia"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🏦 Este pago descontará del disponible digital.</div>}
+          {formaPago==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible (efectivo), no del disponible digital.</div>}
+          {formaPago==="Amex"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💳 No descuenta caja ni banco — queda cargado al resumen de la tarjeta.</div>}
+          <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: pago parcial, boleta #..."/></Field>
+          <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
+
+          <Btn bg="#2D6A4F" onClick={async()=>{if(await guardarPago())setNuevoPagoModal(false);}} disabled={busyPago}>{busyPago?"Guardando…":"Registrar pago"}</Btn>
+        </div>
+      </div>
+    )}
+
+    {nuevoRegModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
+          <input value={nuevoRegNombre} onChange={e=>setNuevoRegNombre(e.target.value)} placeholder="Nombre" autoFocus onKeyDown={e=>e.key==="Enter"&&agregarRegistrador()} style={{...iS,marginBottom:16}}/>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{setNuevoRegModal(false);setNuevoRegNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={agregarRegistrador} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {verSaldoBanco&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
