@@ -2326,7 +2326,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
                 <div key={m.id} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid #F2EAE0"}}>
                   <div>
                     <div style={{fontSize:".8rem",color:"#2C1A0E"}}>{m.tipo==="entrada"?"📥 Entrada":"📤 Salida"}{m.origen==="produccion"?" · producción":m.origen==="desperdicio"?" · desperdicio":m.origen==="conteo"?" · conteo":""}</div>
-                    <div style={{fontSize:".68rem",color:"#7B7063"}}>{fmtF(m.fecha)} {fmtH(m.fecha)}{m.registradoPor?` · ${m.registradoPor}`:""}{m.obs?` · ${m.obs}`:""}</div>
+                    <div style={{fontSize:".68rem",color:"#7B7063"}}>{fmtF(m.fecha)} {fmtH(m.fecha)}{m.registradoPor?` · ${m.registradoPor}`:""}{m.elaboradoPor?` · Elaboró: ${m.elaboradoPor}`:""}{m.obs?` · ${m.obs}`:""}</div>
                   </div>
                   <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:m.tipo==="entrada"?"#2D6A4F":"#C0392B",whiteSpace:"nowrap",marginLeft:10}}>{m.tipo==="entrada"?"+":"−"}{m.cantidad}</div>
                 </div>
@@ -2726,11 +2726,14 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   </>);
 }
 function StockProduccion({stock,saveStock,catalogo,registradoPor}){
+  const EMPLEADOS_PRODUCCION=["Denil","Mike","Rocio","Pedro","Lautaro","Omar"];
   const[prodId,setProdId]=useState("");
   const[cantidad,setCantidad]=useState("");
+  const[empleado,setEmpleado]=useState("");
   const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
   const[fecha,setFecha]=useState(hoyLocal());
+  const[offset,setOffset]=useState(0);
 
   // Solo productos activos del proveedor INTERNO
   const productosInternos=catalogo.filter(c=>norm(c.proveedor)==="interno"&&c.activo!==false)
@@ -2739,12 +2742,13 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
   const registrar=async()=>{
     if(!prodId){toast("Elegí un producto");return;}
     if(!cantidad||Number(cantidad)<=0){toast("Ingresá la cantidad producida");return;}
+    if(!empleado){toast("Elegí quién lo elaboró");return;}
     setBusy(true);
     const prod=productosInternos.find(c=>c.id===prodId);
     const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
     const stockActual=[...stock];
     const idx=stockActual.findIndex(s=>s.catalogoId===prodId);
-    const mov={id:uid(),tipo:"entrada",origen:"produccion",cantidad:Number(cantidad),obs:obs.trim()||"Producción del día",fecha:fechaISO,registradoPor:registradoPor||null};
+    const mov={id:uid(),tipo:"entrada",origen:"produccion",cantidad:Number(cantidad),elaboradoPor:empleado,obs:obs.trim()||"Producción del día",fecha:fechaISO,registradoPor:registradoPor||null};
     if(idx>=0){
       stockActual[idx]={...stockActual[idx],cantidad:stockActual[idx].cantidad+Number(cantidad),movimientos:[mov,...(stockActual[idx].movimientos||[])].slice(0,50)};
     }else{
@@ -2752,16 +2756,39 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
     }
     await saveStock(stockActual);
     toast(`✓ ${prod.producto}: +${cantidad} ${prod.unidad||"unidades"} registradas`);
-    setBusy(false);setProdId("");setCantidad("");setObs("");setFecha(hoyLocal());
+    setBusy(false);setProdId("");setCantidad("");setEmpleado("");setObs("");setFecha(hoyLocal());
   };
 
   if(!productosInternos.length)return(
     <Empty icon="🍳">No hay productos internos en el catálogo. Agregá productos con proveedor INTERNO desde 🗂️ Catálogo.</Empty>
   );
 
-  // Producción de hoy
-  const hoyStr=hoyLocal();
-  const prodHoy=stock.filter(s=>s.proveedor==="INTERNO"&&(s.movimientos||[]).some(m=>m.origen==="produccion"&&m.fecha&&m.fecha.slice(0,10)===hoyStr));
+  const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
+  const tdS={padding:"7px 8px"};
+  const DIAS=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+  const monday=(()=>{
+    const d=new Date();
+    const day=d.getDay();
+    const diff=d.getDate()-day+(day===0?-6:1);
+    const m=new Date(d.getFullYear(),d.getMonth(),diff);
+    m.setDate(m.getDate()+offset*7);
+    m.setHours(0,0,0,0);
+    return m;
+  })();
+  const dias=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
+  const hoyDate=new Date();
+  const enDia=(f,dia)=>f&&new Date(f).toDateString()===dia.toDateString();
+  const rangoLabel=`${dias[0].toLocaleDateString("es-AR",{day:"numeric",month:"short"})} – ${dias[6].toLocaleDateString("es-AR",{day:"numeric",month:"short"})}`;
+
+  const stockPorCatId={};
+  stock.forEach(s=>{if(s.catalogoId)stockPorCatId[s.catalogoId]=s;});
+  const filas=productosInternos.map(c=>{
+    const s=stockPorCatId[c.id];
+    return s?{...s,catalogoId:c.id}:{id:"sc_"+c.id,sinCargar:true,catalogoId:c.id,nombre:c.producto,unidad:c.unidad||"unidades",movimientos:[]};
+  }).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  const produccionDia=(s,dia)=>(s.movimientos||[]).filter(m=>m.origen==="produccion"&&enDia(m.fecha,dia)).reduce((acc,m)=>acc+Number(m.cantidad||0),0);
+  const totalSemana=s=>dias.reduce((acc,d)=>acc+produccionDia(s,d),0);
 
   return(<>
     <Card title="Registrar producción">
@@ -2775,6 +2802,12 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
       <Field label="Cantidad producida">
         <Inp type="number" value={cantidad} onChange={setCantidad} placeholder="0"/>
       </Field>
+      <Field label="Elaborado por">
+        <select value={empleado} onChange={e=>setEmpleado(e.target.value)} style={sS}>
+          <option value="">— Elegí quién lo elaboró —</option>
+          {EMPLEADOS_PRODUCCION.map(n=><option key={n} value={n}>{n}</option>)}
+        </select>
+      </Field>
       <Field label="Observaciones (opcional)">
         <Inp value={obs} onChange={setObs} placeholder="Ej: tanda de la mañana"/>
       </Field>
@@ -2782,26 +2815,58 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
       <Btn bg="#2D6A4F" onClick={registrar} disabled={busy}>{busy?"Guardando…":"Registrar producción"}</Btn>
     </Card>
 
-    {prodHoy.length>0&&(
-      <Card title="Producción registrada hoy">
-        {prodHoy.map(s=>{
-          const movsHoy=(s.movimientos||[]).filter(m=>m.origen==="produccion"&&m.fecha&&m.fecha.slice(0,10)===hoyStr);
-          const totalHoy=movsHoy.reduce((acc,m)=>acc+m.cantidad,0);
-          return(
-            <div key={s.id} style={{padding:"10px 0",borderBottom:"1px solid #F2EAE0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontWeight:600,fontSize:".88rem"}}>{s.nombre}</div>
-                <div style={{fontSize:".72rem",color:"#7B7063"}}>{movsHoy.length} registro{movsHoy.length!==1?"s":""} hoy{movsHoy[0]?.registradoPor?` · ${movsHoy[0].registradoPor}`:""}</div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#2D6A4F"}}>+{totalHoy}</div>
-                <div style={{fontSize:".68rem",color:"#7B7063"}}>{s.unidad}</div>
-              </div>
-            </div>
-          );
-        })}
-      </Card>
-    )}
+    <div style={{fontWeight:700,fontSize:".85rem",color:"#2C1A0E",margin:"22px 0 10px"}}>Historial de producción</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
+      <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E"}}>{rangoLabel}</div>
+        {offset!==0&&<button onClick={()=>setOffset(0)} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".72rem",fontWeight:600,cursor:"pointer",padding:0,marginTop:2}}>Volver a esta semana</button>}
+      </div>
+      <button onClick={()=>setOffset(offset+1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>Semana siguiente →</button>
+    </div>
+
+    <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden",marginBottom:14}}>
+      <div style={{overflowX:"auto"}}>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:760}}>
+        <thead>
+          <tr style={{background:"#F9F6F1"}}>
+            <th style={thS}>Producto</th>
+            {dias.map((d,i)=>{
+              const esHoy=d.toDateString()===hoyDate.toDateString();
+              return(
+                <th key={i} style={{...thS,textAlign:"center",background:esHoy?"#EAF5F0":"#F9F6F1",color:esHoy?"#2D6A4F":"#7B7063"}}>
+                  {DIAS[i]}<br/><span style={{fontWeight:400,textTransform:"none",fontSize:".62rem"}}>{d.getDate()}/{d.getMonth()+1}</span>
+                </th>
+              );
+            })}
+            <th style={{...thS,textAlign:"right"}}>Total semana</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filas.map((s,i)=>{
+            const tot=totalSemana(s);
+            return(
+              <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                <td style={tdS}>
+                  <div>{s.nombre}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN PRODUCIR</span>}</div>
+                </td>
+                {dias.map((d,j)=>{
+                  const v=produccionDia(s,d);
+                  const quienes=[...new Set((s.movimientos||[]).filter(m=>m.origen==="produccion"&&enDia(m.fecha,d)&&m.elaboradoPor).map(m=>m.elaboradoPor))];
+                  return(
+                    <td key={j} style={{...tdS,textAlign:"center"}} title={quienes.length?`Elaboró: ${quienes.join(", ")}`:""}>
+                      {v>0?<span style={{color:"#2D6A4F",fontWeight:700}}>+{v}</span>:<span style={{color:"#D8CFC0"}}>—</span>}
+                    </td>
+                  );
+                })}
+                <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:tot>0?"#2D6A4F":"#D8CFC0",whiteSpace:"nowrap"}}>{tot>0?`+${tot} ${s.unidad}`:"—"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      </div>
+    </div>
   </>);
 }
 
