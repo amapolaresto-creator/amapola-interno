@@ -2786,11 +2786,21 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
   const[sector,setSector]=useState("COCINA");
   const[producto,setProducto]=useState("");
   const[unidad,setUnidad]=useState("unidades");
+  const[minimo,setMinimo]=useState("");
+  const[maximo,setMaximo]=useState("");
   const[fProv,setFProv]=useState("");
   const[fSector,setFSector]=useState("");
   const[fQuery,setFQuery]=useState("");
   const[colapsados,setColapsados]=useState({});
   const[busy,setBusy]=useState(false);
+  const[editModal,setEditModal]=useState(null);
+  const[editProv,setEditProv]=useState("");
+  const[editProvNuevo,setEditProvNuevo]=useState("");
+  const[editMostrarNuevoProv,setEditMostrarNuevoProv]=useState(false);
+  const[editSector,setEditSector]=useState("COCINA");
+  const[editMinimo,setEditMinimo]=useState("");
+  const[editMaximo,setEditMaximo]=useState("");
+  const[editBusy,setEditBusy]=useState(false);
   const UNIDADES=["unidades","kg","g","litros","ml","cajas","bolsas","porciones","paquetes"];
   const sectoresCat=[...new Set(catalogo.map(c=>c.sector).filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
@@ -2804,7 +2814,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
     const yaExiste=catalogo.some(c=>norm(c.proveedor)===norm(proveedorFinal)&&norm(c.producto)===norm(producto));
     if(yaExiste){toast("Ese producto ya existe para ese proveedor");return;}
     setBusy(true);
-    const nuevo={id:uid(),proveedor:proveedorFinal,sector,producto:producto.trim().toUpperCase(),unidad};
+    const nuevo={id:uid(),proveedor:proveedorFinal,sector,producto:producto.trim().toUpperCase(),unidad,minimo:Number(minimo)||0,maximo:Number(maximo)||0};
     await saveCatalogo([...catalogo,nuevo]);
     const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
     if(!yaEsProveedor){
@@ -2812,7 +2822,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
       await saveProveedores([...(proveedores||[]),nuevoProv]);
     }
     toast(yaEsProveedor?"Producto agregado al catálogo ✓":"Producto agregado y proveedor creado ✓");
-    setBusy(false);setProducto("");setProvNuevo("");setMostrarNuevoProv(false);setUnidad("unidades");
+    setBusy(false);setProducto("");setProvNuevo("");setMostrarNuevoProv(false);setUnidad("unidades");setMinimo("");setMaximo("");
   };
 
   const cambiarUnidad=async(id,nuevaUnidad)=>{
@@ -2827,6 +2837,25 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
   const eliminar=async id=>{
     if(!confirm("¿Eliminar este producto del catálogo? (no afecta el inventario ya cargado)"))return;
     await saveCatalogo(catalogo.filter(c=>c.id!==id));toast("Eliminado");
+  };
+
+  const abrirEditar=c=>{
+    setEditModal(c);setEditProv(c.proveedor);setEditProvNuevo("");setEditMostrarNuevoProv(false);
+    setEditSector(c.sector||"COCINA");setEditMinimo(String(c.minimo||""));setEditMaximo(String(c.maximo||""));
+  };
+
+  const guardarEdicion=async()=>{
+    const proveedorFinal=editMostrarNuevoProv?editProvNuevo.trim().toUpperCase():editProv;
+    if(!proveedorFinal){toast("Elegí o ingresá un proveedor");return;}
+    setEditBusy(true);
+    await saveCatalogo(catalogo.map(c=>c.id===editModal.id?{...c,proveedor:proveedorFinal,sector:editSector,minimo:Number(editMinimo)||0,maximo:Number(editMaximo)||0}:c));
+    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
+    if(!yaEsProveedor){
+      const nuevoProv={id:uid(),nombre:proveedorFinal,deudaInicial:0,obs:"",fecha:new Date().toISOString()};
+      await saveProveedores([...(proveedores||[]),nuevoProv]);
+    }
+    toast("Producto actualizado ✓");
+    setEditBusy(false);setEditModal(null);
   };
 
   const listado=catalogo.filter(c=>{
@@ -2871,6 +2900,14 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
           {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
         </select>
       </Field>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1}}>
+          <Field label="Mínimo"><Inp type="number" value={minimo} onChange={setMinimo} placeholder="0"/></Field>
+        </div>
+        <div style={{flex:1}}>
+          <Field label="Máximo"><Inp type="number" value={maximo} onChange={setMaximo} placeholder="0"/></Field>
+        </div>
+      </div>
       <Btn onClick={agregar} disabled={busy}>{busy?"Guardando…":"Agregar al catálogo"}</Btn>
     </Card>
 
@@ -2896,12 +2933,14 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
           </div>
           {!cerrado&&(
           <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:460}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:640}}>
             <thead>
               <tr style={{background:"#F9F6F1"}}>
                 <th style={thS}>Producto</th>
                 <th style={thS}>Sector</th>
                 <th style={{...thS,width:120}}>Unidad</th>
+                <th style={{...thS,textAlign:"right"}}>Mínimo</th>
+                <th style={{...thS,textAlign:"right"}}>Máximo</th>
                 <th style={{...thS,textAlign:"right"}}>Acciones</th>
               </tr>
             </thead>
@@ -2917,7 +2956,10 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
                       {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
                     </select>
                   </td>
+                  <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>{c.minimo||0}</td>
+                  <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>{c.maximo||0}</td>
                   <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
+                    <button onClick={()=>abrirEditar(c)} style={{background:"#F2EAE0",color:"#2C1A0E",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>Editar</button>
                     <button onClick={()=>toggleActivo(c.id,activo)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>{activo?"Desactivar":"Reactivar"}</button>
                     <button onClick={()=>eliminar(c.id)} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
                   </td>
@@ -2931,6 +2973,50 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
         </div>
       );
     })}
+
+    {editModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>Editar producto</p>
+          <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:14}}><strong>{editModal.producto}</strong></p>
+          <Field label="Proveedor">
+            {!editMostrarNuevoProv?(
+              <select value={editProv} onChange={e=>setEditProv(e.target.value)} style={sS}>
+                <option value="">— Elegí un proveedor —</option>
+                {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+            ):(
+              <Inp value={editProvNuevo} onChange={setEditProvNuevo} placeholder="Nombre del nuevo proveedor"/>
+            )}
+          </Field>
+          <div style={{marginTop:-8,marginBottom:6}}>
+            <button onClick={()=>{setEditMostrarNuevoProv(!editMostrarNuevoProv);setEditProv("");setEditProvNuevo("");}} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".74rem",fontWeight:600,cursor:"pointer",padding:0}}>
+              {editMostrarNuevoProv?"← Elegir de la lista":"+ Es un proveedor nuevo"}
+            </button>
+          </div>
+          <Field label="Sector">
+            <select value={editSector} onChange={e=>setEditSector(e.target.value)} style={sS}>
+              {["COCINA","FRONT","OTRO"].map(s=><option key={s} value={s}>{s}</option>)}
+            </select>
+          </Field>
+          <div style={{display:"flex",gap:8,marginTop:6}}>
+            <div style={{flex:1}}>
+              <Field label="Mínimo"><Inp type="number" value={editMinimo} onChange={setEditMinimo} placeholder="0"/></Field>
+            </div>
+            <div style={{flex:1}}>
+              <Field label="Máximo"><Inp type="number" value={editMaximo} onChange={setEditMaximo} placeholder="0"/></Field>
+            </div>
+          </div>
+          <div style={{marginTop:10}}>
+            <button onClick={()=>{toggleActivo(editModal.id,editModal.activo!==false);setEditModal({...editModal,activo:!(editModal.activo!==false)});}} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>{editModal.activo!==false?"⏸ Marcar inactivo":"▶ Reactivar"}</button>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:18}}>
+            <button onClick={()=>setEditModal(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <Btn bg="#2C1A0E" onClick={guardarEdicion} disabled={editBusy}>{editBusy?"Guardando…":"Guardar cambios"}</Btn>
+          </div>
+        </div>
+      </div>
+    )}
   </>);
 }
 
