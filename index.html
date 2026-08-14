@@ -2065,12 +2065,12 @@ function LibroDiarioGastos({gastos,saveGastos}){
 
 function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor}){
   const[sub,setSub]=useState(subInicial||"inventario");
-  const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
+  const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"semana",label:"📅 Semana"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
   const proveedoresCat=[...new Set(catalogo.map(c=>c.proveedor))].sort();
   const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
   return(<>
-    <ST help={"El módulo de Stock tiene seis secciones:\n\n📋 Control de stock: tabla agrupada por proveedor (colapsable) con buscador, filtro por proveedor/sector y botón 'Solo stock bajo'. + suma entrada, − registra salida, ⋯ abre el historial de movimientos del producto (con Editar y Eliminar adentro).\n\n🧮 Conteo: la herramienta para saber cuánto hay REALMENTE. Como acá no se descuentan las ventas de Fudo, el número de Control de stock es 'teórico' (solo compras + producción cargadas). Al hacer un conteo, contás lo que hay físicamente y la app calcula la diferencia contra el teórico — esa diferencia es, por lógica, lo que se vendió/consumió (comparalo después con lo que dice Fudo). Al guardar, el stock se ajusta al valor contado y la diferencia queda en el historial de cada producto como 'ajuste por conteo'. Podés elegir contar todo el inventario o filtrar por proveedor/sector para conteos parciales.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
+    <ST help={"El módulo de Stock tiene siete secciones:\n\n📋 Control de stock: tabla agrupada por proveedor (colapsable) con buscador, filtro por proveedor/sector y botón 'Solo stock bajo'. + suma entrada, − registra salida, ⋯ abre el historial de movimientos del producto (con Editar y Eliminar adentro).\n\n🧮 Conteo: la herramienta para saber cuánto hay REALMENTE. Como acá no se descuentan las ventas de Fudo, el número de Control de stock es 'teórico' (solo compras + producción cargadas). Al hacer un conteo, contás lo que hay físicamente y la app calcula la diferencia contra el teórico — esa diferencia es, por lógica, lo que se vendió/consumió (comparalo después con lo que dice Fudo). Al guardar, el stock se ajusta al valor contado y la diferencia queda en el historial de cada producto como 'ajuste por conteo'. Podés elegir contar todo el inventario o filtrar por proveedor/sector para conteos parciales.\n\n📅 Semana: resumen de lunes a domingo (con flechas para ver otras semanas) que muestra qué día entraron compras, qué día se cargó producción y qué día se hizo un conteo.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
     {stockBajo.length>0&&sub!=="inventario"&&(
       <div onClick={()=>setSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
@@ -2085,6 +2085,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     </div>
     {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} registradoPor={registradoPor}/>}
     {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor}/>}
+    {sub==="semana"&&<StockSemana stock={stock} conteos={conteos}/>}
     {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor}/>}
     {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
     {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat}/>}
@@ -2530,6 +2531,85 @@ function StockConteo({stock,saveStock,catalogo,proveedoresCat,conteos,saveConteo
         );
       })}
     </div>
+  </>);
+}
+function StockSemana({stock,conteos}){
+  const[offset,setOffset]=useState(0);
+  const DIAS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+
+  const monday=(()=>{
+    const d=new Date();
+    const day=d.getDay();
+    const diff=d.getDate()-day+(day===0?-6:1);
+    const m=new Date(d.getFullYear(),d.getMonth(),diff);
+    m.setDate(m.getDate()+offset*7);
+    m.setHours(0,0,0,0);
+    return m;
+  })();
+  const dias=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
+  const hoy=new Date();
+  const enDia=(fecha,dia)=>fecha&&new Date(fecha).toDateString()===dia.toDateString();
+
+  const movsCompras=[];
+  const movsElaboraciones=[];
+  (stock||[]).forEach(s=>{
+    (s.movimientos||[]).forEach(m=>{
+      if(m.tipo==="entrada"&&!m.origen)movsCompras.push({...m,nombre:s.nombre,unidad:s.unidad,proveedor:s.proveedor});
+      else if(m.origen==="produccion")movsElaboraciones.push({...m,nombre:s.nombre,unidad:s.unidad});
+    });
+  });
+
+  const rangoLabel=`${dias[0].toLocaleDateString("es-AR",{day:"numeric",month:"short"})} – ${dias[6].toLocaleDateString("es-AR",{day:"numeric",month:"short"})}`;
+
+  return(<>
+    <Card>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E"}}>{rangoLabel}</div>
+          {offset!==0&&<button onClick={()=>setOffset(0)} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".72rem",fontWeight:600,cursor:"pointer",padding:0,marginTop:2}}>Volver a esta semana</button>}
+        </div>
+        <button onClick={()=>setOffset(offset+1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>Semana siguiente →</button>
+      </div>
+    </Card>
+
+    {dias.map((dia,i)=>{
+      const compras=movsCompras.filter(m=>enDia(m.fecha,dia));
+      const elaboraciones=movsElaboraciones.filter(m=>enDia(m.fecha,dia));
+      const conteosDia=(conteos||[]).filter(c=>enDia(c.fecha,dia));
+      const hayAlgo=compras.length||elaboraciones.length||conteosDia.length;
+      const esHoy=dia.toDateString()===hoy.toDateString();
+      return(
+        <div key={i} style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden",marginBottom:12,border:esHoy?"1.5px solid #2D6A4F":"1.5px solid transparent"}}>
+          <div style={{background:"#F4EEE3",padding:"9px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:".88rem",color:"#2C1A0E"}}>{DIAS[i]} {dia.getDate()}/{dia.getMonth()+1}{esHoy?" · Hoy":""}</span>
+            {!hayAlgo&&<span style={{fontSize:".68rem",color:"#B7A98F"}}>Sin movimientos</span>}
+          </div>
+          {hayAlgo>0&&(
+            <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
+              {compras.length>0&&(
+                <div>
+                  <div style={{fontSize:".65rem",fontWeight:700,color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:4}}>📦 Compras</div>
+                  {compras.map((m,j)=><div key={j} style={{fontSize:".8rem",color:"#2C1A0E",padding:"2px 0"}}>· {m.nombre} — <strong>+{m.cantidad}</strong> {m.unidad}{m.proveedor?` · ${m.proveedor}`:""}</div>)}
+                </div>
+              )}
+              {elaboraciones.length>0&&(
+                <div>
+                  <div style={{fontSize:".65rem",fontWeight:700,color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:4}}>🍳 Elaboraciones</div>
+                  {elaboraciones.map((m,j)=><div key={j} style={{fontSize:".8rem",color:"#2C1A0E",padding:"2px 0"}}>· {m.nombre} — <strong>+{m.cantidad}</strong> {m.unidad}</div>)}
+                </div>
+              )}
+              {conteosDia.length>0&&(
+                <div>
+                  <div style={{fontSize:".65rem",fontWeight:700,color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:4}}>🧮 Conteos</div>
+                  {conteosDia.map(c=><div key={c.id} style={{fontSize:".8rem",color:"#2C1A0E",padding:"2px 0"}}>· {fmtH(c.fecha)} — {c.alcance} ({(c.items||[]).length} productos)</div>)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    })}
   </>);
 }
 function StockProduccion({stock,saveStock,catalogo,registradoPor}){
