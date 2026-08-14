@@ -3170,6 +3170,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
   const[cants,setCants]=useState({});
   const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
+  const[editId,setEditId]=useState(null);
 
   const productosDelProv=provSel?catalogo.filter(c=>c.proveedor===provSel&&c.activo!==false):[];
 
@@ -3178,11 +3179,31 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
     if(!provSel){toast("Elegí un proveedor");return;}
     if(!items.length){toast("Ingresá cantidad en al menos un producto");return;}
     setBusy(true);
-    const nuevo={id:uid(),proveedor:provSel,fecha:new Date().toISOString(),items,obs:obs.trim(),estado:"pendiente",creadoPor:registradoPor||null};
-    await savePedidos([nuevo,...pedidos]);
-    toast("Pedido creado ✓");
-    setBusy(false);setProvSel("");setCants({});setObs("");
+    if(editId){
+      await savePedidos(pedidos.map(p=>p.id===editId?{...p,proveedor:provSel,items,obs:obs.trim()}:p));
+      toast("Pedido actualizado ✓");
+    }else{
+      const nuevo={id:uid(),proveedor:provSel,fecha:new Date().toISOString(),items,obs:obs.trim(),estado:"pendiente",creadoPor:registradoPor||null};
+      await savePedidos([nuevo,...pedidos]);
+      toast("Pedido creado ✓");
+    }
+    setBusy(false);setProvSel("");setCants({});setObs("");setEditId(null);
   };
+
+  const abrirEditar=p=>{
+    setEditId(p.id);
+    setProvSel(p.proveedor);
+    const nuevosCants={};
+    catalogo.filter(c=>c.proveedor===p.proveedor).forEach(c=>{
+      const it=(p.items||[]).find(i=>i.producto===c.producto);
+      if(it)nuevosCants[c.id]=String(it.cantidad);
+    });
+    setCants(nuevosCants);
+    setObs(p.obs||"");
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+
+  const cancelarEdicion=()=>{setEditId(null);setProvSel("");setCants({});setObs("");};
 
   const cambiarEstado=async(id,estado)=>{
     await savePedidos(pedidos.map(p=>p.id===id?{...p,estado}:p));
@@ -3202,7 +3223,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
   const colorEstado={pendiente:"#B7860B",enviado:"#2980B9",recibido:"#2D6A4F"};
 
   return(<>
-    <Card title="Nuevo pedido a proveedor">
+    <Card title={editId?"✏️ Editar pedido":"Nuevo pedido a proveedor"}>
       <Field label="Proveedor">
         <select value={provSel} onChange={e=>{setProvSel(e.target.value);setCants({});}} style={sS}>
           <option value="">— Elegí un proveedor —</option>
@@ -3220,7 +3241,8 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
         </div>
       )}
       <Field label="Observaciones (opcional)"><TA value={obs} onChange={setObs} placeholder="Ej: pedir para el jueves..."/></Field>
-      <Btn onClick={crearPedido} disabled={busy}>{busy?"Guardando…":"Crear pedido"}</Btn>
+      <Btn onClick={crearPedido} disabled={busy}>{busy?"Guardando…":editId?"Guardar cambios":"Crear pedido"}</Btn>
+      {editId&&<button onClick={cancelarEdicion} style={{marginTop:8,width:"100%",padding:10,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".82rem"}}>Cancelar edición</button>}
     </Card>
 
     {!pedidos.length?<Empty icon="🧾">Todavía no creaste pedidos</Empty>:pedidos.map(p=>(
@@ -3238,6 +3260,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
         {p.obs&&<div style={{marginTop:8,fontSize:".76rem",color:"#7B7063",fontStyle:"italic"}}>{p.obs}</div>}
         <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
           <SmBtn color="#2D6A4F" onClick={()=>verNota(p)}>📄 Nota de pedido</SmBtn>
+          <SmBtn onClick={()=>abrirEditar(p)}>✏️ Editar</SmBtn>
           {p.estado!=="pendiente"&&<SmBtn onClick={()=>cambiarEstado(p.id,"pendiente")}>Marcar pendiente</SmBtn>}
           {p.estado!=="enviado"&&<SmBtn onClick={()=>cambiarEstado(p.id,"enviado")}>Marcar enviado</SmBtn>}
           {p.estado!=="recibido"&&<SmBtn onClick={()=>cambiarEstado(p.id,"recibido")}>Marcar recibido</SmBtn>}
