@@ -718,6 +718,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
   const[fecha,setFecha]=useState(hoyLocal());
   const[crearModal,setCrearModal]=useState(false);const[nuevoNombre,setNuevoNombre]=useState("");
   const[crearEmpModal,setCrearEmpModal]=useState(false);const[nuevoEmpNombre,setNuevoEmpNombre]=useState("");
+  const[nuevaBoletaModal,setNuevaBoletaModal]=useState(false);
   // Detalle de productos comprados
   const[lineas,setLineas]=useState([]);// [{catalogoId,nombre,unidad,cantidad}]
   const[lineaProdId,setLineaProdId]=useState("");
@@ -795,7 +796,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
       });
       await saveStock(stockActual);
     }
-    setBusy(false);setProv("");setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setLineas([]);setLineaProdId("");setLineaCant("");
+    setBusy(false);setProv("");setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setLineas([]);setLineaProdId("");setLineaCant("");setNuevaBoletaModal(false);
     toast("Boleta registrada ✓"+(lineas.length>0?` · ${lineas.length} producto${lineas.length!==1?"s":""} al stock`:""));
   };
   const guardarPago=async()=>{
@@ -810,9 +811,79 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
   };
 
   return(<>
-    <ST help={"Registrá acá cada boleta que llega de un proveedor.\n\n• Elegí el proveedor del desplegable (usá + si no existe).\n• 'Empleado que recibe' es quien firmó o recibió la boleta físicamente.\n• El monto suma a la deuda del proveedor y descuenta del disponible cuando lo pagás.\n• Podés adjuntar una foto como respaldo.\n• Desde el listado podés registrar un pago directo al proveedor."}>Boletas de proveedores</ST><SS>Registrá cada boleta ni bien llega el proveedor.</SS>
-    {crearModal&&(
+    <ST help={"Registrá acá cada boleta que llega de un proveedor.\n\n• Tocá + Registrar boleta para abrir el formulario.\n• Elegí el proveedor del desplegable (usá + si no existe).\n• 'Empleado que recibe' es quien firmó o recibió la boleta físicamente.\n• El monto suma a la deuda del proveedor y descuenta del disponible cuando lo pagás.\n• Podés adjuntar una foto como respaldo.\n• Desde el formulario también podés registrar un pago directo al proveedor."}>Boletas de proveedores</ST><SS>Registrá cada boleta ni bien llega el proveedor.</SS>
+
+    <Btn bg="#C0392B" onClick={()=>setNuevaBoletaModal(true)}>+ Registrar boleta</Btn>
+
+    {nuevaBoletaModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nueva boleta</p>
+            <button onClick={()=>setNuevaBoletaModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+          </div>
+          <Field label="Proveedor">
+            <div style={{display:"flex",gap:8}}>
+              <select value={prov} onChange={e=>setProv(e.target.value)} style={{...sS,flex:1}}>
+                <option value="">— Elegí un proveedor —</option>
+                {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
+              <button onClick={()=>setCrearModal(true)} title="Crear proveedor" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+            </div>
+          </Field>
+          <Field label="Empleado que recibe">
+            <div style={{display:"flex",gap:8}}>
+              <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
+                <option value="">— Elegí —</option>
+                {empleados.filter(e=>e.estado==="Activo").map(e=><option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+              </select>
+              <button onClick={()=>setCrearEmpModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+            </div>
+          </Field>
+          <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
+          <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: faltó un bulto..."/></Field>
+          <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
+
+          {/* DETALLE DE PRODUCTOS */}
+          <div style={{marginTop:16,borderTop:"1px solid #F2EAE0",paddingTop:16}}>
+            <div style={{fontSize:".78rem",fontWeight:700,color:"#2C1A0E",marginBottom:10}}>📦 Productos comprados <span style={{fontWeight:400,color:"#7B7063"}}>(opcional — suman al stock automáticamente)</span></div>
+            <div style={{display:"flex",gap:6,alignItems:"flex-end",marginBottom:10}}>
+              <div style={{flex:1}}>
+                <select value={lineaProdId} onChange={e=>setLineaProdId(e.target.value)} style={{...sS,fontSize:".78rem"}}>
+                  <option value="">— Producto —</option>
+                  {productosSugeridos.length>0&&<optgroup label={`✓ De ${prov}`}>{productosSugeridos.map(c=><option key={c.id} value={c.id}>{c.producto}</option>)}</optgroup>}
+                  {productosResto.length>0&&<optgroup label="Otros productos">{productosResto.map(c=><option key={c.id} value={c.id}>{c.producto} ({c.proveedor})</option>)}</optgroup>}
+                </select>
+              </div>
+              <div style={{width:72}}>
+                <input type="number" min="0" value={lineaCant} onChange={e=>setLineaCant(e.target.value)} placeholder="Cant." style={{...iS,fontSize:".82rem",textAlign:"center"}}/>
+              </div>
+              <button onClick={agregarLinea} style={{padding:"10px 12px",border:"none",borderRadius:8,background:"#2C1A0E",color:"#fff",fontWeight:700,fontSize:"1rem",cursor:"pointer",flexShrink:0}}>+</button>
+            </div>
+            {lineas.length>0&&(
+              <div style={{background:"#F9F6F1",borderRadius:10,overflow:"hidden"}}>
+                {lineas.map(l=>(
+                  <div key={l.catalogoId} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:"1px solid #F2EAE0"}}>
+                    <span style={{flex:1,fontSize:".82rem",color:"#2C1A0E"}}>{l.nombre}</span>
+                    <span style={{fontSize:".82rem",fontWeight:700,color:"#2D6A4F"}}>{l.cantidad} {l.unidad}</span>
+                    <button onClick={()=>quitarLinea(l.catalogoId)} style={{background:"none",border:"none",color:"#C0392B",fontSize:".8rem",cursor:"pointer",padding:"0 4px"}}>✕</button>
+                  </div>
+                ))}
+                <div style={{padding:"8px 12px",fontSize:".72rem",color:"#7B7063"}}>
+                  {lineas.length} producto{lineas.length!==1?"s":""} · suman al stock al guardar
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Btn bg="#C0392B" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar boleta"}</Btn>
+          {prov&&<button onClick={()=>setPagoModal(true)} style={{display:"block",width:"100%",padding:12,marginTop:10,border:"1.5px solid #B7860B",borderRadius:10,background:"#FEF9E7",color:"#B7860B",fontFamily:"inherit",fontSize:".9rem",fontWeight:600,cursor:"pointer"}}>💸 Registrar pago a este proveedor</button>}
+        </div>
+      </div>
+    )}
+
+    {crearModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nuevo proveedor</p>
           <input value={nuevoNombre} onChange={e=>setNuevoNombre(e.target.value)} placeholder="Nombre del proveedor" autoFocus onKeyDown={e=>e.key==="Enter"&&crearProveedor()} style={{...iS,marginBottom:8}}/>
@@ -825,7 +896,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
       </div>
     )}
     {crearEmpModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
           <input value={nuevoEmpNombre} onChange={e=>setNuevoEmpNombre(e.target.value)} placeholder="Nombre" autoFocus onKeyDown={e=>e.key==="Enter"&&crearEmpleado()} style={{...iS,marginBottom:16}}/>
@@ -836,66 +907,8 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
         </div>
       </div>
     )}
-    <Card title="Nueva boleta">
-      <Field label="Proveedor">
-        <div style={{display:"flex",gap:8}}>
-          <select value={prov} onChange={e=>setProv(e.target.value)} style={{...sS,flex:1}}>
-            <option value="">— Elegí un proveedor —</option>
-            {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-          </select>
-          <button onClick={()=>setCrearModal(true)} title="Crear proveedor" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
-        </div>
-      </Field>
-      <Field label="Empleado que recibe">
-        <div style={{display:"flex",gap:8}}>
-          <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
-            <option value="">— Elegí —</option>
-            {empleados.filter(e=>e.estado==="Activo").map(e=><option key={e.id} value={e.nombre}>{e.nombre}</option>)}
-          </select>
-          <button onClick={()=>setCrearEmpModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
-        </div>
-      </Field>
-      <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
-      <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: faltó un bulto..."/></Field>
-      <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-
-      {/* DETALLE DE PRODUCTOS */}
-      <div style={{marginTop:16,borderTop:"1px solid #F2EAE0",paddingTop:16}}>
-        <div style={{fontSize:".78rem",fontWeight:700,color:"#2C1A0E",marginBottom:10}}>📦 Productos comprados <span style={{fontWeight:400,color:"#7B7063"}}>(opcional — suman al stock automáticamente)</span></div>
-        <div style={{display:"flex",gap:6,alignItems:"flex-end",marginBottom:10}}>
-          <div style={{flex:1}}>
-            <select value={lineaProdId} onChange={e=>setLineaProdId(e.target.value)} style={{...sS,fontSize:".78rem"}}>
-              <option value="">— Producto —</option>
-              {productosSugeridos.length>0&&<optgroup label={`✓ De ${prov}`}>{productosSugeridos.map(c=><option key={c.id} value={c.id}>{c.producto}</option>)}</optgroup>}
-              {productosResto.length>0&&<optgroup label="Otros productos">{productosResto.map(c=><option key={c.id} value={c.id}>{c.producto} ({c.proveedor})</option>)}</optgroup>}
-            </select>
-          </div>
-          <div style={{width:72}}>
-            <input type="number" min="0" value={lineaCant} onChange={e=>setLineaCant(e.target.value)} placeholder="Cant." style={{...iS,fontSize:".82rem",textAlign:"center"}}/>
-          </div>
-          <button onClick={agregarLinea} style={{padding:"10px 12px",border:"none",borderRadius:8,background:"#2C1A0E",color:"#fff",fontWeight:700,fontSize:"1rem",cursor:"pointer",flexShrink:0}}>+</button>
-        </div>
-        {lineas.length>0&&(
-          <div style={{background:"#F9F6F1",borderRadius:10,overflow:"hidden"}}>
-            {lineas.map(l=>(
-              <div key={l.catalogoId} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:"1px solid #F2EAE0"}}>
-                <span style={{flex:1,fontSize:".82rem",color:"#2C1A0E"}}>{l.nombre}</span>
-                <span style={{fontSize:".82rem",fontWeight:700,color:"#2D6A4F"}}>{l.cantidad} {l.unidad}</span>
-                <button onClick={()=>quitarLinea(l.catalogoId)} style={{background:"none",border:"none",color:"#C0392B",fontSize:".8rem",cursor:"pointer",padding:"0 4px"}}>✕</button>
-              </div>
-            ))}
-            <div style={{padding:"8px 12px",fontSize:".72rem",color:"#7B7063"}}>
-              {lineas.length} producto{lineas.length!==1?"s":""} · suman al stock al guardar
-            </div>
-          </div>
-        )}
-      </div>
-
-      <Btn bg="#C0392B" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar boleta"}</Btn>
-      {prov&&<button onClick={()=>setPagoModal(true)} style={{display:"block",width:"100%",padding:12,marginTop:10,border:"1.5px solid #B7860B",borderRadius:10,background:"#FEF9E7",color:"#B7860B",fontFamily:"inherit",fontSize:".9rem",fontWeight:600,cursor:"pointer"}}>💸 Registrar pago a este proveedor</button>}
-    </Card>
     {pagoModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>💸 Pago a {prov}</p>
           <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Caja disponible: <strong>{fmt(saldo)}</strong></p>
