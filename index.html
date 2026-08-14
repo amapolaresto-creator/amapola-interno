@@ -826,7 +826,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
             <div style={{display:"flex",gap:8}}>
               <select value={prov} onChange={e=>setProv(e.target.value)} style={{...sS,flex:1}}>
                 <option value="">— Elegí un proveedor —</option>
-                {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                {proveedores.filter(p=>p.estado!=="Inactivo").map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
               </select>
               <button onClick={()=>setCrearModal(true)} title="Crear proveedor" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
             </div>
@@ -1186,7 +1186,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
           <Field label="Proveedor">
             <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
               <option value="">— Elegí un proveedor —</option>
-              {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              {proveedores.filter(p=>p.estado!=="Inactivo").map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
             </select>
           </Field>
           <Field label="Registrado por">
@@ -1417,6 +1417,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
   const[desdeDet,setDesdeDet]=useState("");
   const[hastaDet,setHastaDet]=useState("");
   const[mostrarForm,setMostrarForm]=useState(false);
+  const[verInactivos,setVerInactivos]=useState(false);
 
   const guardar=async()=>{
     if(!nombre.trim()){toast("Ingresá el nombre");return;}
@@ -1433,10 +1434,17 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
   };
   const editar=p=>{setNombre(p.nombre);setDeuda(String(p.deudaInicial||""));setObs(p.obs||"");setMostrarForm(true);};
   const abrirNuevo=()=>{setNombre("");setDeuda("");setObs("");setMostrarForm(true);};
+  const toggleActivo=async p=>{
+    const nuevoEstado=p.estado==="Inactivo"?"Activo":"Inactivo";
+    await saveProveedores(proveedores.map(x=>x.id===p.id?{...x,estado:nuevoEstado}:x));
+    toast(nuevoEstado==="Inactivo"?"Proveedor ocultado ✓":"Proveedor activado ✓");
+  };
 
   const sorted=proveedores.map(p=>{const d=calcDeuda(p.nombre);return{...p,_p:d?d.pendiente:0,_i:d?d.totalDeuda:0,_pagado:d?d.pagado:0};}).sort((a,b)=>b._p-a._p);
   const totalPendienteGlobal=sorted.reduce((s,p)=>s+Math.max(0,p._p),0);
-  const filtrados=sorted.filter(p=>!filtroNombre||norm(p.nombre).includes(norm(filtroNombre)));
+  const inactivosCount=sorted.filter(p=>p.estado==="Inactivo").length;
+  const baseVisible=verInactivos?sorted:sorted.filter(p=>p.estado!=="Inactivo");
+  const filtrados=baseVisible.filter(p=>!filtroNombre||norm(p.nombre).includes(norm(filtroNombre)));
 
   // Estado de cuenta del proveedor seleccionado
   const provObj=provSel?proveedores.find(p=>norm(p.nombre)===norm(provSel)):null;
@@ -1477,7 +1485,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
   };
 
   return(<>
-    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
+    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo.\n• 🚫 Activos e inactivos: los proveedores inactivos quedan ocultos de la lista (y no aparecen para elegir al cargar una boleta o un pago nuevo), pero su deuda sigue contando en el total y no se pierde nada de su historial. Tocá 👁️ Ver inactivos para volver a verlos, y ✅ en la fila para reactivarlos."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
 
     {mostrarForm&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
@@ -1582,6 +1590,13 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
     <div style={{marginBottom:12}}>
       <input value={filtroNombre} onChange={e=>setFiltroNombre(e.target.value)} placeholder="🔍 Buscar proveedor..." style={{...iS,fontSize:".85rem"}}/>
     </div>
+    {inactivosCount>0&&(
+      <div style={{marginBottom:12}}>
+        <button onClick={()=>setVerInactivos(v=>!v)} style={{padding:"6px 12px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:verInactivos?"#2C1A0E":"transparent",color:verInactivos?"#E8DCC8":"#7B7063"}}>
+          {verInactivos?"🙈 Ocultar inactivos":`👁️ Ver inactivos (${inactivosCount})`}
+        </button>
+      </div>
+    )}
 
     {!filtrados.length?<Empty icon="🏪">Sin resultados</Empty>:(
       <div style={{background:"#fff",borderRadius:14,padding:16,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
@@ -1597,16 +1612,21 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
             <tbody>
               {filtrados.map((p,i)=>{
                 const sal=p._p<=0;
+                const inactivo=p.estado==="Inactivo";
                 return(
                   <tr key={p.id} onClick={()=>{setProvSel(p.nombre);setDesdeDet("");setHastaDet("");window.scrollTo({top:0,behavior:"smooth"});}}
-                    style={{background:i%2===0?"#fff":"#F9F6F1",cursor:"pointer"}}>
+                    style={{background:i%2===0?"#fff":"#F9F6F1",cursor:"pointer",opacity:inactivo?.55:1}}>
                     <td style={{padding:"6px 8px"}}>
-                      <div style={{fontWeight:600,fontSize:".8rem"}}>{p.nombre}</div>
+                      <div style={{fontWeight:600,fontSize:".8rem",display:"flex",alignItems:"center",gap:6}}>
+                        {p.nombre}
+                        {inactivo&&<span style={{background:"#E8DCC8",color:"#7B7063",borderRadius:4,padding:"1px 6px",fontSize:".6rem",fontWeight:700,textTransform:"uppercase"}}>Inactivo</span>}
+                      </div>
                       {p.obs&&<div style={{fontSize:".65rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:220}}>{p.obs}</div>}
                     </td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:sal?"#2D6A4F":"#C0392B",whiteSpace:"nowrap"}}>{sal?"✅ Saldado":fmt(Math.max(0,p._p))}</td>
                     <td style={{padding:"6px 8px"}} onClick={e=>e.stopPropagation()}>
                       <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                        <button onClick={()=>toggleActivo(p)} title={inactivo?"Activar":"Ocultar (marcar inactivo)"} style={{background:inactivo?"#EAF5F0":"#FEF9E7",border:"none",borderRadius:6,color:inactivo?"#2D6A4F":"#B7860B",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>{inactivo?"✅":"🚫"}</button>
                         <button onClick={()=>editar(p)} title="Editar" style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
                         <button onClick={()=>eliminar(p.id)} title="Eliminar" style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
                       </div>
@@ -1837,7 +1857,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores}){
   const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
   const[modoProv,setModoProv]=useState(false);
   const[provSel,setProvSel]=useState("");
-  const proveedoresOrd=(proveedores||[]).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const proveedoresOrd=(proveedores||[]).filter(p=>p.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
 
   const agregarCategoria=()=>{
     if(!nuevaCat.trim()){toast("Ingresá el nombre de la categoría");return;}
