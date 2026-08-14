@@ -4062,12 +4062,18 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
-    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-      <div style={{background:"#2C1A0E",borderRadius:10,padding:"8px 12px",flex:1,minWidth:0}}>
+    <div style={{display:"flex",alignItems:"stretch",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+      <div style={{background:"#2C1A0E",borderRadius:10,padding:"8px 12px",flex:1,minWidth:140}}>
         <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
         <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
       </div>
-      <button onClick={()=>setVerSaldoBanco(true)} style={{padding:"12px 14px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>⚙️ Saldo banco</button>
+      <button onClick={()=>setVerSaldoBanco(true)} style={{padding:"8px 14px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>⚙️ Saldo banco</button>
+      {amexMes>0&&(
+        <div title="No se descuenta de Caja Disponible ni Caja Digital hasta que pagués el resumen de la tarjeta." style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:10,padding:"8px 12px",flex:1,minWidth:140}}>
+          <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>💳 Amex este mes</div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",color:"#7B5E00",lineHeight:1.15}}>{fmt(amexMes)}</div>
+        </div>
+      )}
     </div>
 
     {verSaldoBanco&&(
@@ -4112,14 +4118,6 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
             </div>
           )}
         </div>
-      </div>
-    )}
-
-    {amexMes>0&&(
-      <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
-        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>💳 Cargado a Amex este mes</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(amexMes)}</div>
-        <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>No se descuenta de Caja Disponible ni Caja Digital hasta que pagués el resumen de la tarjeta.</div>
       </div>
     )}
 
