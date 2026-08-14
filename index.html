@@ -2117,6 +2117,13 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
   const[mostrarNuevoProv,setMostrarNuevoProv]=useState(false);
   const[sector,setSector]=useState("COCINA");
   const[nombreProducto,setNombreProducto]=useState("");
+  const[mostrarInactivos,setMostrarInactivos]=useState(false);
+
+  const toggleActivo=async(catalogoId,activoActual)=>{
+    if(!catalogoId)return;
+    await saveCatalogo(catalogo.map(c=>c.id===catalogoId?{...c,activo:!activoActual}:c));
+    toast(activoActual?"Producto marcado como inactivo":"Producto reactivado ✓");
+  };
 
   const limpiar=()=>{setEditId(null);setProvSel("");setCatId("");setCantidad("");setMinimo("");setUnidad("unidades");setMostrarAgregar(false);setModoAgregar("crear");setProvNuevo("");setMostrarNuevoProv(false);setSector("COCINA");setNombreProducto("");};
 
@@ -2195,13 +2202,17 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
   stock.forEach(s=>{if(s.catalogoId)stockPorCatId[s.catalogoId]=s;});
   const combinado=[];
   catalogo.forEach(c=>{
+    const activo=c.activo!==false;
     const s=stockPorCatId[c.id];
-    if(s)combinado.push(s);
-    else combinado.push({id:"sc_"+c.id,sinCargar:true,catalogoId:c.id,nombre:c.producto,proveedor:c.proveedor,sector:c.sector,unidad:c.unidad||"unidades",cantidad:0,minimo:0,movimientos:[]});
+    if(s)combinado.push({...s,catalogoId:c.id,activo});
+    else combinado.push({id:"sc_"+c.id,sinCargar:true,catalogoId:c.id,nombre:c.producto,proveedor:c.proveedor,sector:c.sector,unidad:c.unidad||"unidades",cantidad:0,minimo:0,movimientos:[],activo});
   });
-  stock.forEach(s=>{if(!s.catalogoId||!catalogoIds.has(s.catalogoId))combinado.push(s);});
+  stock.forEach(s=>{if(!s.catalogoId||!catalogoIds.has(s.catalogoId))combinado.push({...s,activo:true});});
+
+  const inactivosCount=catalogo.filter(c=>c.activo===false).length;
 
   const filtradoInv=combinado.filter(s=>{
+    if(mostrarInactivos){if(s.activo)return false;}else{if(!s.activo)return false;}
     if(fProv&&s.proveedor!==fProv)return false;
     if(fSector&&s.sector!==fSector)return false;
     if(soloBajo&&!(Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0))return false;
@@ -2392,6 +2403,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
           {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
         <button onClick={()=>setSoloBajo(!soloBajo)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:soloBajo?"#C0392B":"#FFF0EF",color:soloBajo?"#fff":"#C0392B",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⚠️ Solo stock bajo ({conAlerta.length})</button>
+        <button onClick={()=>setMostrarInactivos(!mostrarInactivos)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:mostrarInactivos?"#7B7063":"#F2EAE0",color:mostrarInactivos?"#fff":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{mostrarInactivos?"← Volver a activos":`😴 Ver inactivos (${inactivosCount})`}</button>
       </div>
 
       {!gruposInv.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposInv.map(g=>{
@@ -2446,12 +2458,15 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
                     <td style={{...tdS,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,color:cierre!==null?"#2C1A0E":"#D8CFC0",whiteSpace:"nowrap"}}>{cierre!==null?`${cierre} ${s.unidad}`:"—"}</td>
                     <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
                       {s.sinCargar?(
-                        <button onClick={()=>abrirCargar(s)} style={{background:"#2C1A0E",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>Cargar</button>
+                        <button onClick={()=>abrirCargar(s)} style={{background:"#2C1A0E",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>Cargar</button>
                       ):(<>
                         <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{background:"#EAF5F0",color:"#2D6A4F",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>+</button>
                         <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>−</button>
-                        <button onClick={()=>setHistModal(s)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>⋯</button>
+                        <button onClick={()=>setHistModal(s)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>⋯</button>
                       </>)}
+                      {s.catalogoId&&(
+                        <button onClick={()=>toggleActivo(s.catalogoId,s.activo)} title={s.activo?"Marcar inactivo":"Reactivar"} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>{s.activo?"⏸":"▶"}</button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -2768,6 +2783,11 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
     await saveCatalogo(catalogo.map(c=>c.id===id?{...c,unidad:nuevaUnidad}:c));
   };
 
+  const toggleActivo=async(id,activoActual)=>{
+    await saveCatalogo(catalogo.map(c=>c.id===id?{...c,activo:!activoActual}:c));
+    toast(activoActual?"Producto marcado como inactivo":"Producto reactivado ✓");
+  };
+
   const eliminar=async id=>{
     if(!confirm("¿Eliminar este producto del catálogo? (no afecta el inventario ya cargado)"))return;
     await saveCatalogo(catalogo.filter(c=>c.id!==id));toast("Eliminado");
@@ -2850,20 +2870,24 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
               </tr>
             </thead>
             <tbody>
-              {g.items.map((c,i)=>(
-                <tr key={c.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                  <td style={tdS}>{c.producto}</td>
+              {g.items.map((c,i)=>{
+                const activo=c.activo!==false;
+                return(
+                <tr key={c.id} style={{background:i%2===0?"#fff":"#F9F6F1",opacity:activo?1:.55}}>
+                  <td style={tdS}>{c.producto}{!activo&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>INACTIVO</span>}</td>
                   <td style={{...tdS,color:"#7B7063"}}>{c.sector}</td>
                   <td style={tdS}>
                     <select value={c.unidad||"unidades"} onChange={e=>cambiarUnidad(c.id,e.target.value)} style={{fontSize:".72rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:8,padding:"4px 6px",background:"#fff"}}>
                       {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
                     </select>
                   </td>
-                  <td style={{...tdS,textAlign:"right"}}>
+                  <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
+                    <button onClick={()=>toggleActivo(c.id,activo)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>{activo?"Desactivar":"Reactivar"}</button>
                     <button onClick={()=>eliminar(c.id)} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           </div>
