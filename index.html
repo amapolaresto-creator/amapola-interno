@@ -1390,7 +1390,6 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
 
   const guardar=async()=>{
     if(!nombre.trim()){toast("Ingresá el nombre");return;}
-    const ok=await askPass();if(!ok)return;
     setBusy(true);
     const idx=proveedores.findIndex(p=>norm(p.nombre)===norm(nombre));
     let nuevos;
