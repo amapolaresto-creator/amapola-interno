@@ -2070,7 +2070,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
   const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
   return(<>
-    <ST help={"El módulo de Stock tiene seis secciones:\n\n📋 Control de stock: tabla agrupada por proveedor (colapsable) con buscador y filtro por proveedor/sector. Tiene dos vistas con un botón arriba: 'Vista actual' (Stock, Nivel, Últ. mov., botón 'Solo stock bajo' y Acciones — + suma entrada, − registra salida, ⋯ abre el historial del producto con Editar y Eliminar) y 'Vista semana' (lunes a domingo, con flechas para cambiar de semana, mostrando qué día entraron compras/producción — 🧮 marca los días con conteo — y una columna de Cierre semana con el último conteo de esa semana).\n\n🧮 Conteo: la herramienta para saber cuánto hay REALMENTE. Como acá no se descuentan las ventas de Fudo, el número de Control de stock es 'teórico' (solo compras + producción cargadas). Al hacer un conteo, contás lo que hay físicamente y la app calcula la diferencia contra el teórico — esa diferencia es, por lógica, lo que se vendió/consumió (comparalo después con lo que dice Fudo). Pide confirmación antes de guardar. Al confirmar, el stock se ajusta al valor contado y la diferencia queda en el historial de cada producto como 'ajuste por conteo'. Podés elegir contar todo el inventario o filtrar por proveedor/sector para conteos parciales.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor, mismo formato de tabla colapsable que Control de stock.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
+    <ST help={"El módulo de Stock tiene seis secciones:\n\n📋 Control de stock: una sola tabla agrupada por proveedor (colapsable), con navegación de semana (← →) arriba, buscador y filtro por proveedor/sector/'Solo stock bajo'. Cada fila muestra: Producto (con sector debajo y BAJO si corresponde), Stock actual, una columna por cada día de la semana (compras/producción cargadas ese día, y 🧮 si hubo un conteo — parcial o completo), Cierre semana (el último conteo de esa semana) y Acciones (+ suma entrada, − registra salida, ⋯ abre el historial del producto con Editar y Eliminar).\n\n🧮 Conteo: la herramienta para saber cuánto hay REALMENTE. Como acá no se descuentan las ventas de Fudo, el número de Control de stock es 'teórico' (solo compras + producción cargadas). Al hacer un conteo, contás lo que hay físicamente y la app calcula la diferencia contra el teórico — esa diferencia es, por lógica, lo que se vendió/consumió (comparalo después con lo que dice Fudo). Pide confirmación antes de guardar. Al confirmar, el stock se ajusta al valor contado y la diferencia queda en el historial de cada producto como 'ajuste por conteo'. Podés elegir contar todo el inventario o filtrar por proveedor/sector para conteos parciales.\n\n🍳 Producción: exclusivo para cocina. Registrá cuánto se produjo de cada producto interno del día.\n\n🗑️ Desperdicios: registrá lo que se tira o se rompe, para saber cuánto se pierde.\n\n🗂️ Catálogo: base de todos los productos e insumos por proveedor, mismo formato de tabla colapsable que Control de stock.\n\n🧾 Pedidos: generá pedidos a proveedores con seguimiento de estado."}>Stock</ST><SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
     {stockBajo.length>0&&sub!=="inventario"&&(
       <div onClick={()=>setSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
@@ -2093,7 +2093,6 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
 }
 
 function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,registradoPor}){
-  const[vista,setVista]=useState("actual");
   const[offset,setOffset]=useState(0);
   const[provSel,setProvSel]=useState("");
   const[catId,setCatId]=useState("");
@@ -2159,18 +2158,10 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
 
   const conAlerta=stock.filter(s=>Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0);
   const sectoresCat=[...new Set(stock.map(s=>s.sector).filter(Boolean))].sort();
-  const ultimoMov=s=>{
-    const fechaMov=(s.movimientos&&s.movimientos[0]&&s.movimientos[0].fecha)||s.fecha;
-    if(!fechaMov)return"—";
-    const d=new Date(fechaMov);const hoy=new Date();const ayer=new Date();ayer.setDate(hoy.getDate()-1);
-    if(d.toDateString()===hoy.toDateString())return"Hoy "+fmtH(fechaMov);
-    if(d.toDateString()===ayer.toDateString())return"Ayer "+fmtH(fechaMov);
-    return fmtF(fechaMov);
-  };
   const filtradoInv=stock.filter(s=>{
     if(fProv&&s.proveedor!==fProv)return false;
     if(fSector&&s.sector!==fSector)return false;
-    if(vista==="actual"&&soloBajo&&!(Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0))return false;
+    if(soloBajo&&!(Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0))return false;
     if(fQuery&&!norm(s.nombre).includes(norm(fQuery)))return false;
     return true;
   });
@@ -2331,21 +2322,14 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
     )}
 
     {!stock.length?<Empty icon="📦">Todavía no registraste productos en el inventario</Empty>:(<>
-      <div style={{display:"flex",gap:6,marginBottom:14}}>
-        <button onClick={()=>setVista("actual")} style={{flex:1,padding:"9px 8px",borderRadius:10,border:"none",background:vista==="actual"?"#2C1A0E":"#E8DCC8",color:vista==="actual"?"#fff":"#2C1A0E",fontSize:".78rem",fontWeight:600,cursor:"pointer"}}>Vista actual</button>
-        <button onClick={()=>setVista("semana")} style={{flex:1,padding:"9px 8px",borderRadius:10,border:"none",background:vista==="semana"?"#2C1A0E":"#E8DCC8",color:vista==="semana"?"#fff":"#2C1A0E",fontSize:".78rem",fontWeight:600,cursor:"pointer"}}>Vista semana</button>
-      </div>
-
-      {vista==="semana"&&(
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
-          <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
-          <div style={{textAlign:"center"}}>
-            <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E"}}>{rangoLabel}</div>
-            {offset!==0&&<button onClick={()=>setOffset(0)} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".72rem",fontWeight:600,cursor:"pointer",padding:0,marginTop:2}}>Volver a esta semana</button>}
-          </div>
-          <button onClick={()=>setOffset(offset+1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>Semana siguiente →</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
+        <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:"#2C1A0E"}}>{rangoLabel}</div>
+          {offset!==0&&<button onClick={()=>setOffset(0)} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".72rem",fontWeight:600,cursor:"pointer",padding:0,marginTop:2}}>Volver a esta semana</button>}
         </div>
-      )}
+        <button onClick={()=>setOffset(offset+1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>Semana siguiente →</button>
+      </div>
 
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
         <input value={fQuery} onChange={e=>setFQuery(e.target.value)} placeholder="Buscar producto..." style={{flex:"2 1 160px",padding:"9px 12px",border:"1.5px solid #E8DCC8",borderRadius:10,fontSize:".82rem",background:"#fff",color:"#2C1A0E"}}/>
@@ -2357,7 +2341,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
           <option value="">Todos los sectores</option>
           {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
-        {vista==="actual"&&<button onClick={()=>setSoloBajo(!soloBajo)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:soloBajo?"#C0392B":"#FFF0EF",color:soloBajo?"#fff":"#C0392B",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⚠️ Solo stock bajo ({conAlerta.length})</button>}
+        <button onClick={()=>setSoloBajo(!soloBajo)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:soloBajo?"#C0392B":"#FFF0EF",color:soloBajo?"#fff":"#C0392B",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⚠️ Solo stock bajo ({conAlerta.length})</button>
       </div>
 
       {!gruposInv.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposInv.map(g=>{
@@ -2370,63 +2354,46 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
           </div>
           {!cerrado&&(
           <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:vista==="actual"?520:720}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:920}}>
             <thead>
-              {vista==="actual"?(
-                <tr style={{background:"#F9F6F1"}}>
-                  <th style={thS}>Producto</th>
-                  <th style={thS}>Sector</th>
-                  <th style={{...thS,textAlign:"right"}}>Stock</th>
-                  <th style={{...thS,width:90}}>Nivel</th>
-                  <th style={thS}>Últ. mov.</th>
-                  <th style={{...thS,textAlign:"right"}}>Acciones</th>
-                </tr>
-              ):(
-                <tr style={{background:"#F9F6F1"}}>
-                  <th style={thS}>Producto</th>
-                  {dias.map((d,i)=>{
-                    const esHoy=d.toDateString()===hoyDate.toDateString();
-                    return(
-                      <th key={i} style={{...thS,textAlign:"center",background:esHoy?"#EAF5F0":"#F9F6F1",color:esHoy?"#2D6A4F":"#7B7063"}}>
-                        {DIAS[i]}<br/><span style={{fontWeight:400,textTransform:"none",fontSize:".62rem"}}>{d.getDate()}/{d.getMonth()+1}</span>
-                      </th>
-                    );
-                  })}
-                  <th style={{...thS,textAlign:"center"}}>Cierre semana</th>
-                </tr>
-              )}
+              <tr style={{background:"#F9F6F1"}}>
+                <th style={thS}>Producto</th>
+                <th style={{...thS,textAlign:"right"}}>Stock actual</th>
+                {dias.map((d,i)=>{
+                  const esHoy=d.toDateString()===hoyDate.toDateString();
+                  return(
+                    <th key={i} style={{...thS,textAlign:"center",background:esHoy?"#EAF5F0":"#F9F6F1",color:esHoy?"#2D6A4F":"#7B7063"}}>
+                      {DIAS[i]}<br/><span style={{fontWeight:400,textTransform:"none",fontSize:".62rem"}}>{d.getDate()}/{d.getMonth()+1}</span>
+                    </th>
+                  );
+                })}
+                <th style={{...thS,textAlign:"center"}}>Cierre semana</th>
+                <th style={{...thS,textAlign:"right"}}>Acciones</th>
+              </tr>
             </thead>
             <tbody>
               {g.items.map((s,i)=>{
                 const alerta=Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
-                const pct=s.minimo>0?Math.min(100,(s.cantidad/s.minimo)*100):100;
-                if(vista==="semana"){
-                  const cierre=cierreDe(s);
-                  return(
-                    <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                      <td style={tdS}>{s.nombre}</td>
-                      {dias.map((d,j)=>{
-                        const v=entradasDia(s,d);
-                        const c=conteoDeDia(s,d);
-                        return(
-                          <td key={j} style={{...tdS,textAlign:"center"}}>
-                            {v===0&&c===null&&<span style={{color:"#D8CFC0"}}>—</span>}
-                            {v>0&&<div style={{color:"#2D6A4F"}}>+{v}</div>}
-                            {c!==null&&<div style={{color:"#B7860B",fontWeight:700}}>🧮{c}</div>}
-                          </td>
-                        );
-                      })}
-                      <td style={{...tdS,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,color:cierre!==null?"#2C1A0E":"#D8CFC0"}}>{cierre!==null?`${cierre} ${s.unidad}`:"—"}</td>
-                    </tr>
-                  );
-                }
+                const cierre=cierreDe(s);
                 return(
                   <tr key={s.id} style={{background:alerta?"#FFF0EF":(i%2===0?"#fff":"#F9F6F1")}}>
-                    <td style={tdS}>{s.nombre}{alerta&&<span style={{background:"#F09595",color:"#501313",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>BAJO</span>}</td>
-                    <td style={{...tdS,color:"#7B7063"}}>{s.sector||"—"}</td>
-                    <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:alerta?"#C0392B":"#2D6A4F"}}>{s.cantidad} <span style={{color:"#7B7063",fontWeight:400,fontSize:".7rem"}}>{s.unidad}</span></td>
-                    <td style={tdS}>{s.minimo>0?<div style={{background:"#F2EAE0",borderRadius:4,height:5,overflow:"hidden",width:70}}><div style={{height:"100%",width:Math.min(100,pct)+"%",background:alerta?"#C0392B":"#2D6A4F"}}/></div>:<span style={{color:"#B7A98F",fontSize:".68rem"}}>sin mín.</span>}</td>
-                    <td style={{...tdS,color:"#7B7063",fontSize:".72rem"}}>{ultimoMov(s)}</td>
+                    <td style={tdS}>
+                      <div>{s.nombre}{alerta&&<span style={{background:"#F09595",color:"#501313",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>BAJO</span>}</div>
+                      <div style={{fontSize:".65rem",color:"#B7A98F"}}>{s.sector||"—"}</div>
+                    </td>
+                    <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:alerta?"#C0392B":"#2D6A4F",whiteSpace:"nowrap"}}>{s.cantidad} <span style={{color:"#7B7063",fontWeight:400,fontSize:".7rem"}}>{s.unidad}</span></td>
+                    {dias.map((d,j)=>{
+                      const v=entradasDia(s,d);
+                      const c=conteoDeDia(s,d);
+                      return(
+                        <td key={j} style={{...tdS,textAlign:"center"}}>
+                          {v===0&&c===null&&<span style={{color:"#D8CFC0"}}>—</span>}
+                          {v>0&&<div style={{color:"#2D6A4F"}}>+{v}</div>}
+                          {c!==null&&<div style={{color:"#B7860B",fontWeight:700}}>🧮{c}</div>}
+                        </td>
+                      );
+                    })}
+                    <td style={{...tdS,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,color:cierre!==null?"#2C1A0E":"#D8CFC0",whiteSpace:"nowrap"}}>{cierre!==null?`${cierre} ${s.unidad}`:"—"}</td>
                     <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
                       <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{background:"#EAF5F0",color:"#2D6A4F",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>+</button>
                       <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>−</button>
@@ -2442,7 +2409,7 @@ function StockInventario({stock,saveStock,catalogo,proveedoresCat,conteos,regist
         </div>
         );
       })}
-      {vista==="semana"&&gruposInv.length>0&&(
+      {gruposInv.length>0&&(
         <div style={{display:"flex",gap:16,marginTop:6,fontSize:".68rem",color:"#7B7063",flexWrap:"wrap"}}>
           <span><span style={{color:"#2D6A4F",fontWeight:700}}>+N</span> compra o producción cargada ese día</span>
           <span><span style={{color:"#B7860B",fontWeight:700}}>🧮N</span> conteo hecho ese día (parcial o completo)</span>
