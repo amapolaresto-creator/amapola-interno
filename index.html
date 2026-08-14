@@ -3994,9 +3994,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
       return Array.from(new Set([...CATS_BASE_DIG,...guardadas]));
     }catch{return CATS_BASE_DIG;}
   });
-  const[modoProvGasto,setModoProvGasto]=useState(false);
   const[catGasto,setCatGasto]=useState("");
-  const[provSelGasto,setProvSelGasto]=useState("");
   const[nuevaCatModal,setNuevaCatModal]=useState(false);
   const[nuevaCat,setNuevaCat]=useState("");
   const proveedoresActivos=(proveedores||[]).filter(p=>p.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
@@ -4026,7 +4024,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 
   const limpiarFormPago=()=>{
     setProv("");setEmp("");setEmpSueldo("");setConceptoSueldo("Sueldo");setHsExtrasSueldo("");
-    setCatGasto("");setProvSelGasto("");setModoProvGasto(false);
+    setCatGasto("");
     setMontoPago("");setObsPago("");setFechaPago(hoyLocal());
   };
 
@@ -4066,15 +4064,10 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     }
 
     // gasto (pago digital)
-    if(modoProvGasto){
-      if(!provSelGasto||!montoPago){toast("Elegí un proveedor e ingresá el monto");return false;}
-    }else{
-      if(!catGasto||!montoPago){toast("Elegí una categoría e ingresá el monto");return false;}
-    }
+    if(!catGasto||!montoPago){toast("Elegí una categoría e ingresá el monto");return false;}
     setBusyPago(true);
     const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
-    const registro={id:uid(),tipo:"gasto",categoria:modoProvGasto?provSelGasto:catGasto,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
-    if(modoProvGasto)registro.proveedor=provSelGasto;
+    const registro={id:uid(),tipo:"gasto",categoria:catGasto,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
     await saveGastos([...(gastos||[]),registro]);
     setBusyPago(false);limpiarFormPago();
     toast("Pago registrado ✓");
@@ -4244,41 +4237,25 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
             )}
           </>)}
 
-          {tipoPago==="gasto"&&(<>
-            <div style={{display:"flex",gap:6,marginBottom:12}}>
-              <button type="button" onClick={()=>{setModoProvGasto(false);setProvSelGasto("");}}
-                style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:!modoProvGasto?"#2C1A0E":"#F9F6F1",color:!modoProvGasto?"#fff":"#7B7063"}}>Categoría</button>
-              <button type="button" onClick={()=>{setModoProvGasto(true);setCatGasto("");}}
-                style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:modoProvGasto?"#2C1A0E":"#F9F6F1",color:modoProvGasto?"#fff":"#7B7063"}}>Proveedor</button>
-            </div>
-            {!modoProvGasto?(
-              <Field label="Categoría">
-                <div style={{display:"flex",gap:8}}>
-                  <select value={catGasto} onChange={e=>setCatGasto(e.target.value)} style={{...sS,flex:1}}>
-                    <option value="">— Elegí una categoría —</option>
-                    {catsGasto.map(c=><option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
-                    style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
-                </div>
-              </Field>
-            ):(
-              <Field label="Proveedor">
-                <select value={provSelGasto} onChange={e=>setProvSelGasto(e.target.value)} style={sS}>
-                  <option value="">— Elegí un proveedor —</option>
-                  {proveedoresActivos.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+          {tipoPago==="gasto"&&(
+            <Field label="Categoría">
+              <div style={{display:"flex",gap:8}}>
+                <select value={catGasto} onChange={e=>setCatGasto(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí una categoría —</option>
+                  {catsGasto.map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
-                <div style={{fontSize:".72rem",color:"#7B7063",marginTop:6}}>Este pago se descuenta de la deuda pendiente de {provSelGasto||"ese proveedor"} (se ve reflejado en 🏪 Proveedores).</div>
-              </Field>
-            )}
-          </>)}
+                <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
+                  style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+          )}
 
           <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
           <Field label="Forma de pago">
             <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
               <option value="Transferencia">Transferencia (descuenta disponible digital)</option>
               <option value="Efectivo">Efectivo (descuenta de caja)</option>
-              {tipoPago==="proveedor"&&<option value="Amex">Amex</option>}
+              {(tipoPago==="proveedor"||tipoPago==="gasto")&&<option value="Amex">Amex</option>}
               {tipoPago==="sueldo"&&<option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>}
             </select>
           </Field>
