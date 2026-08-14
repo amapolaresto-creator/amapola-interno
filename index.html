@@ -1386,6 +1386,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
   const[provSel,setProvSel]=useState("");
   const[desdeDet,setDesdeDet]=useState("");
   const[hastaDet,setHastaDet]=useState("");
+  const[mostrarForm,setMostrarForm]=useState(false);
 
   const guardar=async()=>{
     if(!nombre.trim()){toast("Ingresá el nombre");return;}
@@ -1395,13 +1396,14 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
     let nuevos;
     if(idx>=0){nuevos=proveedores.map((p,i)=>i===idx?{...p,deudaInicial:Number(deuda)||0,obs:obs.trim()}:p);toast("Actualizado ✓");}
     else{nuevos=[...proveedores,{id:uid(),nombre:nombre.trim(),deudaInicial:Number(deuda)||0,obs:obs.trim(),fecha:new Date().toISOString()}];toast("Guardado ✓");}
-    await saveProveedores(nuevos);setBusy(false);setNombre("");setDeuda("");setObs("");
+    await saveProveedores(nuevos);setBusy(false);setNombre("");setDeuda("");setObs("");setMostrarForm(false);
   };
   const eliminar=async id=>{
     if(!confirm("¿Eliminar? Los pagos no se borran."))return;
     await saveProveedores(proveedores.filter(p=>p.id!==id));toast("Eliminado");
   };
-  const editar=p=>{setNombre(p.nombre);setDeuda(String(p.deudaInicial||""));setObs(p.obs||"");window.scrollTo({top:0,behavior:"smooth"});};
+  const editar=p=>{setNombre(p.nombre);setDeuda(String(p.deudaInicial||""));setObs(p.obs||"");setMostrarForm(true);};
+  const abrirNuevo=()=>{setNombre("");setDeuda("");setObs("");setMostrarForm(true);};
 
   const sorted=proveedores.map(p=>{const d=calcDeuda(p.nombre);return{...p,_p:d?d.pendiente:0,_i:d?d.totalDeuda:0,_pagado:d?d.pagado:0};}).sort((a,b)=>b._p-a._p);
   const totalPendienteGlobal=sorted.reduce((s,p)=>s+Math.max(0,p._p),0);
@@ -1445,7 +1447,26 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,ask
   };
 
   return(<>
-    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − suma de pagos.\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre.\n• Para agregar un proveedor nuevo usá el botón + en la pantalla de Boletas o Pagos."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
+    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − suma de pagos.\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
+
+    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+      <button onClick={abrirNuevo} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer"}}>+ Nuevo proveedor</button>
+    </div>
+
+    {mostrarForm&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{background:"#fff",borderRadius:20,padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:14}}>{proveedores.some(p=>norm(p.nombre)===norm(nombre))&&nombre?"Editar proveedor":"Nuevo proveedor"}</p>
+          <Field label="Nombre"><Inp value={nombre} onChange={setNombre} placeholder="Ej: UTENSILIOS"/></Field>
+          <Field label="Deuda inicial"><Inp type="number" value={deuda} onChange={setDeuda} placeholder="0"/></Field>
+          <Field label="Observaciones (opcional)"><TA value={obs} onChange={setObs} placeholder="Notas sobre este proveedor"/></Field>
+          <div style={{display:"flex",gap:8,marginTop:18}}>
+            <button onClick={()=>{setMostrarForm(false);setNombre("");setDeuda("");setObs("");}} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <Btn bg="#2C1A0E" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Guardar"}</Btn>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* PANEL TOTAL */}
     <div style={{background:"#C0392B",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
