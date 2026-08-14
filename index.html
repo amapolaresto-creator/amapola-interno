@@ -1473,10 +1473,6 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
   return(<>
     <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
 
-    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
-      <button onClick={abrirNuevo} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer"}}>+ Nuevo proveedor</button>
-    </div>
-
     {mostrarForm&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
         <div style={{background:"#fff",borderRadius:20,padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
@@ -1493,9 +1489,12 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
     )}
 
     {/* PANEL TOTAL */}
-    <div style={{background:"#C0392B",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
-      <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Total deuda a proveedores</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#fff",margin:"2px 0 0"}}>{fmt(totalPendienteGlobal)}</div>
+    <div style={{display:"flex",alignItems:"stretch",gap:10,marginBottom:16}}>
+      <div style={{background:"#C0392B",borderRadius:10,padding:"10px 14px",flex:1,minWidth:0}}>
+        <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Total deuda a proveedores</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#fff",margin:"2px 0 0"}}>{fmt(totalPendienteGlobal)}</div>
+      </div>
+      <button onClick={abrirNuevo} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>+ Nuevo proveedor</button>
     </div>
 
     {/* ESTADO DE CUENTA */}
