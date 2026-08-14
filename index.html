@@ -2493,7 +2493,6 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const[fSector,setFSector]=useState("");
   const[fQuery,setFQuery]=useState("");
   const[valores,setValores]=useState({});
-  const[editando,setEditando]=useState({});
   const[busy,setBusy]=useState(false);
   const[expandido,setExpandido]=useState({});
   const[mostrarInactivos,setMostrarInactivos]=useState(false);
@@ -2582,7 +2581,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     const registro={id:uid(),fecha,alcance:fProv?`Proveedor: ${fProv}`:fSector?`Sector: ${fSector}`:"Todo el inventario",items:itemsConteo,registradoPor:registradoPor||null};
     await saveConteos([registro,...(conteos||[])]);
     toast(`✓ Conteo guardado: ${itemsConteo.length} producto${itemsConteo.length!==1?"s":""}`);
-    setValores({});setEditando({});setBusy(false);
+    setValores({});setBusy(false);
   };
 
   if(!combinado.length)return(
@@ -2631,21 +2630,16 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
           <tbody>
             {g.items.map((s,i)=>{
               const d=diffDe(s);
-              const enEdicion=!!editando[s.id];
               const val=valorDe(s);
               return(
                 <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
                   <td style={tdS}>{s.nombre}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN CARGAR</span>}</td>
                   <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>{s.sinCargar?"—":(<>{s.cantidad} <span style={{fontSize:".68rem"}}>{s.unidad}</span></>)}</td>
                   <td style={tdS}>
-                    {enEdicion?(
-                      <input type="number" autoFocus value={val} onChange={e=>setValores({...valores,[s.id]:e.target.value})} onBlur={()=>setEditando({...editando,[s.id]:false})} placeholder="0" style={{width:80,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
-                    ):(
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <span style={{fontSize:".82rem",color:val===""?"#B7A98F":"#2C1A0E"}}>{val===""?"— sin contar":`${val} ${s.unidad}`}</span>
-                        <button onClick={()=>setEditando({...editando,[s.id]:true})} title="Editar" style={{background:"none",border:"none",color:"#7B7063",cursor:"pointer",fontSize:".82rem",padding:0}}>✎</button>
-                      </div>
-                    )}
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <input type="number" value={val} onChange={e=>setValores({...valores,[s.id]:e.target.value})} placeholder="0" style={{width:80,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
+                      <span style={{color:"#B7A98F",fontSize:".8rem"}}>✎</span>
+                    </div>
                   </td>
                   <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:d>0?"#2D6A4F":d<0?"#C0392B":"#B7A98F"}}>{d===null?"—":(d>0?"+":"")+d}</td>
                 </tr>
