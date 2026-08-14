@@ -1499,16 +1499,10 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
     </div>
 
     {/* ESTADO DE CUENTA */}
-    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>Estado de cuenta</div>
-      <Field label="Seleccioná un proveedor">
-        <select value={provSel} onChange={e=>setProvSel(e.target.value)} style={sS}>
-          <option value="">— Elegí un proveedor —</option>
-          {sorted.map(p=><option key={p.id} value={p.nombre}>{p.nombre} · {fmt(Math.max(0,p._p))}</option>)}
-        </select>
-      </Field>
-      {provSel&&<>
-        <div style={{display:"flex",gap:8,marginTop:12}}>
+    {provSel&&(
+      <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
+        <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>Estado de cuenta · {provSel}</div>
+        <div style={{display:"flex",gap:8}}>
           <div style={{flex:1}}>
             <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
             <input type="date" value={desdeDet} onChange={e=>setDesdeDet(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
@@ -1576,8 +1570,8 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
           <button onClick={exportarEstadoCuenta} style={{flex:1,padding:10,borderRadius:10,border:"none",background:"#E8DCC8",color:"#2C1A0E",fontWeight:600,fontSize:".82rem",cursor:"pointer"}}>⬇ Exportar CSV</button>
           <button onClick={()=>{setProvSel("");setDesdeDet("");setHastaDet("");}} style={{padding:10,borderRadius:10,border:"none",background:"#F9F6F1",color:"#7B7063",fontWeight:600,fontSize:".82rem",cursor:"pointer"}}>Limpiar</button>
         </div>
-      </>}
-    </div>
+      </div>
+    )}
 
     {/* BUSCADOR + LISTA */}
     <div style={{marginBottom:12}}>
