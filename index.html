@@ -2106,7 +2106,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} registradoPor={registradoPor} proveedores={proveedores} saveProveedores={saveProveedores}/>}
     {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor}/>}
     {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor}/>}
-    {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
+    {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} catalogo={catalogo} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
     {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores} stock={stock} saveStock={saveStock}/>}
     {sub==="pedidos"&&<StockPedidos catalogo={catalogo} proveedoresCat={proveedoresCat} pedidos={pedidos} savePedidos={savePedidos} registradoPor={registradoPor}/>}
   </>);
@@ -2732,8 +2732,8 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
   const[busy,setBusy]=useState(false);
   const[fecha,setFecha]=useState(hoyLocal());
 
-  // Solo productos del proveedor INTERNO
-  const productosInternos=catalogo.filter(c=>norm(c.proveedor)==="interno")
+  // Solo productos activos del proveedor INTERNO
+  const productosInternos=catalogo.filter(c=>norm(c.proveedor)==="interno"&&c.activo!==false)
     .slice().sort((a,b)=>a.producto.localeCompare(b.producto));
 
   const registrar=async()=>{
@@ -3080,7 +3080,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
   const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
 
-  const productosDelProv=provSel?catalogo.filter(c=>c.proveedor===provSel):[];
+  const productosDelProv=provSel?catalogo.filter(c=>c.proveedor===provSel&&c.activo!==false):[];
 
   const crearPedido=async()=>{
     const items=productosDelProv.filter(c=>Number(cants[c.id])>0).map(c=>({producto:c.producto,cantidad:Number(cants[c.id])}));
@@ -3154,7 +3154,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
 
 
 
-function StockDesperdicios({stock,saveStock,desperdicios,saveDesperdicios,registradoPor}){
+function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdicios,registradoPor}){
   const[itemId,setItemId]=useState("");
   const[cantidad,setCantidad]=useState("");
   const[motivo,setMotivo]=useState("Vencido");
@@ -3163,7 +3163,8 @@ function StockDesperdicios({stock,saveStock,desperdicios,saveDesperdicios,regist
   const[fecha,setFecha]=useState(hoyLocal());
 
   const MOTIVOS=["Vencido","Roto/dañado","Quemado/error de cocina","Devolución de cliente","Otro"];
-  const itemsOrdenados=[...stock].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const inactivosIds=new Set((catalogo||[]).filter(c=>c.activo===false).map(c=>c.id));
+  const itemsOrdenados=stock.filter(s=>!s.catalogoId||!inactivosIds.has(s.catalogoId)).sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const itemSel=stock.find(s=>s.id===itemId);
 
   const registrar=async()=>{
