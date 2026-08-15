@@ -2547,6 +2547,30 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
   </>);
 }
 
+function notaConteoHTML(c,items,titulo){
+  const filas=items.map(it=>{
+    const dCol=it.diferencia>0?"#2D6A4F":it.diferencia<0?"#C0392B":"#999";
+    const dTxt=(it.diferencia>0?"+":"")+it.diferencia;
+    return "<tr><td>"+it.nombre+"</td><td style=\"text-align:right;color:#7B7063\">"+it.teorico+" "+(it.unidad||"")+"</td><td style=\"text-align:right;font-weight:700\">"+it.contado+" "+(it.unidad||"")+"</td><td style=\"text-align:right;color:"+dCol+";font-weight:700\">"+dTxt+"</td></tr>";
+  }).join("");
+  return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><title>Nota de conteo — "+titulo+"</title>"
+    +"<style>body{font-family:Georgia,serif;color:#2C1A0E;padding:36px;max-width:620px;margin:0 auto;}"
+    +"h1{font-size:1.3rem;margin:0 0 2px;}.sub{font-size:.8rem;color:#7B7063;margin-bottom:20px;}"
+    +"table{width:100%;border-collapse:collapse;margin-bottom:0;}"
+    +"th{text-align:left;font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:#7B7063;border-bottom:2px solid #2C1A0E;padding:6px 0;}"
+    +"td{padding:8px 0;font-size:.95rem;border-bottom:1px solid #eee;vertical-align:top;}"
+    +".badge{display:inline-block;background:#F2EAE0;padding:3px 10px;border-radius:20px;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px;}"
+    +".foot{font-size:.68rem;color:#999;margin-top:30px;border-top:1px solid #eee;padding-top:10px;}"
+    +"@media print{.noprint{display:none;}}</style></head><body>"
+    +"<h1>Amapola Resto</h1><div class=\"sub\">Nota de conteo</div>"
+    +"<div class=\"badge\">"+fmtF(c.fecha)+" "+fmtH(c.fecha)+"</div>"
+    +"<p style=\"font-size:1.1rem;margin:0 0 16px;\"><strong>"+titulo+"</strong></p>"
+    +"<table><thead><tr><th>Producto</th><th style=\"text-align:right\">Teórico</th><th style=\"text-align:right\">Contado</th><th style=\"text-align:right\">Diferencia</th></tr></thead><tbody>"+filas+"</tbody></table>"
+    +(c.registradoPor?("<p style=\"font-size:.85rem;color:#7B7063;margin-top:16px;\"><strong>Registrado por:</strong> "+c.registradoPor+"</p>"):"")
+    +"<div class=\"foot\">Emitido el "+new Date().toLocaleDateString("es-AR")+" · Amapola Interno</div>"
+    +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar como imagen o PDF</button>"
+    +"</body></html>";
+}
 function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conteos,saveConteos,registradoPor}){
   const[fProv,setFProv]=useState("");
   const[fSector,setFSector]=useState("");
@@ -2658,6 +2682,17 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     toast("Unidad actualizada ✓");
   };
 
+  // Historial de conteos filtrado por el proveedor elegido arriba (fProv) — si un conteo fue de "Todo el
+  // inventario" o de un sector, se muestran solo los ítems de ese proveedor dentro de ese registro.
+  const conteosHist=fProv
+    ?(conteos||[]).map(c=>({...c,items:(c.items||[]).filter(it=>it.proveedor===fProv)})).filter(c=>c.items.length>0)
+    :(conteos||[]);
+
+  const verNotaConteo=(c,items,titulo)=>{
+    const w=window.open("","_blank");
+    if(w){w.document.write(notaConteoHTML(c,items,titulo));w.document.close();}
+  };
+
   if(!combinado.length)return(
     <Empty icon="🧮">Todavía no hay productos en el catálogo. Cargalos primero desde 🗂️ Catálogo.</Empty>
   );
@@ -2738,18 +2773,22 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     )}
 
     <div style={{marginTop:28}}>
-      <div style={{fontWeight:700,fontSize:".85rem",color:"#2C1A0E",marginBottom:10}}>Historial de conteos</div>
-      {!conteos||!conteos.length?<Empty icon="🧮">Todavía no hiciste ningún conteo</Empty>:conteos.map(c=>{
+      <div style={{fontWeight:700,fontSize:".85rem",color:"#2C1A0E",marginBottom:10}}>Historial de conteos{fProv?` · ${fProv}`:""}</div>
+      {!conteosHist||!conteosHist.length?<Empty icon="🧮">{fProv?`Todavía no hay ningún conteo con productos de ${fProv}`:"Todavía no hiciste ningún conteo"}</Empty>:conteosHist.map(c=>{
         const abierto=!!expandido[c.id];
         const conDif=(c.items||[]).filter(i=>i.diferencia!==0);
+        const tituloNota=fProv?`Proveedor: ${fProv}`:c.alcance;
         return(
           <div key={c.id} style={{background:"#fff",borderRadius:12,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)",overflow:"hidden"}}>
             <div onClick={()=>setExpandido({...expandido,[c.id]:!abierto})} style={{padding:"12px 16px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
               <div>
-                <div style={{fontWeight:600,fontSize:".85rem"}}>{abierto?"▾":"▸"} {fmtF(c.fecha)} {fmtH(c.fecha)} · {c.alcance}</div>
+                <div style={{fontWeight:600,fontSize:".85rem"}}>{abierto?"▾":"▸"} {fmtF(c.fecha)} {fmtH(c.fecha)} · {fProv?`Proveedor: ${fProv}`:c.alcance}</div>
                 <div style={{fontSize:".7rem",color:"#7B7063",marginTop:2}}>{(c.items||[]).length} contados · {conDif.length} con diferencia{c.registradoPor?` · ${c.registradoPor}`:""}</div>
               </div>
-              <SmBtn color="#C0392B" onClick={e=>{e.stopPropagation();if(confirm("¿Eliminar este registro del historial? No revierte el ajuste de stock ya aplicado."))saveConteos((conteos||[]).filter(x=>x.id!==c.id));}}>Eliminar</SmBtn>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                <SmBtn color="#2D6A4F" onClick={e=>{e.stopPropagation();verNotaConteo(c,c.items,tituloNota);}}>📄 Nota de conteo</SmBtn>
+                <SmBtn color="#C0392B" onClick={e=>{e.stopPropagation();if(confirm("¿Eliminar este registro del historial? No revierte el ajuste de stock ya aplicado."))saveConteos((conteos||[]).filter(x=>x.id!==c.id));}}>Eliminar</SmBtn>
+              </div>
             </div>
             {abierto&&(
               <div style={{overflowX:"auto",borderTop:"1px solid #F2EAE0"}}>
