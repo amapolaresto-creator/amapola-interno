@@ -2084,7 +2084,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🧮 Conteo">
-          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una. Un cartel arriba muestra hace cuánto fue el último conteo de ese proveedor/sector y cuántos productos ya cargaste en la pasada actual. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Desde el botón "🧮 Historial de conteo" saltás directo al historial, donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal.
+          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una. Un cartel arriba muestra hace cuánto fue el último conteo de ese proveedor/sector y cuántos productos ya cargaste en la pasada actual. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Desde el botón "🧮 Historial de conteo" saltás directo al historial, donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal.
         </Sec>
 
         <Sec title="🍳 Producción">
@@ -2655,13 +2655,23 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   // Último conteo registrado para el alcance actual (proveedor y/o sector elegidos arriba), y cuántos
   // de los productos visibles ya se cargaron en esta sesión — para no perder de vista qué está
   // desactualizado ni perder el hilo de cuánto falta.
+  const diasNumeroDesde=fechaIso=>Math.max(0,Math.floor((Date.now()-new Date(fechaIso).getTime())/(1000*60*60*24)));
   const diasDesde=fechaIso=>{
-    const dias=Math.floor((Date.now()-new Date(fechaIso).getTime())/(1000*60*60*24));
+    const dias=diasNumeroDesde(fechaIso);
     if(dias<=0)return"hoy";
     if(dias===1)return"ayer";
     return`hace ${dias} días`;
   };
   const ultimoConteoRegistro=(conteos||[]).find(c=>(c.items||[]).some(it=>(!fProv||it.proveedor===fProv)&&(!fSector||it.sector===fSector)));
+
+  // Fecha desde la que viene acumulando el "teórico" de ESTE producto puntual (no del alcance general):
+  // el conteo anterior más reciente que lo incluyó, o si nunca se contó, la fecha en que se cargó al
+  // stock. Sirve para relativizar la diferencia — no es lo mismo -12 en 3 días que -12 en 40.
+  const fechaTeoricoDe=s=>{
+    if(s.sinCargar)return null;
+    const ultimo=(conteos||[]).find(c=>(c.items||[]).some(it=>it.stockId===s.id));
+    return ultimo?ultimo.fecha:(s.fecha||null);
+  };
 
   const guardarConteo=async()=>{
     if(!tocados.length){toast(filtrado.length?"No cargaste ningún conteo":"No hay productos para contar con este filtro");return;}
@@ -2823,10 +2833,15 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
               const d=diffDe(s);
               const val=valorDe(s);
               const grande=esDiferenciaGrande(s,d);
+              const fechaTeo=fechaTeoricoDe(s);
+              const diasTeo=fechaTeo?diasNumeroDesde(fechaTeo):null;
               return(
                 <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
                   <td style={tdS}>{s.nombre}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN CARGAR</span>}</td>
-                  <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>{s.sinCargar?"—":(<>{s.cantidad} <span style={{fontSize:".68rem"}}>{s.unidad}</span></>)}</td>
+                  <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>
+                    {s.sinCargar?"—":(<>{s.cantidad} <span style={{fontSize:".68rem"}}>{s.unidad}</span></>)}
+                    {fechaTeo&&<div style={{fontSize:".6rem",color:"#B7A98F",marginTop:2}}>desde {fmtF(fechaTeo)} · {diasDesde(fechaTeo)}</div>}
+                  </td>
                   <td style={tdS}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <input type="number" min="0" value={val} onFocus={e=>e.target.select()} onChange={e=>{const v=e.target.value;if(v!==""&&Number(v)<0)return;setValores({...valores,[s.id]:v});}} placeholder="0" style={{width:80,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
@@ -2838,6 +2853,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
                   </td>
                   <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:d>0?"#2D6A4F":d<0?"#C0392B":"#B7A98F",background:grande?(d>0?"#EAF5F0":"#FDEDEC"):"transparent"}}>
                     {grande&&<span title="Diferencia grande, revisar">⚠️ </span>}{d===null?"—":(d>0?"+":"")+d}
+                    {d!==null&&d!==0&&diasTeo!==null&&<div style={{fontSize:".6rem",color:"#B7A98F",fontWeight:400,fontFamily:"inherit"}}>en {diasTeo} día{diasTeo===1?"":"s"}</div>}
                   </td>
                 </tr>
               );
