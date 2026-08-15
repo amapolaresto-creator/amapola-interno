@@ -1845,19 +1845,20 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital}
   return(<>
     <ST help={"Acá ves el historial completo de gastos del negocio (alquiler, servicios, impuestos, pagos a proveedores cargados como gasto, etc.), tanto en efectivo como por transferencia.\n\n• Para cargar un pago nuevo (proveedor, sueldo o gasto), usá + Registrar pago desde Caja Digital.\n• Acá podés editar, borrar y filtrar todo lo ya cargado."}>Libro Diario</ST><SS>Historial completo de gastos del negocio.</SS>
 
-    <div style={{display:"flex",gap:10,marginBottom:6,flexWrap:"wrap"}}>
-      <div style={{background:"#2C1A0E",borderRadius:10,padding:"12px 14px",flex:1,minWidth:140}}>
-        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
-      </div>
-      <div style={{background:"#2D6A4F",borderRadius:10,padding:"12px 14px",flex:1,minWidth:140}}>
-        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#EAF5F0",opacity:.85}}>💵 Caja disponible</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#fff",lineHeight:1.15}}>{fmt(saldo)}</div>
-      </div>
-    </div>
     <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:16}}>Pagado este mes: <strong style={{color:"#C0392B"}}>{fmt(totalMes)}</strong></div>
 
     <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos} proveedores={proveedores}/>
+
+    <div style={{marginTop:16}}>
+      <div style={{background:"#2D6A4F",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#EAF5F0",opacity:.85}}>💵 Caja disponible</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#fff",lineHeight:1.15}}>{fmt(saldo)}</div>
+      </div>
+      <div style={{background:"#2C1A0E",borderRadius:10,padding:"12px 14px"}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
+      </div>
+    </div>
   </>);
 }
 
