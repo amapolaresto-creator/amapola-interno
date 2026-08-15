@@ -2084,7 +2084,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🧮 Conteo">
-          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial del producto como "ajuste por conteo" — no se pierde el dato de qué tan cerca (o lejos) estaba lo teórico de lo real.
+          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una. Un cartel arriba muestra hace cuánto fue el último conteo de ese proveedor/sector y cuántos productos ya cargaste en la pasada actual. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Desde el botón "🧮 Historial de conteo" saltás directo al historial, donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal.
         </Sec>
 
         <Sec title="🍳 Producción">
@@ -2580,6 +2580,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const[expandido,setExpandido]=useState({});
   const[mostrarInactivos,setMostrarInactivos]=useState(false);
   const[colapsados,setColapsados]=useState({});
+  const[agruparPor,setAgruparPor]=useState("proveedor");
   const sectoresCat=[...new Set([...stock.map(s=>s.sector),...catalogo.map(c=>c.sector)].filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
   const tdS={padding:"7px 8px"};
@@ -2620,20 +2621,47 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     return Number(v)-(s.sinCargar?0:Number(s.cantidad));
   };
 
+  // Agrupar por proveedor (default) o por sector — físicamente el conteo suele hacerse recorriendo
+  // sectores/depósitos, no proveedores, así que se puede alternar según convenga.
+  const claveGrupo=s=>agruparPor==="sector"?(s.sector||"Sin sector"):(s.proveedor||"Sin proveedor");
   const gruposCnt=[];
   filtrado.forEach(s=>{
-    const key=s.proveedor||"Sin proveedor";
-    let g=gruposCnt.find(g=>g.proveedor===key);
-    if(!g){g={proveedor:key,items:[]};gruposCnt.push(g);}
+    const key=claveGrupo(s);
+    let g=gruposCnt.find(g=>g.key===key);
+    if(!g){g={key,items:[]};gruposCnt.push(g);}
     g.items.push(s);
   });
-  gruposCnt.sort((a,b)=>a.proveedor.localeCompare(b.proveedor));
+  gruposCnt.sort((a,b)=>a.key.localeCompare(b.key));
   gruposCnt.forEach(g=>g.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)));
+
+  const colapsarTodos=()=>{const t={};gruposCnt.forEach(g=>{t[g.key]=true;});setColapsados(t);};
+  const expandirTodos=()=>setColapsados({});
 
   const conMenos=filtrado.filter(s=>{const d=diffDe(s);return d!==null&&d<0;}).length;
   const conMas=filtrado.filter(s=>{const d=diffDe(s);return d!==null&&d>0;}).length;
 
-  const tocados=filtrado.filter(s=>s.sinCargar?(valores[s.id]!==undefined&&valores[s.id]!==""&&!isNaN(Number(valores[s.id]))):true);
+  // Solo se considera "tocado" (y por lo tanto se guarda) lo que realmente se escribió en el campo
+  // Contado — así el conteo guardado refleja lo que se verificó a ojo de verdad, no todo lo que
+  // quedó visible con el filtro actual.
+  const tocados=filtrado.filter(s=>valores[s.id]!==undefined&&valores[s.id]!==""&&!isNaN(Number(valores[s.id])));
+
+  // Diferencia "grande": probablemente un error de tipeo más que consumo normal — se resalta aparte.
+  const esDiferenciaGrande=(s,d)=>{
+    if(d===null||d===0)return false;
+    const teorico=s.sinCargar?0:Number(s.cantidad);
+    return Math.abs(d)>=5||(teorico>0&&Math.abs(d)>teorico*0.3);
+  };
+
+  // Último conteo registrado para el alcance actual (proveedor y/o sector elegidos arriba), y cuántos
+  // de los productos visibles ya se cargaron en esta sesión — para no perder de vista qué está
+  // desactualizado ni perder el hilo de cuánto falta.
+  const diasDesde=fechaIso=>{
+    const dias=Math.floor((Date.now()-new Date(fechaIso).getTime())/(1000*60*60*24));
+    if(dias<=0)return"hoy";
+    if(dias===1)return"ayer";
+    return`hace ${dias} días`;
+  };
+  const ultimoConteoRegistro=(conteos||[]).find(c=>(c.items||[]).some(it=>(!fProv||it.proveedor===fProv)&&(!fSector||it.sector===fSector)));
 
   const guardarConteo=async()=>{
     if(!tocados.length){toast(filtrado.length?"No cargaste ningún conteo":"No hay productos para contar con este filtro");return;}
@@ -2646,7 +2674,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     const itemsConteo=tocados.map(s=>{
       const v=valorDe(s);
       const teorico=s.sinCargar?0:Number(s.cantidad);
-      const contado=(v===""||isNaN(Number(v)))?teorico:Number(v);
+      const contado=(v===""||isNaN(Number(v)))?teorico:Math.max(0,Number(v));
       let stockId=s.id;
       if(s.sinCargar){
         stockId=uid();
@@ -2693,6 +2721,33 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     if(w){w.document.write(notaConteoHTML(c,items,titulo));w.document.close();}
   };
 
+  // Eliminar un conteo del historial revierte también el ajuste de stock que ese conteo generó (vuelve
+  // cada producto a su cantidad teórica de ese momento y saca el movimiento "conteo" correspondiente) —
+  // antes solo borraba el registro y el stock quedaba desalineado sin forma fácil de corregirlo.
+  // Si el historial está filtrado por proveedor (fProv), un conteo mixto ("Todo el inventario") solo
+  // pierde los ítems de ESE proveedor — el resto del registro (otros proveedores) se conserva intacto.
+  const eliminarConteo=async c=>{
+    const original=(conteos||[]).find(x=>x.id===c.id)||c;
+    const itemsAEliminar=fProv?(original.items||[]).filter(it=>it.proveedor===fProv):(original.items||[]);
+    const itemsRestantes=fProv?(original.items||[]).filter(it=>it.proveedor!==fProv):[];
+    const msg=fProv
+      ?`¿Eliminar los ${itemsAEliminar.length} ítems de ${fProv} de este conteo y revertir su ajuste de stock? No se puede deshacer.`
+      :"¿Eliminar este conteo y revertir el ajuste de stock que generó? No se puede deshacer.";
+    if(!confirm(msg))return;
+    const stockRevertido=stock.map(s=>{
+      const it=itemsAEliminar.find(i=>i.stockId===s.id);
+      if(!it)return s;
+      return{...s,cantidad:it.teorico,movimientos:(s.movimientos||[]).filter(m=>!(m.origen==="conteo"&&m.fecha===original.fecha))};
+    });
+    await saveStock(stockRevertido);
+    if(itemsRestantes.length>0){
+      await saveConteos((conteos||[]).map(x=>x.id===original.id?{...x,items:itemsRestantes}:x));
+    }else{
+      await saveConteos((conteos||[]).filter(x=>x.id!==original.id));
+    }
+    toast("Conteo eliminado y stock revertido ✓");
+  };
+
   if(!combinado.length)return(
     <Empty icon="🧮">Todavía no hay productos en el catálogo. Cargalos primero desde 🗂️ Catálogo.</Empty>
   );
@@ -2713,6 +2768,29 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
         <button onClick={()=>document.getElementById("historial-conteos")?.scrollIntoView({behavior:"smooth"})} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🧮 Historial de conteo</button>
         <button onClick={()=>setMostrarInactivos(!mostrarInactivos)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:mostrarInactivos?"#7B7063":"#F2EAE0",color:mostrarInactivos?"#fff":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{mostrarInactivos?"← Volver a activos":`😴 Ver inactivos (${inactivosCount})`}</button>
       </div>
+
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:10}}>
+        <span style={{fontSize:".7rem",color:"#7B7063"}}>Agrupar por:</span>
+        <div style={{display:"flex",borderRadius:20,overflow:"hidden",border:"1px solid #E8DCC8"}}>
+          {[["proveedor","Proveedor"],["sector","Sector"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setAgruparPor(v)} style={{padding:"5px 12px",border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:agruparPor===v?"#2C1A0E":"transparent",color:agruparPor===v?"#E8DCC8":"#7B7063"}}>{l}</button>
+          ))}
+        </div>
+        {gruposCnt.length>1&&(<>
+          <button onClick={colapsarTodos} style={{padding:"5px 12px",borderRadius:20,border:"1px solid #E8DCC8",background:"transparent",color:"#7B7063",fontSize:".7rem",fontWeight:600,cursor:"pointer"}}>Colapsar todos</button>
+          <button onClick={expandirTodos} style={{padding:"5px 12px",borderRadius:20,border:"1px solid #E8DCC8",background:"transparent",color:"#7B7063",fontSize:".7rem",fontWeight:600,cursor:"pointer"}}>Expandir todos</button>
+        </>)}
+      </div>
+
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
+        <div style={{fontSize:".72rem",color:"#7B7063",background:"#F9F6F1",borderRadius:8,padding:"6px 10px"}}>
+          🕒 Último conteo{fProv?` de ${fProv}`:fSector?` de ${fSector}`:""}: <strong>{ultimoConteoRegistro?diasDesde(ultimoConteoRegistro.fecha):"nunca"}</strong>
+        </div>
+        <div style={{fontSize:".72rem",color:"#7B7063",background:"#F9F6F1",borderRadius:8,padding:"6px 10px"}}>
+          ✅ <strong>{tocados.length}/{filtrado.length}</strong> cargados en esta pasada
+        </div>
+      </div>
+
       {(conMenos>0||conMas>0)&&(
         <div style={{fontSize:".74rem",color:"#7B7063",marginTop:12}}>
           {conMenos>0&&<span style={{color:"#C0392B",fontWeight:600,marginRight:12}}>⚠️ {conMenos} con menos de lo esperado</span>}
@@ -2722,11 +2800,11 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     </Card>
 
     {!gruposCnt.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposCnt.map(g=>{
-      const cerrado=!!colapsados[g.proveedor];
+      const cerrado=!!colapsados[g.key];
       return(
-      <div key={g.proveedor} style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden",marginBottom:14}}>
-        <div onClick={()=>setColapsados({...colapsados,[g.proveedor]:!cerrado})} style={{background:"#F4EEE3",padding:"9px 16px",fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:".88rem",color:"#2C1A0E",borderBottom:cerrado?"none":"1px solid #E8DCC8",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",userSelect:"none"}}>
-          <span>{cerrado?"▸":"▾"} {g.proveedor}</span>
+      <div key={g.key} style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden",marginBottom:14}}>
+        <div onClick={()=>setColapsados({...colapsados,[g.key]:!cerrado})} style={{background:"#F4EEE3",padding:"9px 16px",fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:".88rem",color:"#2C1A0E",borderBottom:cerrado?"none":"1px solid #E8DCC8",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",userSelect:"none"}}>
+          <span>{cerrado?"▸":"▾"} {g.key}</span>
           <span style={{fontSize:".65rem",color:"#7B7063",fontStyle:"normal"}}>{g.items.length} producto{g.items.length!==1?"s":""}</span>
         </div>
         {!cerrado&&(
@@ -2744,20 +2822,23 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
             {g.items.map((s,i)=>{
               const d=diffDe(s);
               const val=valorDe(s);
+              const grande=esDiferenciaGrande(s,d);
               return(
                 <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
                   <td style={tdS}>{s.nombre}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN CARGAR</span>}</td>
                   <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>{s.sinCargar?"—":(<>{s.cantidad} <span style={{fontSize:".68rem"}}>{s.unidad}</span></>)}</td>
                   <td style={tdS}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <input type="number" value={val} onChange={e=>setValores({...valores,[s.id]:e.target.value})} placeholder="0" style={{width:80,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
+                      <input type="number" min="0" value={val} onFocus={e=>e.target.select()} onChange={e=>{const v=e.target.value;if(v!==""&&Number(v)<0)return;setValores({...valores,[s.id]:v});}} placeholder="0" style={{width:80,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
                       <select value={s.unidad||"unidades"} onChange={e=>cambiarUnidad(s,e.target.value)} onClick={e=>e.stopPropagation()} style={{fontSize:".68rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:6,padding:"3px 4px",background:"#fff"}}>
                         {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
                       </select>
                       <span style={{color:"#B7A98F",fontSize:".8rem"}}>✎</span>
                     </div>
                   </td>
-                  <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:d>0?"#2D6A4F":d<0?"#C0392B":"#B7A98F"}}>{d===null?"—":(d>0?"+":"")+d}</td>
+                  <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:d>0?"#2D6A4F":d<0?"#C0392B":"#B7A98F",background:grande?(d>0?"#EAF5F0":"#FDEDEC"):"transparent"}}>
+                    {grande&&<span title="Diferencia grande, revisar">⚠️ </span>}{d===null?"—":(d>0?"+":"")+d}
+                  </td>
                 </tr>
               );
             })}
@@ -2788,7 +2869,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
               </div>
               <div style={{display:"flex",gap:6,flexShrink:0}}>
                 <SmBtn color="#2D6A4F" onClick={e=>{e.stopPropagation();verNotaConteo(c,c.items,tituloNota);}}>📄 Nota de conteo</SmBtn>
-                <SmBtn color="#C0392B" onClick={e=>{e.stopPropagation();if(confirm("¿Eliminar este registro del historial? No revierte el ajuste de stock ya aplicado."))saveConteos((conteos||[]).filter(x=>x.id!==c.id));}}>Eliminar</SmBtn>
+                <SmBtn color="#C0392B" onClick={e=>{e.stopPropagation();eliminarConteo(c);}}>Eliminar</SmBtn>
               </div>
             </div>
             {abierto&&(
