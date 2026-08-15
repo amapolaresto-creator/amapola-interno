@@ -569,7 +569,7 @@ function App({role="full",cerrarSesion}){
     {id:"penalidades",label:"⚡ Penalidades"},
   ];
   const TABS_ADMIN=[
-    {id:"gastos",     label:"🏠 Pagos Digitales"},
+    {id:"gastos",     label:"📒 Libro Diario"},
     {id:"historial",  label:"📋 Historial"},
     {id:"dashboard",  label:"🏠 Dashboard"},
     {id:"liquidacion",label:"🧾 Liquidación de sueldos"},
@@ -660,7 +660,7 @@ function App({role="full",cerrarSesion}){
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
-        {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores}/>}
+        {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
@@ -1838,129 +1838,24 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
 }
 
 
-function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores}){
-  const CATS_BASE=['Alquiler','Contadora','Abogada','Conciliaciones','Amex','Impuestos','Carta Documento','Disney','FUDO','Fumigador','Mantenimiento','Movistar','Rapiboy','Retiro para sueldos'];
-  // Combina las categorías base (que pueden crecer con el tiempo) con las que el usuario haya
-  // agregado a mano en este dispositivo, para que una categoría nueva agregada al código no quede
-  // "perdida" detrás de una lista vieja ya guardada en localStorage.
-  const[cats,setCats]=useState(()=>{
-    try{
-      const s=localStorage.getItem("amapola_cats_gastos");
-      const guardadas=s?JSON.parse(s):[];
-      return Array.from(new Set([...CATS_BASE,...guardadas]));
-    }catch{return CATS_BASE;}
-  });
-  const[cat,setCat]=useState("");const[monto,setMonto]=useState("");
-  const[forma,setForma]=useState("Efectivo");const[obs,setObs]=useState("");
-  const[busy,setBusy]=useState(false);
-  const[nuevaCatModal,setNuevaCatModal]=useState(false);
-  const[nuevaCat,setNuevaCat]=useState("");
-  const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
-  const[modoProv,setModoProv]=useState(false);
-  const[provSel,setProvSel]=useState("");
-  const proveedoresOrd=(proveedores||[]).filter(p=>p.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
-
-  const agregarCategoria=()=>{
-    if(!nuevaCat.trim()){toast("Ingresá el nombre de la categoría");return;}
-    if(cats.includes(nuevaCat.trim())){toast("Ya existe esa categoría");return;}
-    const nuevas=[...cats,nuevaCat.trim()];
-    setCats(nuevas);
-    localStorage.setItem("amapola_cats_gastos",JSON.stringify(nuevas));
-    setCat(nuevaCat.trim());
-    setNuevaCat("");setNuevaCatModal(false);
-    toast("Categoría creada ✓");
-  };
-  const[fecha,setFecha]=useState(hoyLocal());
-
-  const guardar=async()=>{
-    if(modoProv){
-      if(!provSel||!monto){toast("Elegí un proveedor e ingresá el monto");return false;}
-    }else{
-      if(!cat||!monto){toast("Elegí una categoría e ingresá el monto");return false;}
-    }
-    if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return false;}
-    setBusy(true);
-    const registro={id:uid(),tipo:"gasto",categoria:modoProv?provSel:cat,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()};
-    if(modoProv)registro.proveedor=provSel;
-    await saveGastos([...gastos,registro]);
-    setBusy(false);setCat("");setProvSel("");setModoProv(false);setMonto("");setObs("");setFecha(hoyLocal());toast("Pago registrado ✓");
-    return true;
-  };
-
+function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital}){
+  const{saldoReal}=calcDigital();
   const totalMes=gastos.filter(g=>{const d=new Date(g.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,g)=>a+Number(g.monto||0),0);
 
   return(<>
-    <ST>Pagos Digitales</ST><SS>Registrá pagos fijos del negocio (alquiler, servicios, impuestos...).</SS>
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
-    </div>
+    <ST help={"Acá ves el historial completo de gastos del negocio (alquiler, servicios, impuestos, pagos a proveedores cargados como gasto, etc.), tanto en efectivo como por transferencia.\n\n• Para cargar un pago nuevo (proveedor, sueldo o gasto), usá + Registrar pago desde Caja Digital.\n• Acá podés editar, borrar y filtrar todo lo ya cargado."}>Libro Diario</ST><SS>Historial completo de gastos del negocio.</SS>
 
-    <Btn bg="#7B7063" onClick={()=>setNuevoPagoModal(true)}>+ Registrar pago</Btn>
-
-    {nuevoPagoModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nuevo pago digital</p>
-            <button onClick={()=>setNuevoPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
-          </div>
-
-          {nuevaCatModal&&(
-            <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-              <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-                <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
-                <input value={nuevaCat} onChange={e=>setNuevaCat(e.target.value)} placeholder="Ej: Seguro, Contador, ..."
-                  autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCategoria()}
-                  style={{...iS,marginBottom:16}}/>
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-                  <button onClick={agregarCategoria} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#7B7063",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
-                </div>
-              </div>
-            </div>
-          )}
-          <div style={{display:"flex",gap:6,marginBottom:12}}>
-            <button type="button" onClick={()=>{setModoProv(false);setProvSel("");}}
-              style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:!modoProv?"#2C1A0E":"#F9F6F1",color:!modoProv?"#fff":"#7B7063"}}>Categoría</button>
-            <button type="button" onClick={()=>{setModoProv(true);setCat("");}}
-              style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #E8DCC8",cursor:"pointer",fontSize:".76rem",fontWeight:600,background:modoProv?"#2C1A0E":"#F9F6F1",color:modoProv?"#fff":"#7B7063"}}>Proveedor</button>
-          </div>
-          {!modoProv?(
-            <Field label="Categoría">
-              <div style={{display:"flex",gap:8}}>
-                <select value={cat} onChange={e=>setCat(e.target.value)} style={{...sS,flex:1}}>
-                  <option value="">— Elegí una categoría —</option>
-                  {cats.map(c=><option key={c} value={c}>{c}</option>)}
-                </select>
-                <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
-                  style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
-              </div>
-            </Field>
-          ):(
-            <Field label="Proveedor">
-              <select value={provSel} onChange={e=>setProvSel(e.target.value)} style={sS}>
-                <option value="">— Elegí un proveedor —</option>
-                {proveedoresOrd.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-              </select>
-              <div style={{fontSize:".72rem",color:"#7B7063",marginTop:6}}>Este pago se descuenta de la deuda pendiente de {provSel||"ese proveedor"} (se ve reflejado en 🏪 Proveedores).</div>
-            </Field>
-          )}
-          <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
-          <Field label="Forma de pago">
-            <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
-              <option value="Efectivo">Efectivo (descuenta de caja)</option>
-              <option value="Transferencia">Transferencia (solo registro)</option>
-            </select>
-          </Field>
-          {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
-          <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: mes de junio, cuota..."/></Field>
-          <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-          <Btn bg="#7B7063" onClick={async()=>{if(await guardar())setNuevoPagoModal(false);}} disabled={busy}>{busy?"Guardando…":"Registrar pago"}</Btn>
-        </div>
+    <div style={{display:"flex",gap:10,marginBottom:6,flexWrap:"wrap"}}>
+      <div style={{background:"#2C1A0E",borderRadius:10,padding:"12px 14px",flex:1,minWidth:140}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
       </div>
-    )}
+      <div style={{background:"#2D6A4F",borderRadius:10,padding:"12px 14px",flex:1,minWidth:140}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#EAF5F0",opacity:.85}}>💵 Caja disponible</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#fff",lineHeight:1.15}}>{fmt(saldo)}</div>
+      </div>
+    </div>
+    <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:16}}>Pagado este mes: <strong style={{color:"#C0392B"}}>{fmt(totalMes)}</strong></div>
 
     <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos} proveedores={proveedores}/>
   </>);
@@ -2024,7 +1919,7 @@ function LibroDiarioGastos({gastos,saveGastos,proveedores}){
 
   return(
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📒 Libro diario · Pagos Digitales</div>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📒 Historial de gastos</div>
 
       {/* FILTROS FECHA */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
