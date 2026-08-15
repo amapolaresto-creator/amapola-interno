@@ -2559,6 +2559,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const sectoresCat=[...new Set([...stock.map(s=>s.sector),...catalogo.map(c=>c.sector)].filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
   const tdS={padding:"7px 8px"};
+  const UNIDADES=["unidades","kg","g","litros","ml","cajas","bolsas","porciones","paquetes"];
 
   const toggleActivo=async(catalogoId,activoActual)=>{
     if(!catalogoId)return;
@@ -2644,6 +2645,19 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     setValores({});setBusy(false);
   };
 
+  // Cambiar la unidad de medida de un producto desde acá mismo (Conteo): actualiza el catálogo (fuente
+  // de verdad para productos "sin cargar") y, si ya tiene un registro de stock cargado, también ese
+  // registro — así el cambio se ve reflejado al toque en toda la app.
+  const cambiarUnidad=async(s,nuevaUnidad)=>{
+    if(s.catalogoId&&catalogoIds.has(s.catalogoId)){
+      await saveCatalogo(catalogo.map(c=>c.id===s.catalogoId?{...c,unidad:nuevaUnidad}:c));
+    }
+    if(!s.sinCargar){
+      await saveStock(stock.map(x=>x.id===s.id?{...x,unidad:nuevaUnidad}:x));
+    }
+    toast("Unidad actualizada ✓");
+  };
+
   if(!combinado.length)return(
     <Empty icon="🧮">Todavía no hay productos en el catálogo. Cargalos primero desde 🗂️ Catálogo.</Empty>
   );
@@ -2701,7 +2715,9 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
                   <td style={tdS}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <input type="number" value={val} onChange={e=>setValores({...valores,[s.id]:e.target.value})} placeholder="0" style={{width:80,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
-                      <span style={{fontSize:".68rem",color:"#7B7063"}}>{s.unidad}</span>
+                      <select value={s.unidad||"unidades"} onChange={e=>cambiarUnidad(s,e.target.value)} onClick={e=>e.stopPropagation()} style={{fontSize:".68rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:6,padding:"3px 4px",background:"#fff"}}>
+                        {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
+                      </select>
                       <span style={{color:"#B7A98F",fontSize:".8rem"}}>✎</span>
                     </div>
                   </td>
