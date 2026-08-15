@@ -2701,6 +2701,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
                   <td style={tdS}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <input type="number" value={val} onChange={e=>setValores({...valores,[s.id]:e.target.value})} placeholder="0" style={{width:80,border:"1.5px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".82rem",textAlign:"center"}}/>
+                      <span style={{fontSize:".68rem",color:"#7B7063"}}>{s.unidad}</span>
                       <span style={{color:"#B7A98F",fontSize:".8rem"}}>✎</span>
                     </div>
                   </td>
