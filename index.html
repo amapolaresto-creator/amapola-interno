@@ -2710,6 +2710,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
           <option value="">Todos los sectores</option>
           {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
+        <button onClick={()=>document.getElementById("historial-conteos")?.scrollIntoView({behavior:"smooth"})} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🧮 Historial de conteo</button>
         <button onClick={()=>setMostrarInactivos(!mostrarInactivos)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:mostrarInactivos?"#7B7063":"#F2EAE0",color:mostrarInactivos?"#fff":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{mostrarInactivos?"← Volver a activos":`😴 Ver inactivos (${inactivosCount})`}</button>
       </div>
       {(conMenos>0||conMas>0)&&(
@@ -2772,7 +2773,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
       <Btn bg="#2C1A0E" onClick={guardarConteo} disabled={busy||!tocados.length}>{busy?"Guardando…":`Guardar conteo (${tocados.length} producto${tocados.length!==1?"s":""})`}</Btn>
     )}
 
-    <div style={{marginTop:28}}>
+    <div id="historial-conteos" style={{marginTop:28}}>
       <div style={{fontWeight:700,fontSize:".85rem",color:"#2C1A0E",marginBottom:10}}>Historial de conteos{fProv?` · ${fProv}`:""}</div>
       {!conteosHist||!conteosHist.length?<Empty icon="🧮">{fProv?`Todavía no hay ningún conteo con productos de ${fProv}`:"Todavía no hiciste ningún conteo"}</Empty>:conteosHist.map(c=>{
         const abierto=!!expandido[c.id];
