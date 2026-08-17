@@ -653,12 +653,12 @@ function App({role="full",cerrarSesion}){
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saldo={saldo}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
-        {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock}/>}
+        {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock} calcDeuda={calcDeuda}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} saveGastos={saveGastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo} setTab={setTab}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} gastos={gastos} askPass={askPass}/>}
-        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
-        {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo}/> }
+        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock}/>}
+        {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} stock={stock} saveStock={saveStock}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
@@ -712,7 +712,7 @@ function NotasTurno({cierres}){
   );
 }
 
-function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,savePagos,saldo,empleados,saveEmpleados,pagarConExcedente,catalogo,saveStock,stock}){
+function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,savePagos,saldo,empleados,saveEmpleados,pagarConExcedente,catalogo,saveStock,stock,calcDeuda}){
   const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
   const[monto,setMonto]=useState("");const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
@@ -778,6 +778,11 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
   };
   const guardar=async()=>{
     if(!prov||!emp.trim()){toast("Elegí un proveedor y completá el empleado");return;}
+    const montoNum=Number(monto)||0;
+    if(montoNum<=0){toast("Ingresá un monto mayor a $0");return;}
+    const fechaChk=fecha||hoyLocal();
+    const dup=boletas.find(b=>norm(b.proveedor)===norm(prov)&&Number(b.monto)===montoNum&&b.fecha.slice(0,10)===fechaChk);
+    if(dup&&!confirm(`Ya hay una boleta de ${prov} por ${fmt(montoNum)} cargada ese día. ¿Registrar igual?`))return;
     setBusy(true);
     const boletaId=uid();
     const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
@@ -812,7 +817,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
   };
 
   return(<>
-    <ST help={"Registrá acá cada boleta que llega de un proveedor.\n\n• Tocá + Registrar boleta para abrir el formulario.\n• Elegí el proveedor del desplegable (usá + si no existe).\n• 'Empleado que recibe' es quien firmó o recibió la boleta físicamente.\n• El monto suma a la deuda del proveedor y descuenta del disponible cuando lo pagás.\n• Podés adjuntar una foto como respaldo.\n• Desde el formulario también podés registrar un pago directo al proveedor."}>Boletas de proveedores</ST><SS>Registrá cada boleta ni bien llega el proveedor.</SS>
+    <ST help={"Registrá acá cada boleta que llega de un proveedor.\n\n• Tocá + Registrar boleta para abrir el formulario.\n• Elegí el proveedor del desplegable (usá + si no existe) — te muestra la deuda actual de ese proveedor para que puedas chequear el monto.\n• 'Empleado que recibe' es quien firmó o recibió la boleta físicamente.\n• El monto es obligatorio y suma a la deuda del proveedor; se descuenta del disponible cuando lo pagás.\n• Si cargás una boleta muy parecida a otra ya guardada ese mismo día (mismo proveedor y monto), te avisa por si es una carga duplicada.\n• Desde el formulario también podés registrar un pago directo al proveedor.\n• Si te equivocaste al cargar una boleta, corregila o eliminala desde Admin → Corregir boletas."}>Boletas de proveedores</ST><SS>Registrá cada boleta ni bien llega el proveedor.</SS>
 
     <Btn bg="#C0392B" onClick={()=>setNuevaBoletaModal(true)}>+ Registrar boleta</Btn>
 
@@ -831,6 +836,9 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
               </select>
               <button onClick={()=>setCrearModal(true)} title="Crear proveedor" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
             </div>
+            {prov&&calcDeuda&&(()=>{const d=calcDeuda(prov);return d?(
+              <div style={{fontSize:".72rem",color:d.pendiente>0?"#C0392B":"#2D6A4F",marginTop:6,fontWeight:600}}>Deuda actual: {fmt(d.pendiente)}</div>
+            ):null;})()}
           </Field>
           <Field label="Empleado que recibe">
             <div style={{display:"flex",gap:8}}>
@@ -841,7 +849,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
               <button onClick={()=>setCrearEmpModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
             </div>
           </Field>
-          <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
+          <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0" min="0"/></Field>
           <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: faltó un bulto..."/></Field>
           <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
 
@@ -913,7 +921,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 44px",width:"100%",maxWidth:460}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:4}}>💸 Pago a {prov}</p>
           <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Caja disponible: <strong>{fmt(saldo)}</strong></p>
-          <Field label="Monto ($)"><Inp type="number" value={pagoMonto} onChange={setPagoMonto} placeholder="0"/></Field>
+          <Field label="Monto ($)"><Inp type="number" value={pagoMonto} onChange={setPagoMonto} placeholder="0" min="0"/></Field>
           <Field label="Forma de pago">
             <select value={pagoForma} onChange={e=>setPagoForma(e.target.value)} style={sS}>
               <option value="Efectivo">Efectivo (descuenta de caja)</option>
@@ -5426,7 +5434,7 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 }
 
 
-function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPass,cierresCaja,saveCierresCaja,pagos,savePagos,sueldos,saveSueldos,boletas,saveBoletas,ajustesCajaEfectivo,saveAjustesCajaEfectivo,saldo}){
+function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPass,cierresCaja,saveCierresCaja,pagos,savePagos,sueldos,saveSueldos,boletas,saveBoletas,ajustesCajaEfectivo,saveAjustesCajaEfectivo,saldo,empleados,stock,saveStock}){
   const[unlocked,setUnlocked]=useState(false);
   const[passInput,setPassInput]=useState("");
   const[passErr,setPassErr]=useState(false);
@@ -5587,7 +5595,7 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
       </Card>
     )}
 
-    {seccion==="boletas"&&<AdminBoletas boletas={boletas} saveBoletas={saveBoletas}/>}
+    {seccion==="boletas"&&<AdminBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} empleados={empleados} stock={stock} saveStock={saveStock}/>}
 
     {seccion==="ajustecaja"&&<AjusteCajaEfectivo saldo={saldo} ajustes={ajustesCajaEfectivo} saveAjustes={saveAjustesCajaEfectivo}/>}
   </>);
@@ -6868,15 +6876,14 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   </>);
 }
 
-function AdminBoletas({boletas,saveBoletas}){
+function AdminBoletas({boletas,saveBoletas,proveedores,empleados,stock,saveStock}){
   const[busqueda,setBusqueda]=useState("");
-  const[editId,setEditId]=useState(null);
-  const[editMonto,setEditMonto]=useState("");
-  const[editObs,setEditObs]=useState("");
+  const[editItem,setEditItem]=useState(null);
+  const[editForm,setEditForm]=useState({});
+  const[confElim,setConfElim]=useState(null);
   const[busy,setBusy]=useState(false);
 
   const lista=[...boletas]
-    .filter(b=>b.tipo==="boleta")
     .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
 
   const filtrada=busqueda.trim()
@@ -6887,17 +6894,38 @@ function AdminBoletas({boletas,saveBoletas}){
       )
     :lista;
 
-  const abrirEdit=b=>{setEditId(b.id);setEditMonto(String(b.monto||0));setEditObs(b.obs||"");};
-  const cerrarEdit=()=>{setEditId(null);setEditMonto("");setEditObs("");};
+  const abrirEdit=b=>{
+    setEditItem(b);
+    setEditForm({proveedor:b.proveedor||"",empleado:b.empleado||"",monto:String(b.monto||0),obs:b.obs||"",fecha:b.fecha?b.fecha.slice(0,10):hoyLocal()});
+  };
+  const cerrarEdit=()=>{setEditItem(null);setEditForm({});};
 
   const guardar=async()=>{
-    const v=Number(editMonto);
-    if(isNaN(v)||v<0){toast("Importe inválido");return;}
+    if(!editForm.proveedor){toast("Elegí un proveedor");return;}
+    const v=Number(editForm.monto);
+    if(isNaN(v)||v<=0){toast("Ingresá un monto mayor a $0");return;}
     setBusy(true);
-    const nuevas=boletas.map(b=>b.id===editId?{...b,monto:v,obs:editObs.trim()}:b);
+    const nuevas=boletas.map(b=>b.id===editItem.id?{...b,proveedor:editForm.proveedor,empleado:editForm.empleado,monto:v,obs:editForm.obs.trim(),fecha:editForm.fecha?new Date(editForm.fecha+"T12:00:00").toISOString():b.fecha}:b);
     await saveBoletas(nuevas);
     toast("Boleta corregida ✓");
     setBusy(false);cerrarEdit();
+  };
+
+  const eliminar=async()=>{
+    const b=confElim;
+    setBusy(true);
+    if(b.productos&&b.productos.length>0&&stock&&saveStock){
+      const stockActual=stock.map(s=>{
+        const linea=b.productos.find(p=>p.catalogoId===s.catalogoId);
+        if(!linea)return s;
+        return{...s,cantidad:Math.max(0,Number(s.cantidad||0)-Number(linea.cantidad||0)),movimientos:(s.movimientos||[]).filter(m=>m.boletaId!==b.id)};
+      });
+      await saveStock(stockActual);
+    }
+    await saveBoletas(boletas.filter(x=>x.id!==b.id));
+    toast("Boleta eliminada"+(b.productos&&b.productos.length>0?" · stock revertido":""));
+    setBusy(false);setConfElim(null);
+    if(editItem&&editItem.id===b.id)cerrarEdit();
   };
 
   return(
@@ -6906,53 +6934,87 @@ function AdminBoletas({boletas,saveBoletas}){
         <Inp value={busqueda} onChange={setBusqueda} placeholder="Ej: Avenida, María..."/>
       </Field>
 
-      {editId&&(()=>{
-        const b=boletas.find(x=>x.id===editId);
-        return(
-          <div style={{background:"#FFF8F0",border:"1.5px solid #F5CBA7",borderRadius:12,padding:16,marginTop:12}}>
-            <div style={{fontWeight:700,fontSize:".85rem",marginBottom:12}}>✏️ Editando boleta</div>
-            <div style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>
-              {b.proveedor} · {fmtFL(b.fecha)} · cargó: {b.empleado||"—"}
-            </div>
-            <Field label="Importe corregido ($)">
-              <Inp type="number" value={editMonto} onChange={setEditMonto} placeholder="0"/>
-            </Field>
-            <Field label="Observaciones">
-              <TA value={editObs} onChange={setEditObs} placeholder="Motivo de la corrección..."/>
-            </Field>
-            <div style={{display:"flex",gap:8,marginTop:14}}>
-              <button onClick={cerrarEdit} style={{flex:1,padding:11,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <Btn onClick={guardar} disabled={busy}>{busy?"Guardando…":"Guardar corrección"}</Btn>
-            </div>
-          </div>
-        );
-      })()}
-
       <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:6}}>
         {!filtrada.length&&<Empty icon="🧾">No hay boletas que coincidan</Empty>}
         {filtrada.map(b=>(
-          <div key={b.id} style={{background:editId===b.id?"#FFF8F0":"#fff",border:editId===b.id?"1.5px solid #F5CBA7":"1px solid #F2EAE0",borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+          <div key={b.id} style={{background:"#fff",border:"1px solid #F2EAE0",borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:700,fontSize:".88rem",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{b.proveedor||"Sin proveedor"}</div>
               <div style={{fontSize:".72rem",color:"#7B7063",marginTop:2}}>
                 {fmtFL(b.fecha)}{b.empleado?` · ${b.empleado}`:""}
               </div>
               {b.obs&&<div style={{fontSize:".7rem",color:"#7B7063",marginTop:2,fontStyle:"italic"}}>{b.obs}</div>}
+              {b.productos&&b.productos.length>0&&<div style={{fontSize:".66rem",color:"#B7860B",marginTop:2}}>📦 {b.productos.length} producto{b.productos.length!==1?"s":""} sumado{b.productos.length!==1?"s":""} al stock</div>}
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
               <span style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",color:"#2C1A0E"}}>{fmt(b.monto)}</span>
-              <button onClick={()=>editId===b.id?cerrarEdit():abrirEdit(b)} style={{padding:"5px 10px",border:"1px solid #E8DCC8",borderRadius:8,background:"none",fontSize:".72rem",fontWeight:600,cursor:"pointer",color:"#2C1A0E"}}>
-                {editId===b.id?"✕":"Editar"}
-              </button>
+              <div style={{display:"flex",gap:4}}>
+                <button onClick={()=>abrirEdit(b)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✏️</button>
+                <button onClick={()=>setConfElim(b)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {editItem&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"88dvh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>✏️ Editar boleta</p>
+              <button onClick={cerrarEdit} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            </div>
+            <Field label="Proveedor">
+              <select value={editForm.proveedor||""} onChange={e=>setEditForm(f=>({...f,proveedor:e.target.value}))} style={sS}>
+                <option value="">— Elegí —</option>
+                {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Empleado que recibió">
+              <select value={editForm.empleado||""} onChange={e=>setEditForm(f=>({...f,empleado:e.target.value}))} style={sS}>
+                <option value="">— Elegí —</option>
+                {empleados.map(e=><option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Importe corregido ($)">
+              <Inp type="number" value={editForm.monto} onChange={v=>setEditForm(f=>({...f,monto:v}))} placeholder="0" min="0"/>
+            </Field>
+            <Field label="Fecha">
+              <Inp type="date" value={editForm.fecha} onChange={v=>setEditForm(f=>({...f,fecha:v}))}/>
+            </Field>
+            <Field label="Observaciones">
+              <TA value={editForm.obs} onChange={v=>setEditForm(f=>({...f,obs:v}))} placeholder="Motivo de la corrección..."/>
+            </Field>
+            {editItem.productos&&editItem.productos.length>0&&(
+              <div style={{fontSize:".72rem",color:"#7B7063",background:"#F9F6F1",borderRadius:8,padding:"8px 10px",marginTop:14}}>📦 Esta boleta sumó {editItem.productos.length} producto{editItem.productos.length!==1?"s":""} al stock — corregir estos datos NO ajusta el stock ya cargado.</div>
+            )}
+            <div style={{display:"flex",gap:8,marginTop:14}}>
+              <button onClick={cerrarEdit} style={{flex:1,padding:11,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <Btn onClick={guardar} disabled={busy}>{busy?"Guardando…":"Guardar corrección"}</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confElim&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8}}>⚠️ Eliminar boleta</p>
+            <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:8}}>{confElim.proveedor} · {fmt(confElim.monto)} · {fmtFL(confElim.fecha)}</p>
+            {confElim.productos&&confElim.productos.length>0&&<p style={{fontSize:".78rem",color:"#B7860B",marginBottom:8}}>📦 Se van a revertir {confElim.productos.length} producto{confElim.productos.length!==1?"s":""} del stock.</p>}
+            <p style={{fontSize:".78rem",color:"#C0392B",marginBottom:16,fontWeight:600}}>Esta acción no se puede deshacer.</p>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setConfElim(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={eliminar} disabled={busy} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>{busy?"Eliminando…":"Eliminar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
 
-function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,ajustesCajaEfectivo,saveAjustesCajaEfectivo}){
+function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock}){
   const[filtro,setFiltro]=useState("todo");
   const[filtroDH,setFiltroDH]=useState("todos");
   const hoy=new Date();
@@ -7025,7 +7087,17 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const confirmarEliminar=async()=>{
     const item=confirmarElim;
     setConfirmarElim(null);
-    if(item.tipo==="boleta")     await saveBoletas(boletas.filter(b=>b.id!==item.id));
+    if(item.tipo==="boleta"){
+      if(item.productos&&item.productos.length>0&&stock&&saveStock){
+        const stockActual=stock.map(s=>{
+          const linea=item.productos.find(p=>p.catalogoId===s.catalogoId);
+          if(!linea)return s;
+          return{...s,cantidad:Math.max(0,Number(s.cantidad||0)-Number(linea.cantidad||0)),movimientos:(s.movimientos||[]).filter(m=>m.boletaId!==item.id)};
+        });
+        await saveStock(stockActual);
+      }
+      await saveBoletas(boletas.filter(b=>b.id!==item.id));
+    }
     if(item.tipo==="cierre")     await saveCierres(cierres.filter(c=>c.id!==item.id));
     if(item.tipo==="cierre_caja")await saveCierresCaja((cierresCaja||[]).filter(c=>c.id!==item.id));
     if(item.tipo==="pago")       await savePagos(pagos.filter(p=>p.id!==item.id));
@@ -7173,6 +7245,7 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
             {" · "}{fmt(confirmarElim.monto)}
           </p>
           <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
+          {confirmarElim.tipo==="boleta"&&confirmarElim.productos&&confirmarElim.productos.length>0&&<p style={{fontSize:".78rem",color:"#B7860B",marginBottom:20}}>📦 Se van a revertir {confirmarElim.productos.length} producto{confirmarElim.productos.length!==1?"s":""} del stock.</p>}
           <p style={{fontSize:".78rem",color:"#C0392B",marginBottom:20,fontWeight:600}}>Esta accion no se puede deshacer.</p>
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setConfirmarElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Cancelar</button>
