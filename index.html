@@ -6343,7 +6343,7 @@ function ManualLiquidacionModal({onClose}){
         </Sec>
 
         <Sec title="Registrar el pago">
-          Con la liquidación confirmada, aparece el botón 💵 Pago. Se puede pagar con Reservado (plata ya retirada para sueldos), Efectivo, Digital, o combinar más de una fuente (mixto). También se puede pagar de a partes (pago parcial): el sistema suma todo lo pagado hasta llegar al neto.
+          Con la liquidación confirmada, aparece el botón 💵 Pago. Se puede pagar con Caja retiro (plata ya retirada de Caja Disponible para sueldos, desde Pagos o desde la propia Caja Disponible), Efectivo, Digital, o combinar más de una fuente (mixto). También se puede pagar de a partes (pago parcial): el sistema suma todo lo pagado hasta llegar al neto. No deja cargar más Caja retiro del que realmente está disponible.
         </Sec>
 
         <Sec title="Para tener en cuenta">
@@ -6428,7 +6428,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     if(suma<=0){toast("Cargá al menos un monto");return;}
     if(Math.round(suma*100)>Math.round(pendiente*100)+1){toast("La suma cargada ("+fmt(suma)+") supera lo que falta pagar ("+fmt(pendiente)+")");return;}
     if(mEfectivo>saldo){toast("⚠️ La parte en Efectivo supera la Caja Disponible");return;}
-    if(mReservado>saldoRetiro){toast("⚠️ La parte Reservada supera lo disponible del retiro para sueldos");return;}
+    if(mReservado>saldoRetiro){toast("⚠️ La parte de Caja retiro supera lo disponible ("+fmt(saldoRetiro)+")");return;}
     setPagoBusy(true);
     const empleadoNombre=(emp.nombre+" "+(emp.apellido||"")).trim();
     const concepto="Liquidación "+mesLabel(periodo);
@@ -6906,12 +6906,12 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
             <p style={{fontSize:".74rem",color:"#7B7063",marginBottom:8}}>Elegí de dónde sale (podés combinar más de una fuente — mixto — o cargar menos del pendiente para un pago parcial):</p>
             <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              <SmBtn onClick={()=>setSoloFuente("reservado",pendiente)}>Todo Reservado</SmBtn>
+              <SmBtn onClick={()=>setSoloFuente("reservado",pendiente)}>Toda Caja retiro</SmBtn>
               <SmBtn onClick={()=>setSoloFuente("efectivo",pendiente)}>Todo Efectivo</SmBtn>
               <SmBtn onClick={()=>setSoloFuente("digital",pendiente)}>Todo Digital</SmBtn>
             </div>
 
-            <Field label={<>Reservado <span style={{fontWeight:400,color:"#7B7063"}}>(disponible: {fmt(saldoRetiro)})</span></>}>
+            <Field label={<>💰 Caja retiro para sueldos <span style={{fontWeight:400,color:"#7B7063"}}>(disponible: {fmt(saldoRetiro)})</span></>}>
               <Inp type="number" value={pagoMontos.reservado} onChange={v=>setPagoMontos(m=>({...m,reservado:v}))} placeholder="0"/>
             </Field>
             <Field label={<>Efectivo <span style={{fontWeight:400,color:"#7B7063"}}>(caja disponible: {fmt(saldo)})</span></>}>
