@@ -662,7 +662,7 @@ function App({role="full",cerrarSesion}){
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores}/>}
+        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
@@ -2088,7 +2088,8 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🍳 Producción">
-          Exclusivo para productos que se elaboran en la propia cocina (los que en el Catálogo tienen proveedor <b>INTERNO</b> — ej. salsas, masas, cosas que se preparan acá y no se compran hechas). Elegís el producto, cuánto se produjo, quién lo hizo y la fecha, y esa cantidad se suma directo al stock de ese producto. Si un producto que se elabora en cocina no aparece en la lista, hay que agregarlo primero en 🗂️ Catálogo con proveedor <b>INTERNO</b>.
+          Exclusivo para productos que se elaboran en la propia cocina (los que en el Catálogo tienen proveedor <b>INTERNO</b> — ej. salsas, masas, cosas que se preparan acá y no se compran hechas). Elegís el producto, cuánto se produjo, quién lo hizo (de la lista de empleados activos) y la fecha, y esa cantidad se suma directo al stock de ese producto. Si un producto que se elabora en cocina no aparece en la lista, hay que agregarlo primero en 🗂️ Catálogo con proveedor <b>INTERNO</b>.<br/><br/>
+          Arriba de la tabla hay un buscador y, si se produjo algo hoy, un cartel con el total del día. La tabla muestra el stock actual de cada producto (en rojo si está BAJO el mínimo) además de lo producido por día. Tocando cualquier "+N" de un día se abre el detalle de esa producción puntual, con opción de <b>editarla</b> o <b>eliminarla</b> (ajusta el stock automáticamente) por si se cargó algo mal.
         </Sec>
 
         <Sec title="🗑️ Desperdicios">
@@ -2116,7 +2117,7 @@ function ManualStockModal({onClose}){
   );
 }
 
-function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor,proveedores,saveProveedores}){
+function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor,proveedores,saveProveedores,empleados}){
   const[sub,setSub]=useState(subInicial||"inventario");
   const[verManual,setVerManual]=useState(false);
   const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
@@ -2144,7 +2145,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     </div>
     {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} registradoPor={registradoPor} proveedores={proveedores} saveProveedores={saveProveedores}/>}
     {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor}/>}
-    {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor}/>}
+    {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor} empleados={empleados}/>}
     {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} catalogo={catalogo} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
     {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores} stock={stock} saveStock={saveStock}/>}
     {sub==="pedidos"&&<StockPedidos catalogo={catalogo} proveedoresCat={proveedoresCat} pedidos={pedidos} savePedidos={savePedidos} registradoPor={registradoPor}/>}
@@ -2954,8 +2955,8 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     </div>
   </>);
 }
-function StockProduccion({stock,saveStock,catalogo,registradoPor}){
-  const EMPLEADOS_PRODUCCION=["Denil","Mike","Rocio","Pedro","Lautaro","Omar"];
+function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
+  const EMPS=(empleados||[]).filter(e=>e.estado==="Activo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
   const[prodId,setProdId]=useState("");
   const[cantidad,setCantidad]=useState("");
   const[empleado,setEmpleado]=useState("");
@@ -2963,6 +2964,12 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
   const[busy,setBusy]=useState(false);
   const[fecha,setFecha]=useState(hoyLocal());
   const[offset,setOffset]=useState(0);
+  const[busqueda,setBusqueda]=useState("");
+  const[verMovs,setVerMovs]=useState(null);
+  const[editMovId,setEditMovId]=useState(null);
+  const[editCant,setEditCant]=useState("");
+  const[editEmp,setEditEmp]=useState("");
+  const[editObs,setEditObs]=useState("");
 
   // Solo productos activos del proveedor INTERNO
   const productosInternos=catalogo.filter(c=>norm(c.proveedor)==="interno"&&c.activo!==false)
@@ -2986,6 +2993,40 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
     await saveStock(stockActual);
     toast(`✓ ${prod.producto}: +${cantidad} ${prod.unidad||"unidades"} registradas`);
     setBusy(false);setProdId("");setCantidad("");setEmpleado("");setObs("");setFecha(hoyLocal());
+  };
+
+  const eliminarMov=async(stockId,movId)=>{
+    const s=stock.find(x=>x.id===stockId);
+    if(!s)return;
+    const mov=(s.movimientos||[]).find(m=>m.id===movId);
+    if(!mov)return;
+    if(!confirm(`¿Eliminar esta producción de ${mov.cantidad} ${s.unidad||""}? Se descuenta del stock.`))return;
+    const nuevaCant=Math.max(0,Number(s.cantidad)-Number(mov.cantidad));
+    const nuevos=stock.map(x=>x.id===stockId?{...x,cantidad:nuevaCant,movimientos:(x.movimientos||[]).filter(m=>m.id!==movId)}:x);
+    await saveStock(nuevos);
+    toast("Producción eliminada, stock revertido");
+    setVerMovs(v=>v?{...v,movs:v.movs.filter(m=>m.id!==movId)}:v);
+    setEditMovId(null);
+  };
+
+  const abrirEdicionMov=mov=>{
+    setEditMovId(mov.id);setEditCant(String(mov.cantidad));setEditEmp(mov.elaboradoPor||"");setEditObs(mov.obs||"");
+  };
+
+  const guardarEdicionMov=async stockId=>{
+    if(!editCant||Number(editCant)<=0){toast("Ingresá una cantidad válida");return;}
+    const s=stock.find(x=>x.id===stockId);
+    if(!s)return;
+    const mov=(s.movimientos||[]).find(m=>m.id===editMovId);
+    if(!mov)return;
+    const delta=Number(editCant)-Number(mov.cantidad);
+    const nuevaCant=Math.max(0,Number(s.cantidad)+delta);
+    const movs=(s.movimientos||[]).map(m=>m.id===editMovId?{...m,cantidad:Number(editCant),elaboradoPor:editEmp,obs:editObs.trim()||"Producción del día"}:m);
+    const nuevos=stock.map(x=>x.id===stockId?{...x,cantidad:nuevaCant,movimientos:movs}:x);
+    await saveStock(nuevos);
+    toast("Producción actualizada ✓");
+    setVerMovs(v=>v?{...v,movs}:v);
+    setEditMovId(null);
   };
 
   if(!productosInternos.length)return(
@@ -3018,6 +3059,9 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
 
   const produccionDia=(s,dia)=>(s.movimientos||[]).filter(m=>m.origen==="produccion"&&enDia(m.fecha,dia)).reduce((acc,m)=>acc+Number(m.cantidad||0),0);
   const totalSemana=s=>dias.reduce((acc,d)=>acc+produccionDia(s,d),0);
+  const totalHoy=filas.reduce((acc,s)=>acc+produccionDia(s,hoyDate),0);
+  const productosHoy=filas.filter(s=>produccionDia(s,hoyDate)>0).length;
+  const filasFiltradas=busqueda.trim()?filas.filter(s=>norm(s.nombre).includes(norm(busqueda))):filas;
 
   return(<>
     <Card title="Registrar producción">
@@ -3034,7 +3078,7 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
       <Field label="Elaborado por">
         <select value={empleado} onChange={e=>setEmpleado(e.target.value)} style={sS}>
           <option value="">— Elegí quién lo elaboró —</option>
-          {EMPLEADOS_PRODUCCION.map(n=><option key={n} value={n}>{n}</option>)}
+          {EMPS.map(n=><option key={n} value={n}>{n}</option>)}
         </select>
       </Field>
       <Field label="Observaciones (opcional)">
@@ -3045,6 +3089,17 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
     </Card>
 
     <div style={{fontWeight:700,fontSize:".85rem",color:"#2C1A0E",margin:"22px 0 10px"}}>Historial de producción</div>
+
+    {totalHoy>0&&(
+      <div style={{background:"#EAF5F0",border:"1px solid #cfe8dc",borderRadius:12,padding:"10px 14px",marginBottom:14,fontSize:".8rem",color:"#2D6A4F",fontWeight:600}}>
+        🍳 Hoy se produjeron {totalHoy} unidad{totalHoy!==1?"es":""} de {productosHoy} producto{productosHoy!==1?"s":""}
+      </div>
+    )}
+
+    <div style={{marginBottom:14}}>
+      <Inp value={busqueda} onChange={setBusqueda} placeholder="🔎 Buscar producto..."/>
+    </div>
+
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
       <button onClick={()=>setOffset(offset-1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>← Semana anterior</button>
       <div style={{textAlign:"center"}}>
@@ -3054,12 +3109,16 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
       <button onClick={()=>setOffset(offset+1)} style={{padding:"7px 12px",border:"none",borderRadius:8,background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".8rem"}}>Semana siguiente →</button>
     </div>
 
+    {!filasFiltradas.length?(
+      <Empty icon="🔎">No hay productos que coincidan con la búsqueda.</Empty>
+    ):(
     <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden",marginBottom:14}}>
       <div style={{overflowX:"auto"}}>
-      <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:760}}>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:880}}>
         <thead>
           <tr style={{background:"#F9F6F1"}}>
             <th style={thS}>Producto</th>
+            <th style={{...thS,textAlign:"right"}}>Stock actual</th>
             {dias.map((d,i)=>{
               const esHoy=d.toDateString()===hoyDate.toDateString();
               return(
@@ -3072,19 +3131,27 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
           </tr>
         </thead>
         <tbody>
-          {filas.map((s,i)=>{
+          {filasFiltradas.map((s,i)=>{
             const tot=totalSemana(s);
+            const cantActual=s.sinCargar?0:Number(s.cantidad||0);
+            const bajo=!s.sinCargar&&Number(s.minimo)>0&&cantActual<=Number(s.minimo);
             return(
               <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
                 <td style={tdS}>
-                  <div>{s.nombre}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN PRODUCIR</span>}</div>
+                  <div>{s.nombre} <span style={{color:"#B7A88E",fontSize:".68rem"}}>({s.unidad||"unidades"})</span>{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN PRODUCIR</span>}</div>
+                </td>
+                <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
+                  {s.sinCargar?<span style={{color:"#D8CFC0"}}>—</span>:(
+                    <span style={{color:bajo?"#C0392B":"#2C1A0E",fontWeight:bajo?700:400}}>{cantActual}{bajo&&" BAJO"}</span>
+                  )}
                 </td>
                 {dias.map((d,j)=>{
                   const v=produccionDia(s,d);
-                  const quienes=[...new Set((s.movimientos||[]).filter(m=>m.origen==="produccion"&&enDia(m.fecha,d)&&m.elaboradoPor).map(m=>m.elaboradoPor))];
+                  const movsDia=(s.movimientos||[]).filter(m=>m.origen==="produccion"&&enDia(m.fecha,d));
+                  const quienes=[...new Set(movsDia.filter(m=>m.elaboradoPor).map(m=>m.elaboradoPor))];
                   return(
-                    <td key={j} style={{...tdS,textAlign:"center"}} title={quienes.length?`Elaboró: ${quienes.join(", ")}`:""}>
-                      {v>0?<span style={{color:"#2D6A4F",fontWeight:700}}>+{v}</span>:<span style={{color:"#D8CFC0"}}>—</span>}
+                    <td key={j} style={{...tdS,textAlign:"center",cursor:v>0?"pointer":"default"}} title={quienes.length?`Elaboró: ${quienes.join(", ")} (tocá para ver/editar)`:""} onClick={()=>v>0&&setVerMovs({stockId:s.id,nombre:s.nombre,unidad:s.unidad,fechaLabel:`${DIAS[j]} ${d.getDate()}/${d.getMonth()+1}`,movs:movsDia})}>
+                      {v>0?<span style={{color:"#2D6A4F",fontWeight:700,textDecoration:"underline",textDecorationStyle:"dotted"}}>+{v}</span>:<span style={{color:"#D8CFC0"}}>—</span>}
                     </td>
                   );
                 })}
@@ -3096,6 +3163,46 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor}){
       </table>
       </div>
     </div>
+    )}
+
+    {verMovs&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:200}} onClick={()=>{setVerMovs(null);setEditMovId(null);}}>
+        <div style={{background:"#fff",borderRadius:"18px 18px 0 0",padding:20,width:"100%",maxWidth:480,maxHeight:"80vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontWeight:700,fontSize:".95rem",marginBottom:2}}>{verMovs.nombre}</div>
+          <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:14}}>{verMovs.fechaLabel}</div>
+          {!verMovs.movs.length&&<Empty icon="🍳">No quedan producciones cargadas ese día.</Empty>}
+          {verMovs.movs.map(m=>(
+            <div key={m.id} style={{border:"1px solid #E8DCC8",borderRadius:12,padding:12,marginBottom:10}}>
+              {editMovId===m.id?(<>
+                <Field label="Cantidad"><Inp type="number" min="0" value={editCant} onChange={v=>Number(v)<0?null:setEditCant(v)}/></Field>
+                <Field label="Elaborado por">
+                  <select value={editEmp} onChange={e=>setEditEmp(e.target.value)} style={sS}>
+                    <option value="">— Elegí quién lo elaboró —</option>
+                    {EMPS.map(n=><option key={n} value={n}>{n}</option>)}
+                  </select>
+                </Field>
+                <Field label="Observaciones"><Inp value={editObs} onChange={setEditObs}/></Field>
+                <div style={{display:"flex",gap:8}}>
+                  <Btn bg="#2D6A4F" onClick={()=>guardarEdicionMov(verMovs.stockId)}>Guardar</Btn>
+                  <SmBtn onClick={()=>setEditMovId(null)}>Cancelar</SmBtn>
+                </div>
+              </>):(<>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontWeight:700,color:"#2D6A4F"}}>+{m.cantidad} {verMovs.unidad}</div>
+                  <div style={{display:"flex",gap:10}}>
+                    <span onClick={()=>abrirEdicionMov(m)} style={{cursor:"pointer"}} title="Editar">✏️</span>
+                    <span onClick={()=>eliminarMov(verMovs.stockId,m.id)} style={{cursor:"pointer"}} title="Eliminar">✕</span>
+                  </div>
+                </div>
+                {m.elaboradoPor&&<div style={{fontSize:".76rem",color:"#7B7063",marginTop:4}}>Elaboró: {m.elaboradoPor}</div>}
+                {m.obs&&<div style={{fontSize:".76rem",color:"#7B7063",marginTop:2}}>{m.obs}</div>}
+              </>)}
+            </div>
+          ))}
+          <SmBtn onClick={()=>{setVerMovs(null);setEditMovId(null);}}>Cerrar</SmBtn>
+        </div>
+      </div>
+    )}
   </>);
 }
 
