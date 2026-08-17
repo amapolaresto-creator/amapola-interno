@@ -1725,6 +1725,12 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
     const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
     return pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)?{liq,pagado}:null;
   };
+  // Saldo de la caja retiro para sueldos (plata ya sacada de Caja Disponible en Pagos o Caja Disponible,
+  // categoría "Retiro para sueldos") — no debería dejarse cargar más "Retiro" que lo que efectivamente
+  // se sacó y todavía no se usó.
+  const totalRetirado=(gastos||[]).filter(g=>g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).reduce((s,g)=>s+Number(g.monto||0),0);
+  const totalUsadoDeRetiro=(sueldos||[]).filter(s=>s.forma==="Retiro").reduce((s2,s)=>s2+Number(s.monto||0),0);
+  const saldoRetiro=totalRetirado-totalUsadoDeRetiro;
   const[emp,setEmp]=useState("");const[monto,setMonto]=useState("");
   const[forma,setForma]=useState("Efectivo");const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
@@ -1742,6 +1748,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
   const guardar=async()=>{
     if(!emp||!monto){toast("Elegí un empleado e ingresá el monto");return;}
     if(forma==="Efectivo"&&Number(monto)>saldo){toast("⚠️ Supera la caja disponible");return;}
+    if(forma==="Retiro"&&Number(monto)>saldoRetiro){toast("⚠️ Supera el saldo de caja retiro para sueldos ("+fmt(saldoRetiro)+")");return;}
     if(concepto==="Sueldo"){
       const per=(fecha||hoyLocal()).slice(0,7);
       const chk=liquidacionYaPagada(emp,per);
@@ -1763,7 +1770,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
   const totalMes=sueldos.filter(s=>{const d=new Date(s.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,s)=>a+Number(s.monto||0),0);
 
   return(<>
-    <ST help={"Registrá acá los pagos de sueldos, anticipos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Anticipo, Horas extra y Vacaciones.\n• Cada pago descuenta de la caja disponible si se paga en efectivo.\n• Si vas a pagar varios sueldos con plata que ya sacaste antes de la caja: primero registrá el retiro desde Caja Disponible ('💰 Retirar efectivo para sueldos'). Después, cada sueldo pagado con esa plata se registra acá con forma 'Retiro' — así no se descuenta la caja dos veces.\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
+    <ST help={"Registrá acá los pagos de sueldos, anticipos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Anticipo, Horas extra y Vacaciones.\n• Cada pago descuenta de la caja disponible si se paga en efectivo.\n• Si vas a pagar varios sueldos con plata que ya sacaste antes de la caja: primero registrá el retiro desde Pagos o Caja Disponible ('💰 Retirar p/ sueldos'). Después, cada sueldo pagado con esa plata se registra acá con forma 'Retiro' — así no se descuenta la caja dos veces. No te deja cargar más 'Retiro' del que realmente hay disponible en esa caja aparte.\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
     {crearModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
@@ -1780,7 +1787,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong></div>
+      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong>{saldoRetiro>0?<> · Caja retiro disponible: <strong style={{color:"#F5D98B"}}>{fmt(saldoRetiro)}</strong></>:null}</div>
     </div>
     <Card title="Registrar pago de sueldo">
       <Field label="Empleado">
@@ -1811,7 +1818,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
         </select>
       </Field>
       {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
-      {forma==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta la caja disponible — se paga con efectivo que ya retiraste antes (cargado como Gasto "Retiro para sueldos").</div>}
+      {forma==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta la caja disponible — se paga con efectivo que ya retiraste antes. Disponible en caja retiro: <strong>{fmt(saldoRetiro)}</strong></div>}
       <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: quincena, adelanto..."/></Field>
       <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
       <Btn bg="#2D6A4F" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar sueldo"}</Btn>
@@ -3946,6 +3953,11 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const[editItem,setEditItem]=useState(null);
   const[editForm,setEditForm]=useState({});
   const[confElim,setConfElim]=useState(null);
+  const[retiroModal,setRetiroModal]=useState(false);
+  const[retiroMonto,setRetiroMonto]=useState("");
+  const[retiroObs,setRetiroObs]=useState("");
+  const[retiroFecha,setRetiroFecha]=useState(hoyLocal());
+  const[retiroBusy,setRetiroBusy]=useState(false);
 
   const pagosEf    = (pagos||[]).filter(p=>p.forma==="Efectivo").map(p=>({...p,_cat:"pago",  _label:p.proveedor,_signo:-1}));
   const sueldosEf  = (sueldos||[]).filter(s=>s.forma==="Efectivo").map(s=>({...s,_cat:"sueldo",_label:s.empleado+" · "+(s.concepto||"Sueldo"),_signo:-1}));
@@ -4016,14 +4028,26 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
 
   // Retiro de efectivo para pagar sueldos: se carga como Gasto (categoría "Retiro para sueldos", forma
   // Efectivo) — eso descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata
-  // se registra en Sueldos con forma "Retiro" y NO vuelve a descontar caja (ya salió antes). Este cartel
-  // muestra cuánto de lo retirado todavía no se usó en sueldos.
+  // se registra en Sueldos con forma "Retiro" y NO vuelve a descontar caja (ya salió antes). Esta sección
+  // muestra el historial completo de esa caja aparte (retiros + usos) y cuánto queda pendiente.
   const totalRetirado=(gastos||[]).filter(g=>g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).reduce((s,g)=>s+Number(g.monto||0),0);
   const totalUsadoDeRetiro=(sueldos||[]).filter(s=>s.forma==="Retiro").reduce((s2,s)=>s2+Number(s.monto||0),0);
   const saldoRetiro=totalRetirado-totalUsadoDeRetiro;
+  const retirosCreados=gastosEf.filter(g=>(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).map(g=>({...g,_tipoRetiro:"retiro"}));
+  const retirosUsados=(sueldos||[]).filter(s=>s.forma==="Retiro").map(s=>({...s,_cat:"sueldo",_label:s.empleado+" · "+(s.concepto||"Sueldo"),_tipoRetiro:"uso"}));
+  const movsRetiro=[...retirosCreados,...retirosUsados].sort((a,b)=>a.fecha.localeCompare(b.fecha)).reverse();
+
+  const guardarRetiro=async()=>{
+    if(!retiroMonto){toast("Ingresá el monto retirado");return;}
+    if(Number(retiroMonto)>Number(saldo||0)){toast("⚠️ Supera la caja disponible");return;}
+    setRetiroBusy(true);
+    await saveGastos([...(gastos||[]),{id:uid(),tipo:"gasto",categoria:RETIRO_SUELDOS_CAT,monto:Number(retiroMonto),forma:"Efectivo",obs:retiroObs.trim(),fecha:retiroFecha?fechaLocalISO(retiroFecha):new Date().toISOString()}]);
+    setRetiroBusy(false);setRetiroModal(false);setRetiroMonto("");setRetiroObs("");setRetiroFecha(hoyLocal());
+    toast("Retiro registrado ✓");
+  };
 
   return(<>
-    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• El cartel '💰 Efectivo retirado, pendiente de usar en sueldos' muestra cuánto sacaste de acá para juntar y pagar sueldos, y cuánto de eso ya se usó. El retiro se registra desde Pagos ('💰 Retirar p/ sueldos') — eso descuenta la caja una sola vez (queda cargado como Gasto, categoría 'Retiro para sueldos').\n• Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' — así no se descuenta la caja dos veces."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
+    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro y cada sueldo pagado con esa plata. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
 
     <div style={{background:"#2D6A4F",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Saldo final del período</div>
@@ -4038,11 +4062,50 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       </div>
     </div>
 
-    {totalRetirado>0&&(
-      <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
-        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>💰 Efectivo retirado, pendiente de usar en sueldos</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(saldoRetiro)}</div>
-        <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>Retirado en total: {fmt(totalRetirado)} · Ya usado en sueldos: {fmt(totalUsadoDeRetiro)} · Registrá el retiro desde Pagos</div>
+    <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+        <div>
+          <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#B7860B"}}>💰 Caja retiro para sueldos</div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#7B5E00",margin:"4px 0 0"}}>{fmt(saldoRetiro)}</div>
+          {totalRetirado>0&&<div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>Retirado en total: {fmt(totalRetirado)} · Ya usado en sueldos: {fmt(totalUsadoDeRetiro)}</div>}
+        </div>
+        <button onClick={()=>setRetiroModal(true)} style={{padding:"10px 16px",border:"none",borderRadius:10,background:"#8B5E3C",color:"#fff",fontSize:".82rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>💰 Retirar p/ sueldos</button>
+      </div>
+      {movsRetiro.length>0&&(
+        <div style={{marginTop:14,borderTop:"1px solid #F5D98B",paddingTop:10}}>
+          {movsRetiro.map((m,i)=>(
+            <div key={m._cat+m.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<movsRetiro.length-1?"1px solid #FBEFC9":"none",fontSize:".76rem"}}>
+              <div style={{minWidth:0,flex:1}}>
+                <div style={{fontWeight:600,color:"#2C1A0E"}}>{m._tipoRetiro==="retiro"?"Retiro de caja":m._label}</div>
+                <div style={{fontSize:".65rem",color:"#7B7063"}}>{fmtF(m.fecha)}{m.obs?" · "+m.obs:""}</div>
+              </div>
+              <div style={{fontWeight:700,color:m._tipoRetiro==="retiro"?"#2D6A4F":"#C0392B",whiteSpace:"nowrap"}}>{m._tipoRetiro==="retiro"?"+":"-"}{fmt(m.monto)}</div>
+              <div style={{display:"flex",gap:4,flexShrink:0}}>
+                <button onClick={()=>abrirEditar(m)} style={{background:"#fff",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
+                <button onClick={()=>setConfElim(m)} style={{background:"#fff",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
+    {retiroModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>💰 Retirar efectivo para sueldos</p>
+            <button onClick={()=>setRetiroModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+          </div>
+          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:16}}>Esto descuenta la caja disponible una sola vez (queda cargado como Gasto, categoría "Retiro para sueldos"). Después, cada sueldo que pagues con esta plata registralo en Sueldos con forma "Retiro" — así no se descuenta de nuevo.</p>
+          <Field label="Monto retirado ($)"><Inp type="number" value={retiroMonto} onChange={setRetiroMonto} placeholder="0" min="0"/></Field>
+          <Field label="Observaciones"><TA value={retiroObs} onChange={setRetiroObs} placeholder="Ej: para pagar sueldos de la semana..."/></Field>
+          <Field label="Fecha"><Inp type="date" value={retiroFecha} onChange={setRetiroFecha}/></Field>
+          <div style={{display:"flex",gap:10,marginTop:18}}>
+            <button onClick={()=>setRetiroModal(false)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={guardarRetiro} disabled={retiroBusy} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#8B5E3C",color:"#fff",fontWeight:600,cursor:"pointer"}}>{retiroBusy?"Guardando…":"Confirmar retiro"}</button>
+          </div>
+        </div>
       </div>
     )}
 
