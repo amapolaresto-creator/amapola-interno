@@ -6244,6 +6244,7 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
   const[descripcion,setDescripcion]=useState("");
   const[proveedor,setProveedor]=useState("");
   const[montoTotal,setMontoTotal]=useState("");
+  const[montoRecibido,setMontoRecibido]=useState("");
   const[cantidadCuotas,setCantidadCuotas]=useState("");
   const[fechaCompra,setFechaCompra]=useState(hoyLocal());
   const[obs,setObs]=useState("");
@@ -6290,12 +6291,13 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
     return{mes,total,items};
   });
 
-  const limpiar=()=>{setEditId(null);setDescripcion("");setProveedor("");setMontoTotal("");setCantidadCuotas("");setFechaCompra(hoyLocal());setObs("");setRecurrente(false);setEsPrestamo(false);};
+  const limpiar=()=>{setEditId(null);setDescripcion("");setProveedor("");setMontoTotal("");setMontoRecibido("");setCantidadCuotas("");setFechaCompra(hoyLocal());setObs("");setRecurrente(false);setEsPrestamo(false);};
   const abrirNuevo=()=>{limpiar();setShowForm(true);};
   const abrirNuevoPrestamo=()=>{limpiar();setEsPrestamo(true);setDescripcion("Préstamo Amex");setShowForm(true);};
   const abrirEditar=c=>{
     setEditId(c.id);setDescripcion(c.descripcion);setProveedor(c.proveedor||"");
     setMontoTotal(String(c.montoTotal));setCantidadCuotas(c.recurrente?"":String(c.cantidadCuotas));
+    setMontoRecibido(c.esPrestamo?String(c.montoRecibido!=null?c.montoRecibido:c.montoTotal):"");
     setFechaCompra(c.fechaCompra);setObs(c.obs||"");setRecurrente(!!c.recurrente);setEsPrestamo(!!c.esPrestamo);setShowForm(true);
   };
   const cerrar=()=>{setShowForm(false);limpiar();};
@@ -6307,10 +6309,12 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
   const guardar=async()=>{
     if(!descripcion.trim()){toast(esPrestamo?"Falta la descripción del préstamo":"Falta la descripción");return;}
     const mt=Number(montoTotal);
-    if(!(mt>0)){toast(esPrestamo?"Monto del préstamo inválido":recurrente?"Monto mensual inválido":"Monto total inválido");return;}
+    if(!(mt>0)){toast(esPrestamo?"Monto a devolver inválido":recurrente?"Monto mensual inválido":"Monto total inválido");return;}
+    const mr=esPrestamo?Number(montoRecibido):mt;
+    if(esPrestamo&&!(mr>0)){toast("Monto recibido inválido");return;}
     const cc=recurrente?1:Number(cantidadCuotas);
     if(!recurrente&&!(cc>0)){toast("Cantidad de cuotas inválida");return;}
-    const base={descripcion:descripcion.trim(),proveedor:esPrestamo?"":proveedor.trim(),montoTotal:mt,cantidadCuotas:cc,fechaCompra,obs:obs.trim(),recurrente,esPrestamo};
+    const base={descripcion:descripcion.trim(),proveedor:esPrestamo?"":proveedor.trim(),montoTotal:mt,montoRecibido:esPrestamo?mr:undefined,cantidadCuotas:cc,fechaCompra,obs:obs.trim(),recurrente,esPrestamo};
     if(!editId)base.fechaCuota1=fechaCompra;// nuevo registro: cuota 1 arranca el mismo mes de la compra por defecto
     if(editId){
       const nuevas=(amexCuotas||[]).map(c=>c.id===editId?{...c,...base}:c);
@@ -6321,10 +6325,10 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
       await saveAmexCuotas([registro,...(amexCuotas||[])]);
       if(esPrestamo&&saveCajaDigitalSaldo&&saveCajaDigitalAjustes){
         const saldoAnterior=Number(cajaDigitalSaldo)||0;
-        const saldoNuevo=saldoAnterior+mt;
+        const saldoNuevo=saldoAnterior+mr;
         await saveCajaDigitalSaldo(saldoNuevo);
-        await saveCajaDigitalAjustes([{fecha:new Date().toISOString(),saldoAnterior,saldoNuevo,diferencia:mt,nota:"Préstamo Amex: "+descripcion.trim()},...(cajaDigitalAjustes||[])]);
-        toast("Préstamo registrado ✓ · sumado a Caja Digital");
+        await saveCajaDigitalAjustes([{fecha:new Date().toISOString(),saldoAnterior,saldoNuevo,diferencia:mr,nota:"Préstamo Amex: "+descripcion.trim()+" (recibido "+fmt(mr)+", a devolver "+fmt(mt)+")"},...(cajaDigitalAjustes||[])]);
+        toast("Préstamo registrado ✓ · "+fmt(mr)+" sumado a Caja Digital");
       }else{
         toast("Compra registrada");
       }
@@ -6355,7 +6359,7 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
 
   return(
     <div style={{padding:"20px 0"}}>
-      <ST help={"Compras pagadas con Amex en cuotas, y préstamos que dio la tarjeta — no hace falta que estén ligadas a un proveedor de Boletas, pueden ser compras sueltas (equipamiento, insumos grandes, etc.).\n\n• Arriba de todo está 'Próximos meses': te muestra cuánto vas a tener que pagar cada uno de los próximos 3/6/12 meses, sumando todas las cuotas, préstamos y débitos recurrentes vigentes en cada mes. Tocá un mes para ver el detalle.\n• '+ Registrar compra': cargá la descripción, monto total, cantidad de cuotas y la fecha real de compra.\n• '🏦 Registrar préstamo': para cuando Amex te da un préstamo en efectivo (no una compra). Al guardarlo, el monto se suma SOLO en ese momento al saldo real de Caja Digital (mismo efecto que 'Actualizar saldo real' en esa pantalla) — así queda reflejada la plata que entró al banco. Las cuotas del préstamo (igual mecánica que una compra: cuota actual, restantes, etc.) son solo para el seguimiento de cuánto falta devolver, no vuelven a tocar Caja Digital solas. Editar un préstamo después no vuelve a sumar nada; eliminarlo tampoco resta — esa plata ya quedó contada en el banco, borrar solo saca el seguimiento de cuotas. Los préstamos se marcan con la etiqueta 🏦 PRÉSTAMO en las tablas para no confundirlos con compras reales.\n• La 'cuota actual' se calcula sola según los meses que pasaron desde la fecha de compra/préstamo — no depende de si ya pagaste o no el resumen de Amex. Por defecto asume que la 1ra cuota se factura el mismo mes; si tu caso es distinto, avisame para ajustar ese registro puntual.\n• El resumen mensual de Amex seguís cargándolo a mano como Gasto (categoría Amex) igual que siempre — esta pantalla es solo para ver qué compras/préstamos están vigentes y cuánto corresponde ese mes.\n• Un registro sigue apareciendo como activo mes a mes hasta agotar sus cuotas, aunque ya hayas pagado el resumen de ese mes. Cuando se agotan, pasa solo a 'Finalizadas'.\n• Si tildás 'Débito recurrente' (solo para compras), no se le pone cantidad de cuotas — se asume que se repite todos los meses sin fecha de fin (ej. un seguro o un servicio), hasta que lo elimines a mano."}>💳 Amex — compras en cuotas</ST>
+      <ST help={"Compras pagadas con Amex en cuotas, y préstamos que dio la tarjeta — no hace falta que estén ligadas a un proveedor de Boletas, pueden ser compras sueltas (equipamiento, insumos grandes, etc.).\n\n• Arriba de todo está 'Próximos meses': te muestra cuánto vas a tener que pagar cada uno de los próximos 3/6/12 meses, sumando todas las cuotas, préstamos y débitos recurrentes vigentes en cada mes. Tocá un mes para ver el detalle.\n• '+ Registrar compra': cargá la descripción, monto total, cantidad de cuotas y la fecha real de compra.\n• '🏦 Registrar préstamo': para cuando Amex te da un préstamo en efectivo (no una compra). Acá hay DOS montos separados porque Amex suele descontar intereses: 'Monto recibido' es la plata que efectivamente te depositaron, y es la ÚNICA que se suma — SOLO en ese momento, al guardar — al saldo real de Caja Digital (mismo efecto que 'Actualizar saldo real' en esa pantalla). 'Monto a devolver' puede ser mayor (incluye intereses) y es el que se usa para calcular las cuotas del resumen de Amex — ese seguimiento de cuotas no vuelve a tocar Caja Digital solo. Ej: te depositan $3.500.000 pero terminás devolviendo $3.744.650 en cuotas — cargás recibido 3.500.000 y a devolver 3.744.650. Editar un préstamo después no vuelve a sumar nada a Caja Digital; eliminarlo tampoco resta — esa plata ya quedó contada en el banco, borrar solo saca el seguimiento de cuotas. Los préstamos se marcan con la etiqueta 🏦 PRÉSTAMO en las tablas para no confundirlos con compras reales, y en la lista se ve el monto recibido debajo de la descripción.\n• La 'cuota actual' se calcula sola según los meses que pasaron desde la fecha de compra/préstamo — no depende de si ya pagaste o no el resumen de Amex. Por defecto asume que la 1ra cuota se factura el mismo mes; si tu caso es distinto, avisame para ajustar ese registro puntual.\n• El resumen mensual de Amex seguís cargándolo a mano como Gasto (categoría Amex) igual que siempre — esta pantalla es solo para ver qué compras/préstamos están vigentes y cuánto corresponde ese mes.\n• Un registro sigue apareciendo como activo mes a mes hasta agotar sus cuotas, aunque ya hayas pagado el resumen de ese mes. Cuando se agotan, pasa solo a 'Finalizadas'.\n• Si tildás 'Débito recurrente' (solo para compras), no se le pone cantidad de cuotas — se asume que se repite todos los meses sin fecha de fin (ej. un seguro o un servicio), hasta que lo elimines a mano."}>💳 Amex — compras en cuotas</ST>
       <SS>Compras pagadas con Amex en cuotas, ligadas o no a un proveedor.</SS>
 
       {amexMes>0&&(
@@ -6405,14 +6409,14 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
           <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:640}}>
               <thead><tr style={{background:"#F9F6F1"}}>
-                {["Descripción","Proveedor","Monto total","Cuota","Monto cuota","Restantes","Fecha compra",""].map(h=>(
+                {["Descripción","Proveedor","Monto total / a devolver","Cuota","Monto cuota","Restantes","Fecha compra",""].map(h=>(
                   <th key={h} style={thS}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>
                 {activas.map((c,i)=>(
                   <tr key={c.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                    <td style={tdS}>{c.esPrestamo&&<span style={{background:"#FEF9E7",color:"#B7860B",fontSize:".6rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginRight:6}}>🏦 PRÉSTAMO</span>}{c.descripcion}{c.obs?<div style={{fontSize:".68rem",color:"#B8A88E"}}>{c.obs}</div>:null}</td>
+                    <td style={tdS}>{c.esPrestamo&&<span style={{background:"#FEF9E7",color:"#B7860B",fontSize:".6rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginRight:6}}>🏦 PRÉSTAMO</span>}{c.descripcion}{c.esPrestamo&&c.montoRecibido!=null?<div style={{fontSize:".68rem",color:"#B8A88E"}}>recibido {fmt(c.montoRecibido)}</div>:null}{c.obs?<div style={{fontSize:".68rem",color:"#B8A88E"}}>{c.obs}</div>:null}</td>
                     <td style={tdS}>{c.proveedor||"—"}</td>
                     <td style={tdS}>{c.recurrente?"—":fmt(c.montoTotal)}</td>
                     <td style={tdS}>{c.recurrente?<span style={{color:"#2D6A4F",fontWeight:600}}>Recurrente</span>:(cuotaActual(c)+"/"+c.cantidadCuotas)}</td>
@@ -6440,14 +6444,14 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
             <div style={{overflowX:"auto",marginTop:12}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:560}}>
                 <thead><tr style={{background:"#F9F6F1"}}>
-                  {["Descripción","Proveedor","Monto total","Cuotas","Fecha compra",""].map(h=>(
+                  {["Descripción","Proveedor","Monto total / a devolver","Cuotas","Fecha compra",""].map(h=>(
                     <th key={h} style={thS}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
                   {finalizadas.map((c,i)=>(
                     <tr key={c.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                      <td style={tdS}>{c.esPrestamo&&<span style={{background:"#FEF9E7",color:"#B7860B",fontSize:".6rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginRight:6}}>🏦 PRÉSTAMO</span>}{c.descripcion}</td>
+                      <td style={tdS}>{c.esPrestamo&&<span style={{background:"#FEF9E7",color:"#B7860B",fontSize:".6rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginRight:6}}>🏦 PRÉSTAMO</span>}{c.descripcion}{c.esPrestamo&&c.montoRecibido!=null?<div style={{fontSize:".68rem",color:"#B8A88E"}}>recibido {fmt(c.montoRecibido)}</div>:null}</td>
                       <td style={tdS}>{c.proveedor||"—"}</td>
                       <td style={tdS}>{fmt(c.montoTotal)}</td>
                       <td style={tdS}>{c.cantidadCuotas}</td>
@@ -6478,7 +6482,7 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
             )}
             {esPrestamo&&(
               <div style={{fontSize:".76rem",color:"#B7860B",background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:8,padding:"8px 10px",marginBottom:12}}>
-                Al guardar, este monto se suma al saldo real de Caja Digital (mismo efecto que "Actualizar saldo real"). Las cuotas de acá abajo son solo para hacer el seguimiento de cuánto falta devolver — no vuelven a tocar Caja Digital solas.
+                El "monto recibido" es lo que Amex te depositó y es lo único que se suma al saldo real de Caja Digital (mismo efecto que "Actualizar saldo real"). El "monto a devolver" puede ser mayor (incluye intereses) y es el que se usa para calcular las cuotas — ese seguimiento no vuelve a tocar Caja Digital solo.
               </div>
             )}
             <Field label="Descripción">
@@ -6500,9 +6504,14 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
                 </label>
               </Field>
             )}
+            {esPrestamo&&(
+              <Field label="Monto recibido (esto suma a Caja Digital)">
+                <Inp type="number" value={montoRecibido} onChange={setMontoRecibido} placeholder="0"/>
+              </Field>
+            )}
             <div style={{display:"flex",gap:10}}>
               <div style={{flex:1}}>
-                <Field label={esPrestamo?"Monto del préstamo":recurrente?"Monto mensual":"Monto total"}>
+                <Field label={esPrestamo?"Monto a devolver (con intereses)":recurrente?"Monto mensual":"Monto total"}>
                   <Inp type="number" value={montoTotal} onChange={setMontoTotal} placeholder="0"/>
                 </Field>
               </div>
