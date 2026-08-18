@@ -2186,7 +2186,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="📋 Control de stock">
-          Es la pantalla principal: una tabla agrupada por proveedor (tocá el nombre del proveedor para abrir/cerrar el grupo), con una fila por producto. Cada fila muestra el stock actual, debajo el sector y hace cuántos días fue el último movimiento cargado, una columna por cada día de la semana (con lo que se cargó ese día — compra o producción en verde, salida en rojo — y un 🧮 si ese día se hizo un conteo), el cierre de semana (último conteo) y botones de acción: <b>+</b> para sumar una entrada (llegó mercadería), <b>−</b> para registrar una salida (no te deja sacar más de lo que hay), <b>⋯</b> para abrir el historial completo del producto, y de forma directa <b>✏️</b> para editar y <b>✕</b> para eliminar. Si editás la cantidad de un producto a mano, eso también queda registrado en su historial como una edición manual, para que no se pierda el rastro de por qué cambió el número.<br/><br/>
+          Es la pantalla principal: una tabla agrupada por proveedor (tocá el nombre del proveedor para abrir/cerrar el grupo), con una fila por producto. Cada fila muestra el stock actual, debajo el sector y hace cuántos días fue el último movimiento cargado, una columna por cada día de la semana (con lo que se cargó ese día — compra o producción en verde, salida en rojo — y un 🧮 si ese día se hizo un conteo), el cierre de semana (último conteo) y botones de acción: <b>+</b> para sumar una entrada (llegó mercadería), <b>−</b> para registrar una salida (no te deja sacar más de lo que hay), <b>⋯</b> para abrir el historial completo del producto, y de forma directa <b>✏️</b> para editar y <b>✕</b> para eliminar. En el modal de Entrada/Salida podés elegir la <b>fecha</b> del movimiento (arranca en hoy, pero se puede cambiar) — así, si cargás algo atrasado, queda en la columna del día que realmente pasó y no en la de hoy. Si editás la cantidad de un producto a mano, eso también queda registrado en su historial como una edición manual, para que no se pierda el rastro de por qué cambió el número.<br/><br/>
           Arriba tenés flechas ← → para moverte de semana, un buscador, filtros por proveedor, sector y "Solo stock bajo", y un botón <b>📱 Vista compacta</b> para ocultar las columnas de los días y ver solo lo esencial (útil en el celular). Los productos con stock bajo el mínimo que definiste quedan marcados en rojo con la palabra <b>BAJO</b>, y también suman al numerito rojo que aparece al lado de "Stock" en el menú de la izquierda.
         </Sec>
 
@@ -2200,7 +2200,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🗑️ Desperdicios">
-          Para registrar lo que se tira, se rompe o se vence, y así saber cuánto se está perdiendo. Elegís el producto del inventario, la cantidad, el motivo (Vencido, Roto/dañado, Quemado/error de cocina, Devolución de cliente, u Otro) y la fecha. Al guardar, esa cantidad se descuenta del stock del producto — el registro queda en la lista de abajo, con opción de eliminarlo si se cargó por error (ojo: eliminar el registro NO repone el stock solo, hay que sumarlo de nuevo a mano si corresponde).
+          Para registrar lo que se tira, se rompe o se vence, y así saber cuánto se está perdiendo. El desplegable de producto muestra TODO el catálogo activo (incluidos los productos que todavía no tienen stock cargado, marcados "sin cargar"), no solo lo que ya está en Control de stock. Elegís el producto, la cantidad, el motivo (Vencido, Roto/dañado, Quemado/error de cocina, Devolución de cliente, u Otro) y la fecha. Al guardar, esa cantidad se descuenta del stock del producto (si era "sin cargar", se crea la fila arrancando en 0) — el registro queda en la lista de abajo, con opción de eliminarlo si se cargó por error (ojo: eliminar el registro NO repone el stock solo, hay que sumarlo de nuevo a mano si corresponde).
         </Sec>
 
         <Sec title="🗂️ Catálogo">
@@ -2272,6 +2272,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
   const[movCant,setMovCant]=useState("");
   const[movTipo,setMovTipo]=useState("entrada");
   const[movObs,setMovObs]=useState("");
+  const[movFecha,setMovFecha]=useState(hoyLocal());
   const[fQuery,setFQuery]=useState("");
   const[fProv,setFProv]=useState("");
   const[fSector,setFSector]=useState("");
@@ -2371,11 +2372,12 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
     if(movTipo==="salida"&&Number(movCant)>Number(item.cantidad)){toast(`⚠️ Solo hay ${item.cantidad} ${item.unidad} disponibles`);return;}
     const delta=movTipo==="entrada"?Number(movCant):-Number(movCant);
     const nuevaCant=Math.max(0,item.cantidad+delta);
-    const mov={id:uid(),tipo:movTipo,cantidad:Number(movCant),obs:movObs.trim(),fecha:new Date().toISOString(),registradoPor:registradoPor||null};
+    const fechaISO=movFecha?fechaLocalISO(movFecha):new Date().toISOString();
+    const mov={id:uid(),tipo:movTipo,cantidad:Number(movCant),obs:movObs.trim(),fecha:fechaISO,registradoPor:registradoPor||null};
     const nuevos=stock.map(s=>s.id===item.id?{...s,cantidad:nuevaCant,movimientos:[mov,...(s.movimientos||[])].slice(0,50)}:s);
     await saveStock(nuevos);
     toast(movTipo==="entrada"?"Entrada registrada ✓":"Salida registrada ✓");
-    setMovModal(null);setMovCant("");setMovObs("");
+    setMovModal(null);setMovCant("");setMovObs("");setMovFecha(hoyLocal());
   };
 
   const eliminar=async id=>{
@@ -2480,8 +2482,9 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
           </div>
           <Field label={`Cantidad (${movModal.unidad})`}><Inp type="number" min="0" value={movCant} onChange={v=>{if(v!==""&&Number(v)<0)return;setMovCant(v);}} placeholder="0"/></Field>
           <Field label="Observaciones"><TA value={movObs} onChange={setMovObs} placeholder="Ej: compra del día, venta..."/></Field>
+          <Field label="Fecha"><Inp type="date" value={movFecha} onChange={setMovFecha}/></Field>
           <div style={{display:"flex",gap:10,marginTop:18}}>
-            <button onClick={()=>{setMovModal(null);setMovCant("");setMovObs("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>{setMovModal(null);setMovCant("");setMovObs("");setMovFecha(hoyLocal());}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
             <button onClick={registrarMovimiento} style={{flex:1,padding:12,borderRadius:10,border:"none",background:movTipo==="entrada"?"#2D6A4F":"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Confirmar</button>
           </div>
         </div>
@@ -2660,8 +2663,8 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
                       {s.sinCargar?(
                         <button onClick={()=>abrirCargar(s)} style={{background:"#2C1A0E",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>Cargar</button>
                       ):(<>
-                        <button onClick={()=>{setMovModal(s);setMovTipo("entrada");}} style={{background:"#EAF5F0",color:"#2D6A4F",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>+</button>
-                        <button onClick={()=>{setMovModal(s);setMovTipo("salida");}} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>−</button>
+                        <button onClick={()=>{setMovModal(s);setMovTipo("entrada");setMovFecha(hoyLocal());}} style={{background:"#EAF5F0",color:"#2D6A4F",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>+</button>
+                        <button onClick={()=>{setMovModal(s);setMovTipo("salida");setMovFecha(hoyLocal());}} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>−</button>
                         <button onClick={()=>setHistModal(s)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>⋯</button>
                         <button onClick={()=>editar(s)} title="Editar" style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>✏️</button>
                         <button onClick={()=>eliminar(s.id)} title="Eliminar" style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 8px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>✕</button>
@@ -3720,9 +3723,21 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
   const[fecha,setFecha]=useState(hoyLocal());
 
   const MOTIVOS=["Vencido","Roto/dañado","Quemado/error de cocina","Devolución de cliente","Otro"];
-  const inactivosIds=new Set((catalogo||[]).filter(c=>c.activo===false).map(c=>c.id));
-  const itemsOrdenados=stock.filter(s=>!s.catalogoId||!inactivosIds.has(s.catalogoId)).sort((a,b)=>a.nombre.localeCompare(b.nombre));
-  const itemSel=stock.find(s=>s.id===itemId);
+  // Combina TODO el catálogo (activo) con lo que ya tiene fila de stock — igual patrón que Control de stock,
+  // así los productos que todavía no se cargaron ("sin cargar") también aparecen para poder registrar un desperdicio.
+  const catalogoIds=new Set((catalogo||[]).map(c=>c.id));
+  const stockPorCatId={};
+  stock.forEach(s=>{if(s.catalogoId)stockPorCatId[s.catalogoId]=s;});
+  const combinadoDesp=[];
+  (catalogo||[]).forEach(c=>{
+    if(c.activo===false)return;
+    const s=stockPorCatId[c.id];
+    if(s)combinadoDesp.push({...s,catalogoId:c.id});
+    else combinadoDesp.push({id:"sc_"+c.id,sinCargar:true,catalogoId:c.id,nombre:c.producto,proveedor:c.proveedor,sector:c.sector,unidad:c.unidad||"unidades",cantidad:0,minimo:0,movimientos:[]});
+  });
+  stock.forEach(s=>{if(!s.catalogoId||!catalogoIds.has(s.catalogoId))combinadoDesp.push(s);});
+  const itemsOrdenados=combinadoDesp.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const itemSel=itemsOrdenados.find(s=>s.id===itemId);
 
   const registrar=async()=>{
     if(!itemId){toast("Elegí un producto del inventario");return;}
@@ -3731,9 +3746,19 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
     const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
     const cant=Number(cantidad);
     const mov={id:uid(),tipo:"salida",origen:"desperdicio",cantidad:cant,obs:`${motivo}${obs.trim()?" — "+obs.trim():""}`,fecha:fechaISO,registradoPor:registradoPor||null};
-    const stockActual=stock.map(s=>s.id===itemId?{...s,cantidad:Math.max(0,s.cantidad-cant),movimientos:[mov,...(s.movimientos||[])].slice(0,50)}:s);
+    const existeFila=stock.some(s=>s.id===itemId);
+    let stockActual,stockIdFinal;
+    if(existeFila){
+      stockActual=stock.map(s=>s.id===itemId?{...s,cantidad:Math.max(0,s.cantidad-cant),movimientos:[mov,...(s.movimientos||[])].slice(0,50)}:s);
+      stockIdFinal=itemId;
+    }else{
+      // Producto del catálogo sin fila de stock todavía — se crea la fila (arranca en 0, clampeado) con este movimiento.
+      const nuevaFila={id:uid(),catalogoId:itemSel.catalogoId,nombre:itemSel.nombre,proveedor:itemSel.proveedor,sector:itemSel.sector||"",cantidad:0,minimo:0,unidad:itemSel.unidad,movimientos:[mov],fecha:fechaISO};
+      stockActual=[...stock,nuevaFila];
+      stockIdFinal=nuevaFila.id;
+    }
     await saveStock(stockActual);
-    const registro={id:uid(),stockId:itemId,producto:itemSel.nombre,unidad:itemSel.unidad,proveedor:itemSel.proveedor,cantidad:cant,motivo,obs:obs.trim(),registradoPor:registradoPor||null,fecha:fechaISO};
+    const registro={id:uid(),stockId:stockIdFinal,producto:itemSel.nombre,unidad:itemSel.unidad,proveedor:itemSel.proveedor,cantidad:cant,motivo,obs:obs.trim(),registradoPor:registradoPor||null,fecha:fechaISO};
     await saveDesperdicios([registro,...desperdicios]);
     toast(`✓ Desperdicio registrado: ${itemSel.nombre}`);
     setBusy(false);setItemId("");setCantidad("");setObs("");setMotivo("Vencido");setFecha(hoyLocal());
@@ -3747,8 +3772,8 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
   const hoyStr=hoyLocal();
   const desperdiciosHoy=desperdicios.filter(d=>d.fecha&&d.fecha.slice(0,10)===hoyStr);
 
-  if(!stock.length)return(
-    <Empty icon="🗑️">Todavía no hay productos en el inventario. Cargalos primero desde 📋 Control de stock.</Empty>
+  if(!itemsOrdenados.length)return(
+    <Empty icon="🗑️">Todavía no hay productos en el catálogo. Agregalos primero desde 🗂️ Catálogo.</Empty>
   );
 
   return(<>
@@ -3757,7 +3782,7 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
       <Field label="Producto">
         <select value={itemId} onChange={e=>setItemId(e.target.value)} style={sS}>
           <option value="">— Elegí un producto —</option>
-          {itemsOrdenados.map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad} {s.unidad})</option>)}
+          {itemsOrdenados.map(s=><option key={s.id} value={s.id}>{s.nombre} ({s.sinCargar?"sin cargar":`stock: ${s.cantidad} ${s.unidad}`})</option>)}
         </select>
       </Field>
       <Field label={`Cantidad${itemSel?` (${itemSel.unidad})`:""}`}>
