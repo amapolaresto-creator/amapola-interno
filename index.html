@@ -98,6 +98,28 @@ async function sbSet(key,value,intentos=3){
 
 const fmt=n=>"$"+Number(n||0).toLocaleString("es-AR");
 const norm=s=>String(s||"").trim().toLowerCase();
+// Detecta proveedores "parecidos" (typo, con/sin razón social, etc.) para avisar antes de crear uno
+// nuevo por escrito a mano y terminar con la deuda de un mismo proveedor partida en dos registros.
+const levenshtein=(a,b)=>{
+  const m=a.length,n=b.length;
+  if(!m)return n;if(!n)return m;
+  const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++)dp[i][0]=i;
+  for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+};
+const proveedorParecido=(nombre,lista)=>{
+  const n=norm(nombre);
+  if(!n)return null;
+  return(lista||[]).find(p=>{
+    const pn=norm(p.nombre);
+    if(pn===n)return false;
+    if(pn.length>3&&n.length>3&&(pn.includes(n)||n.includes(pn)))return true;
+    return Math.min(pn.length,n.length)>3&&levenshtein(n,pn)<=2;
+  })||null;
+};
 const fmtH=iso=>new Date(iso).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
 const fmtF=iso=>new Date(iso).toLocaleDateString("es-AR",{day:"numeric",month:"short"});
 const hoyLocal=()=>{const d=new Date();const off=d.getTimezoneOffset();const local=new Date(d.getTime()-off*60000);return local.toISOString().slice(0,10);};
@@ -702,7 +724,7 @@ function App({role="full",cerrarSesion}){
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock} calcDeuda={calcDeuda}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} saveGastos={saveGastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo} setTab={setTab}/>}
-        {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} boletas={boletas} gastos={gastos} askPass={askPass}/>}
+        {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} savePagos={savePagos} boletas={boletas} saveBoletas={saveBoletas} gastos={gastos} saveGastos={saveGastos} catalogoStock={catalogoStock} saveCatalogoStock={saveCatalogoStock} stock={stock} saveStock={saveStock} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} stock={stock} saveStock={saveStock}/> }
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
@@ -860,6 +882,8 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
       toast("Ese proveedor ya existía, lo seleccioné");
       return;
     }
+    const parecido=proveedorParecido(nuevoNombre,proveedores);
+    if(parecido&&!confirm(`Ya existe un proveedor parecido: "${parecido.nombre}". ¿Seguro que "${nuevoNombre.trim()}" es uno distinto? Si es el mismo, cancelá y elegí "${parecido.nombre}" de la lista para no duplicar su deuda.`))return;
     const nuevo={id:uid(),nombre:nuevoNombre.trim(),deudaInicial:0,obs:"",fecha:new Date().toISOString()};
     await saveProveedores([...proveedores,nuevo]);
     setProv(nuevoNombre.trim());setNuevoNombre("");setCrearModal(false);
@@ -1624,7 +1648,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
   );
 }
 
-function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gastos,askPass}){
+function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,savePagos,boletas,saveBoletas,gastos,saveGastos,catalogoStock,saveCatalogoStock,stock,saveStock,askPass}){
   const[nombre,setNombre]=useState("");const[deuda,setDeuda]=useState("");
   const[obs,setObs]=useState("");const[busy,setBusy]=useState(false);
   const[filtroNombre,setFiltroNombre]=useState("");
@@ -1633,19 +1657,42 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
   const[hastaDet,setHastaDet]=useState("");
   const[mostrarForm,setMostrarForm]=useState(false);
   const[verInactivos,setVerInactivos]=useState(false);
+  const[mostrarFusion,setMostrarFusion]=useState(false);
+  const[fusionOrigen,setFusionOrigen]=useState("");
+  const[fusionDestino,setFusionDestino]=useState("");
+  const[fusionBusy,setFusionBusy]=useState(false);
+
+  const provEditando=nombre?proveedores.find(p=>norm(p.nombre)===norm(nombre)):null;
 
   const guardar=async()=>{
     if(!nombre.trim()){toast("Ingresá el nombre");return;}
-    setBusy(true);
     const idx=proveedores.findIndex(p=>norm(p.nombre)===norm(nombre));
+    if(idx<0){
+      const parecido=proveedorParecido(nombre,proveedores);
+      if(parecido&&!confirm(`Ya existe un proveedor parecido: "${parecido.nombre}". ¿"${nombre.trim()}" es realmente distinto? Cancelá si es el mismo y elegilo de la lista para no duplicar su deuda.`))return;
+    }
+    setBusy(true);
     let nuevos;
-    if(idx>=0){nuevos=proveedores.map((p,i)=>i===idx?{...p,deudaInicial:Number(deuda)||0,obs:obs.trim()}:p);toast("Actualizado ✓");}
+    if(idx>=0){
+      const anterior=Number(proveedores[idx].deudaInicial)||0;
+      const nuevoValor=Number(deuda)||0;
+      let historialDeuda=proveedores[idx].historialDeuda||[];
+      if(anterior!==nuevoValor)historialDeuda=[{fecha:new Date().toISOString(),anterior,nuevo:nuevoValor},...historialDeuda];
+      nuevos=proveedores.map((p,i)=>i===idx?{...p,deudaInicial:nuevoValor,obs:obs.trim(),historialDeuda}:p);
+      toast("Actualizado ✓");
+    }
     else{nuevos=[...proveedores,{id:uid(),nombre:nombre.trim(),deudaInicial:Number(deuda)||0,obs:obs.trim(),fecha:new Date().toISOString()}];toast("Guardado ✓");}
     await saveProveedores(nuevos);setBusy(false);setNombre("");setDeuda("");setObs("");setMostrarForm(false);
   };
   const eliminar=async id=>{
-    if(!confirm("¿Eliminar? Los pagos no se borran."))return;
-    await saveProveedores(proveedores.filter(p=>p.id!==id));toast("Eliminado");
+    const p=proveedores.find(x=>x.id===id);
+    const d=p?calcDeuda(p.nombre):null;
+    const pendiente=d?d.pendiente:0;
+    const msg=pendiente>0
+      ?`Este proveedor tiene una deuda pendiente de ${fmt(pendiente)}. Si lo eliminás, esa deuda deja de aparecer en el total (las boletas y pagos no se borran, pero dejás de verla acá). ¿Eliminar igual?`
+      :"¿Eliminar? Los pagos no se borran.";
+    if(!confirm(msg))return;
+    await saveProveedores(proveedores.filter(x=>x.id!==id));toast("Eliminado");
   };
   const editar=p=>{setNombre(p.nombre);setDeuda(String(p.deudaInicial||""));setObs(p.obs||"");setMostrarForm(true);};
   const abrirNuevo=()=>{setNombre("");setDeuda("");setObs("");setMostrarForm(true);};
@@ -1655,7 +1702,44 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
     toast(nuevoEstado==="Inactivo"?"Proveedor ocultado ✓":"Proveedor activado ✓");
   };
 
-  const sorted=proveedores.map(p=>{const d=calcDeuda(p.nombre);return{...p,_p:d?d.pendiente:0,_i:d?d.totalDeuda:0,_pagado:d?d.pagado:0};}).sort((a,b)=>b._p-a._p);
+  const fusionar=async()=>{
+    if(!fusionOrigen||!fusionDestino){toast("Elegí los dos proveedores");return;}
+    if(norm(fusionOrigen)===norm(fusionDestino)){toast("Elegí dos proveedores distintos");return;}
+    const origenObj=proveedores.find(p=>norm(p.nombre)===norm(fusionOrigen));
+    const destinoObj=proveedores.find(p=>norm(p.nombre)===norm(fusionDestino));
+    if(!origenObj||!destinoObj){toast("Proveedor no encontrado");return;}
+    if(!confirm(`Vas a fusionar "${origenObj.nombre}" dentro de "${destinoObj.nombre}". Todas sus boletas, pagos y gastos van a pasar a nombre de "${destinoObj.nombre}", y su deuda inicial se suma. "${origenObj.nombre}" se elimina como proveedor. Esta acción no se puede deshacer. ¿Continuar?`))return;
+    setFusionBusy(true);
+    const nombreDestino=destinoObj.nombre;
+    if(saveBoletas&&boletas.some(b=>norm(b.proveedor)===norm(origenObj.nombre)))
+      await saveBoletas(boletas.map(b=>norm(b.proveedor)===norm(origenObj.nombre)?{...b,proveedor:nombreDestino}:b));
+    if(savePagos&&pagos.some(x=>norm(x.proveedor)===norm(origenObj.nombre)))
+      await savePagos(pagos.map(x=>norm(x.proveedor)===norm(origenObj.nombre)?{...x,proveedor:nombreDestino}:x));
+    if(saveGastos&&(gastos||[]).some(g=>g.proveedor&&norm(g.proveedor)===norm(origenObj.nombre)))
+      await saveGastos((gastos||[]).map(g=>g.proveedor&&norm(g.proveedor)===norm(origenObj.nombre)?{...g,proveedor:nombreDestino}:g));
+    if(catalogoStock&&saveCatalogoStock&&catalogoStock.some(c=>norm(c.proveedor)===norm(origenObj.nombre)))
+      await saveCatalogoStock(catalogoStock.map(c=>norm(c.proveedor)===norm(origenObj.nombre)?{...c,proveedor:nombreDestino}:c));
+    if(stock&&saveStock&&stock.some(s=>norm(s.proveedor)===norm(origenObj.nombre)))
+      await saveStock(stock.map(s=>norm(s.proveedor)===norm(origenObj.nombre)?{...s,proveedor:nombreDestino}:s));
+    const anteriorDeuda=Number(destinoObj.deudaInicial)||0;
+    const nuevaDeudaInicial=anteriorDeuda+(Number(origenObj.deudaInicial)||0);
+    const historialDeuda=[{fecha:new Date().toISOString(),anterior:anteriorDeuda,nuevo:nuevaDeudaInicial,nota:`Fusión con "${origenObj.nombre}"`},...(destinoObj.historialDeuda||[])];
+    const nuevosProveedores=proveedores.filter(p=>p.id!==origenObj.id).map(p=>p.id===destinoObj.id?{...p,deudaInicial:nuevaDeudaInicial,historialDeuda}:p);
+    await saveProveedores(nuevosProveedores);
+    setFusionBusy(false);setMostrarFusion(false);setFusionOrigen("");setFusionDestino("");
+    toast(`Fusionado: "${origenObj.nombre}" ahora es "${destinoObj.nombre}" ✓`);
+  };
+
+  const sorted=proveedores.map(p=>{
+    const d=calcDeuda(p.nombre);
+    const fechas=[
+      ...boletas.filter(b=>norm(b.proveedor)===norm(p.nombre)).map(b=>b.fecha),
+      ...pagos.filter(x=>norm(x.proveedor)===norm(p.nombre)).map(x=>x.fecha),
+      ...(gastos||[]).filter(g=>g.proveedor&&norm(g.proveedor)===norm(p.nombre)).map(g=>g.fecha)
+    ];
+    const ultima=fechas.length?fechas.reduce((a,b)=>a>b?a:b):null;
+    return{...p,_p:d?d.pendiente:0,_i:d?d.totalDeuda:0,_pagado:d?d.pagado:0,_ultima:ultima};
+  }).sort((a,b)=>b._p-a._p);
   const totalPendienteGlobal=sorted.reduce((s,p)=>s+Math.max(0,p._p),0);
   const inactivosCount=sorted.filter(p=>p.estado==="Inactivo").length;
   const baseVisible=verInactivos?sorted:sorted.filter(p=>p.estado!=="Inactivo");
@@ -1700,7 +1784,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
   };
 
   return(<>
-    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo.\n• 🚫 Activos e inactivos: los proveedores inactivos quedan ocultos de la lista (y no aparecen para elegir al cargar una boleta o un pago nuevo), pero su deuda sigue contando en el total y no se pierde nada de su historial. Tocá 👁️ Ver inactivos para volver a verlos, y ✅ en la fila para reactivarlos."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
+    <ST help={"Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo.\n• Si al crear un proveedor (acá o al cargar una boleta/producto) el nombre se parece mucho a uno que ya existe, la app te avisa para evitar duplicarlo por error.\n• 🔀 Fusionar: si dos proveedores quedaron cargados con nombres distintos siendo el mismo, usá este botón para unirlos — todas sus boletas, pagos y gastos pasan al que elijas como destino, la deuda inicial se suma, y el otro se elimina. No se puede deshacer.\n• Si editás la deuda inicial de un proveedor que ya tenía una cargada, queda un historial del cambio (fecha, valor anterior y nuevo) visible al editarlo.\n• Cuando un proveedor quedó con saldo a favor (le pagaste de más), se muestra en azul como \"💰 A favor\" en vez de plata pendiente.\n• La columna Última act. muestra la fecha del movimiento (boleta, pago o gasto) más reciente de cada proveedor.\n• Si eliminás un proveedor que tiene deuda pendiente, la app te avisa antes de confirmar.\n• 🚫 Activos e inactivos: los proveedores inactivos quedan ocultos de la lista (y no aparecen para elegir al cargar una boleta o un pago nuevo), pero su deuda sigue contando en el total y no se pierde nada de su historial. Tocá 👁️ Ver inactivos para volver a verlos, y ✅ en la fila para reactivarlos."}>Proveedores</ST><SS>Estado de cuenta y deuda por proveedor.</SS>
 
     {mostrarForm&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
@@ -1709,9 +1793,42 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
           <Field label="Nombre"><Inp value={nombre} onChange={setNombre} placeholder="Ej: UTENSILIOS"/></Field>
           <Field label="Deuda inicial"><Inp type="number" value={deuda} onChange={setDeuda} placeholder="0"/></Field>
           <Field label="Observaciones (opcional)"><TA value={obs} onChange={setObs} placeholder="Notas sobre este proveedor"/></Field>
+          {provEditando&&provEditando.historialDeuda&&provEditando.historialDeuda.length>0&&(
+            <div style={{background:"#F9F6F1",borderRadius:8,padding:"8px 10px",marginBottom:12,maxHeight:120,overflowY:"auto"}}>
+              <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".05em",textTransform:"uppercase",color:"#7B7063",marginBottom:4}}>Historial de deuda inicial</div>
+              {provEditando.historialDeuda.map((h,i)=>(
+                <div key={i} style={{fontSize:".68rem",color:"#7B7063",marginBottom:2}}>{fmtFL(h.fecha)}: {fmt(h.anterior)} → {fmt(h.nuevo)}{h.nota?` (${h.nota})`:""}</div>
+              ))}
+            </div>
+          )}
           <div style={{display:"flex",gap:8,marginTop:18}}>
             <button onClick={()=>{setMostrarForm(false);setNombre("");setDeuda("");setObs("");}} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
             <Btn bg="#2C1A0E" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Guardar"}</Btn>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {mostrarFusion&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{background:"#fff",borderRadius:20,padding:"24px 20px 32px",width:"100%",maxWidth:460,maxHeight:"85vh",overflowY:"auto"}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:6}}>Fusionar proveedores</p>
+          <p style={{fontSize:".75rem",color:"#7B7063",marginBottom:14}}>Usalo cuando el mismo proveedor quedó cargado dos veces con nombres distintos. Todo lo del proveedor "origen" pasa a nombre del "destino" y se elimina el origen.</p>
+          <Field label="Proveedor a eliminar (origen)">
+            <select value={fusionOrigen} onChange={e=>setFusionOrigen(e.target.value)} style={iS}>
+              <option value="">Elegir…</option>
+              {proveedores.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=>(<option key={p.id} value={p.nombre}>{p.nombre}</option>))}
+            </select>
+          </Field>
+          <Field label="Proveedor que queda (destino)">
+            <select value={fusionDestino} onChange={e=>setFusionDestino(e.target.value)} style={iS}>
+              <option value="">Elegir…</option>
+              {proveedores.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=>(<option key={p.id} value={p.nombre}>{p.nombre}</option>))}
+            </select>
+          </Field>
+          <div style={{display:"flex",gap:8,marginTop:18}}>
+            <button onClick={()=>{setMostrarFusion(false);setFusionOrigen("");setFusionDestino("");}} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <Btn bg="#2C1A0E" onClick={fusionar} disabled={fusionBusy}>{fusionBusy?"Fusionando…":"Fusionar"}</Btn>
           </div>
         </div>
       </div>
@@ -1724,6 +1841,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
         <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:"#fff",margin:"2px 0 0"}}>{fmt(totalPendienteGlobal)}</div>
       </div>
       <button onClick={abrirNuevo} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,fontSize:".8rem",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>+ Nuevo proveedor</button>
+      <button onClick={()=>setMostrarFusion(true)} style={{padding:"9px 16px",borderRadius:10,border:"1px solid #2C1A0E",background:"#fff",color:"#2C1A0E",fontWeight:600,fontSize:".8rem",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🔀 Fusionar</button>
     </div>
 
     {/* ESTADO DE CUENTA */}
@@ -1743,7 +1861,7 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
 
         {/* RESUMEN */}
         {infoSel&&<div style={{display:"flex",gap:8,margin:"14px 0 0"}}>
-          {[["Deuda ini.",fmt(infoSel.deudaInicial),"#E8DCC8"],["Boletas",fmt(infoSel.sumaBoletas),"#f5b7b1"],["Pagado",fmt(infoSel.pagado),"#40916C"],["Pendiente",fmt(Math.max(0,infoSel.pendiente)),infoSel.pendiente>0?"#E74C3C":"#40916C"]].map(([l,v,c])=>(
+          {[["Deuda ini.",fmt(infoSel.deudaInicial),"#E8DCC8"],["Boletas",fmt(infoSel.sumaBoletas),"#f5b7b1"],["Pagado",fmt(infoSel.pagado),"#40916C"],["Pendiente",infoSel.pendiente<0?`A favor ${fmt(Math.abs(infoSel.pendiente))}`:fmt(infoSel.pendiente),infoSel.pendiente>0?"#E74C3C":infoSel.pendiente<0?"#5DADE2":"#40916C"]].map(([l,v,c])=>(
             <div key={l} style={{flex:1,background:"#2C1A0E",borderRadius:10,padding:"8px 6px",textAlign:"center"}}>
               <div style={{fontSize:".55rem",color:"#E8DCC8",opacity:.6,textTransform:"uppercase"}}>{l}</div>
               <div style={{fontSize:".82rem",fontWeight:700,color:c,marginTop:2}}>{v}</div>
@@ -1819,14 +1937,15 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:340}}>
             <thead>
               <tr style={{background:"#F9F6F1"}}>
-                {["Proveedor","Pendiente",""].map(h=>(
-                  <th key={h||"acc"} style={{padding:"7px 8px",textAlign:h==="Pendiente"?"right":h===""?"center":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                {["Proveedor","Última act.","Pendiente",""].map(h=>(
+                  <th key={h||"acc"} style={{padding:"7px 8px",textAlign:h==="Pendiente"?"right":h===""?"center":h==="Última act."?"center":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtrados.map((p,i)=>{
-                const sal=p._p<=0;
+                const esCredito=p._p<0;
+                const sal=p._p===0;
                 const inactivo=p.estado==="Inactivo";
                 return(
                   <tr key={p.id} onClick={()=>{setProvSel(p.nombre);setDesdeDet("");setHastaDet("");window.scrollTo({top:0,behavior:"smooth"});}}
@@ -1838,7 +1957,8 @@ function TabProveedores({proveedores,saveProveedores,calcDeuda,pagos,boletas,gas
                       </div>
                       {p.obs&&<div style={{fontSize:".65rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:220}}>{p.obs}</div>}
                     </td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:sal?"#2D6A4F":"#C0392B",whiteSpace:"nowrap"}}>{sal?"✅ Saldado":fmt(Math.max(0,p._p))}</td>
+                    <td style={{padding:"6px 8px",textAlign:"center",color:"#7B7063",fontSize:".72rem",whiteSpace:"nowrap"}}>{p._ultima?fmtF(p._ultima):"—"}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:esCredito?"#2E86C1":sal?"#2D6A4F":"#C0392B",whiteSpace:"nowrap"}}>{esCredito?`💰 A favor ${fmt(Math.abs(p._p))}`:sal?"✅ Saldado":fmt(p._p)}</td>
                     <td style={{padding:"6px 8px"}} onClick={e=>e.stopPropagation()}>
                       <div style={{display:"flex",gap:4,justifyContent:"center"}}>
                         <button onClick={()=>toggleActivo(p)} title={inactivo?"Activar":"Ocultar (marcar inactivo)"} style={{background:inactivo?"#EAF5F0":"#FEF9E7",border:"none",borderRadius:6,color:inactivo?"#2D6A4F":"#B7860B",fontSize:".62rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>{inactivo?"✅":"🚫"}</button>
@@ -2430,6 +2550,10 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
     if(!cantidad){toast("Completá la cantidad");return;}
     const yaExiste=catalogo.some(c=>norm(c.proveedor)===norm(proveedorFinal)&&norm(c.producto)===norm(nombreProducto));
     if(yaExiste){toast("Ese producto ya existe en el catálogo para ese proveedor");return;}
+    if(mostrarNuevoProv){
+      const parecido=proveedorParecido(proveedorFinal,proveedores);
+      if(parecido&&!confirm(`Ya existe un proveedor parecido: "${parecido.nombre}". ¿"${proveedorFinal}" es realmente distinto? Cancelá si es el mismo y elegilo de la lista para no duplicar su deuda.`))return;
+    }
     setBusy(true);
     const nuevoCat={id:uid(),proveedor:proveedorFinal,sector,producto:nombreProducto.trim().toUpperCase(),unidad};
     await saveCatalogo([...catalogo,nuevoCat]);
@@ -3441,6 +3565,10 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
     if(!producto.trim()){toast("Ingresá el nombre del producto");return;}
     const yaExiste=catalogo.some(c=>norm(c.proveedor)===norm(proveedorFinal)&&norm(c.producto)===norm(producto));
     if(yaExiste){toast("Ese producto ya existe para ese proveedor");return;}
+    if(mostrarNuevoProv){
+      const parecido=proveedorParecido(proveedorFinal,proveedores);
+      if(parecido&&!confirm(`Ya existe un proveedor parecido: "${parecido.nombre}". ¿"${proveedorFinal}" es realmente distinto? Cancelá si es el mismo y elegilo de la lista para no duplicar su deuda.`))return;
+    }
     setBusy(true);
     const nuevo={id:uid(),proveedor:proveedorFinal,sector,producto:producto.trim().toUpperCase(),unidad,minimo:Number(minimo)||0,maximo:Number(maximo)||0};
     await saveCatalogo([...catalogo,nuevo]);
@@ -3479,6 +3607,10 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
     const nombreFinal=editProducto.trim().toUpperCase();
     const dup=catalogo.some(c=>c.id!==editModal.id&&norm(c.proveedor)===norm(proveedorFinal)&&norm(c.producto)===norm(nombreFinal));
     if(dup){toast("Ya existe un producto con ese nombre para ese proveedor");return;}
+    if(editMostrarNuevoProv){
+      const parecido=proveedorParecido(proveedorFinal,proveedores);
+      if(parecido&&!confirm(`Ya existe un proveedor parecido: "${parecido.nombre}". ¿"${proveedorFinal}" es realmente distinto? Cancelá si es el mismo y elegilo de la lista para no duplicar su deuda.`))return;
+    }
     setEditBusy(true);
     await saveCatalogo(catalogo.map(c=>c.id===editModal.id?{...c,proveedor:proveedorFinal,sector:editSector,producto:nombreFinal,minimo:Number(editMinimo)||0,maximo:Number(editMaximo)||0}:c));
     if(stock&&saveStock){
