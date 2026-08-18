@@ -317,6 +317,14 @@ function App({role="full",cerrarSesion}){
   const[passModal,setPassModal]=useState(null);
   const[syncMsg,setSyncMsg]=useState("Conectando…");
   const[syncColor,setSyncColor]=useState("#B7860B");
+  // Reloj en vivo que se muestra en el header — usa la hora del dispositivo, la misma que se guarda en
+  // cada movimiento nuevo. Sirve para chequear a simple vista si el reloj/huso horario del dispositivo
+  // está bien configurado (si no coincide con la hora real, hay que corregirlo en el celu/PC, no en la app).
+  const[relojActual,setRelojActual]=useState(()=>new Date());
+  useEffect(()=>{
+    const id=setInterval(()=>setRelojActual(new Date()),30000);
+    return()=>clearInterval(id);
+  },[]);
   const[adminUnlocked,setAdminUnlocked]=useState(false);
   const[adminPassInput,setAdminPassInput]=useState("");
   const[adminPassErr,setAdminPassErr]=useState(false);
@@ -643,9 +651,10 @@ function App({role="full",cerrarSesion}){
         </div>
         {!cocinaOnly&&(
           <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
-            <div style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-              <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{new Date().toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
-              <span>{new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
+            <div title="Hora del dispositivo — si no coincide con la hora real, corregí el reloj/huso horario del celu o la PC" style={{background:"#1A3C2E",color:"#A8D5BA",borderRadius:20,padding:"5px 12px",textAlign:"center",fontSize:".7rem",fontWeight:600,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+              <span style={{opacity:.7,fontSize:".58rem",textTransform:"uppercase",letterSpacing:".04em"}}>{relojActual.toLocaleDateString("es-AR",{weekday:"short"}).toUpperCase()}</span>
+              <span>{relojActual.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
+              <span style={{fontSize:".64rem",opacity:.85,marginTop:1}}>🕐 {relojActual.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</span>
             </div>
             <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
               <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
