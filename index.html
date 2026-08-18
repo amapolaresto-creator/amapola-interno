@@ -689,7 +689,7 @@ function App({role="full",cerrarSesion}){
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
-        {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja}/>}
+        {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} empleados={empleados} saveEmpleados={saveEmpleados}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
       {lightbox&&<Lightbox src={lightbox} onClose={()=>setLightbox(null)}/>}
@@ -5403,9 +5403,10 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
   </>);
 }
 
-function TabCierresCaja({cierresCaja,saveCierresCaja}){
+function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
   const TURNOS=["Mostrador Día","Mostrador Noche","PosFUDO1","PosFUDO2"];
   const hoy=hoyLocal();
+  const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
 
   const[fecha,setFecha]=useState(hoy);
   const[turno,setTurno]=useState("Mostrador Día");
@@ -5419,19 +5420,24 @@ function TabCierresCaja({cierresCaja,saveCierresCaja}){
   const[ventaSistema,setVentaSistema]=useState("");
   const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
-  const[fotos,setFotos]=useState([]);
   const[confElim,setConfElim]=useState(null);
-  const[verFotos,setVerFotos]=useState(null);
-  const[personas,setPersonas]=useState(["Micaela","Priscila","Valentina","Ludmila","Catalina","Lautaro"]);
   const[nuevoPersonaModal,setNuevoPersonaModal]=useState(false);
   const[nuevoPersonaNombre,setNuevoPersonaNombre]=useState("");
+  const[filtroFecha,setFiltroFecha]=useState("todos");
+  const[desdeF,setDesdeF]=useState(hoy);
+  const[hastaF,setHastaF]=useState(hoy);
+  const[buscar,setBuscar]=useState("");
 
-  const agregarPersona=()=>{
+  // Se guarda en Empleados (lo mismo que usan Boletas/Sueldos/Pagos) para que quede persistido y no
+  // se pierda al recargar la app — antes era una lista fija en memoria que se reiniciaba sola.
+  const agregarPersona=async()=>{
     const nombre=nuevoPersonaNombre.trim();
     if(!nombre){toast("Ingresá un nombre");return;}
-    if(personas.some(p=>norm(p)===norm(nombre))){toast("Ya existe");return;}
-    setPersonas([...personas,nombre]);
-    setPersona(nombre);setNuevoPersonaNombre("");setNuevoPersonaModal(false);toast("Agregado ✓");
+    if(registradores.some(r=>norm(r.nombre)===norm(nombre))){toast("Ya existe");setPersona(nombre);setNuevoPersonaNombre("");setNuevoPersonaModal(false);return;}
+    const nuevo={id:uid(),nombre,apellido:"",dni:"",domicilio:"",telPropio:"",telContacto:"",estado:"Activo"};
+    await saveEmpleados([...(empleados||[]),nuevo]);
+    setPersona(nombre);setNuevoPersonaNombre("");setNuevoPersonaModal(false);
+    toast("Agregado ✓");
   };
   const eliminarCierre=async()=>{
     const c=confElim;setConfElim(null);
@@ -5459,7 +5465,6 @@ function TabCierresCaja({cierresCaja,saveCierresCaja}){
       efectivo:n(efectivo),totalDigital,total:totalCierre,
       ventaSistema:n(ventaSistema),diferencia,obs:obs.trim(),
     };
-    // Guardar cierre SIN fotos (liviano, va rápido aunque el WiFi sea malo)
     const ok=await saveCierresCaja([...cierresCaja,nuevo]);
 
     setBusy(false);
@@ -5467,15 +5472,40 @@ function TabCierresCaja({cierresCaja,saveCierresCaja}){
     setMp("");setFudoTarjetas("");setPostnet("");setDigital("");setUber("");
     setEfectivo("");setVentaSistema("");setObs("");setPersona("");
     setFecha(hoyLocal());
-    setFotos([]);
     toast("Cierre registrado ✓");
   };
 
-  // Últimos cierres
-  const ultimos=[...cierresCaja].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).slice(0,10);
+  // Marca con ⚠️ los cierres cuya diferencia (contra venta del sistema) es grande — más del 3%.
+  const UMBRAL_DIF_PCT=0.03;
+  const esDifGrande=c=>Number(c.ventaSistema)>0&&Math.abs(Number(c.diferencia))>Number(c.ventaSistema)*UMBRAL_DIF_PCT;
+
+  // Últimos cierres — con filtro de fecha y búsqueda por persona/turno
+  const hoy2=new Date();
+  const iso2=d=>d.toISOString().slice(0,10);
+  const inicioMes2=new Date(hoy2.getFullYear(),hoy2.getMonth(),1);
+  const desdeCalc=filtroFecha==="hoy"?hoy:filtroFecha==="mes"?iso2(inicioMes2):filtroFecha==="custom"?desdeF:null;
+  const hastaCalc=filtroFecha==="hoy"?hoy:filtroFecha==="mes"?iso2(hoy2):filtroFecha==="custom"?hastaF:null;
+  const ultimos=[...cierresCaja]
+    .filter(c=>{const f=c.fecha.slice(0,10);return(!desdeCalc||f>=desdeCalc)&&(!hastaCalc||f<=hastaCalc);})
+    .filter(c=>!buscar||norm(c.persona).includes(norm(buscar))||norm(c.turno).includes(norm(buscar)))
+    .sort((a,b)=>{
+      const d=new Date(b.fecha)-new Date(a.fecha);
+      if(d!==0)return d;
+      return String(b.id||"").localeCompare(String(a.id||""));
+    })
+    .slice(0,filtroFecha==="todos"?30:200);
+
+  // Agrupados por día para mostrar un subtotal cuando hay más de un turno cerrado ese día.
+  const grupos=[];
+  ultimos.forEach(c=>{
+    const dia=c.fecha.slice(0,10);
+    let g=grupos[grupos.length-1];
+    if(!g||g.dia!==dia){g={dia,items:[],subtotal:0};grupos.push(g);}
+    g.items.push(c);g.subtotal+=Number(c.total)||0;
+  });
 
   return(<>
-    <ST help={"Registrá acá el cierre de cada turno con el detalle de ventas por canal.\n\n• MP/FUDO, FUDO Tarjetas, PostNet, Digital, Uber Eat: ingresos digitales del turno.\n• Efectivo: dinero en efectivo contado al cerrar.\n• Venta del sistema: total que figura en FUDO — sirve para calcular la diferencia y detectar faltantes.\n• La diferencia (positiva o negativa) queda registrada en el historial.\n• Podés adjuntar fotos del cierre como respaldo."}>Cierres de Caja</ST><SS>Registrá cada cierre al finalizar el turno.</SS>
+    <ST help={"Registrá acá el cierre de cada turno con el detalle de ventas por canal.\n\n• MP/FUDO, FUDO Tarjetas, PostNet, Digital, Uber Eat: ingresos digitales del turno.\n• Efectivo: dinero en efectivo contado al cerrar.\n• Venta del sistema: total que figura en FUDO — sirve para calcular la diferencia y detectar faltantes.\n• La diferencia (positiva o negativa) queda registrada en el historial, y si supera el 3% de la venta del sistema se marca con ⚠️ para que salte a la vista.\n• Podés filtrar y buscar por persona o turno en 'Últimos cierres', y cuando hay más de un turno el mismo día te muestra el subtotal del día."}>Cierres de Caja</ST><SS>Registrá cada cierre al finalizar el turno.</SS>
 
 
 
@@ -5513,7 +5543,7 @@ function TabCierresCaja({cierresCaja,saveCierresCaja}){
         <div style={{display:"flex",gap:8}}>
           <select value={persona} onChange={e=>setPersona(e.target.value)} style={{...sS,flex:1}}>
             <option value="">— Elegí —</option>
-            {personas.map(p=><option key={p} value={p}>{p}</option>)}
+            {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
           </select>
           <button onClick={()=>setNuevoPersonaModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
         </div>
@@ -5569,47 +5599,62 @@ function TabCierresCaja({cierresCaja,saveCierresCaja}){
     </div>
 
     {/* ÚLTIMOS CIERRES */}
-    {ultimos.length>0&&(
-      <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
-        <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>Últimos cierres</div>
+    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>Últimos cierres</div>
+
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {[["todos","Últimos 30"],["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFiltroFecha(v)} style={{padding:"6px 12px",borderRadius:20,border:"none",background:filtroFecha===v?"#2C1A0E":"#F2EAE0",color:filtroFecha===v?"#fff":"#7B7063",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>{l}</button>
+        ))}
+      </div>
+      {filtroFecha==="custom"&&(
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <input type="date" value={desdeF} onChange={e=>setDesdeF(e.target.value)} style={{...iS,fontSize:".8rem"}}/>
+          <input type="date" value={hastaF} onChange={e=>setHastaF(e.target.value)} style={{...iS,fontSize:".8rem"}}/>
+        </div>
+      )}
+      <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar por persona o turno..." style={{...iS,marginBottom:14,fontSize:".82rem"}}/>
+
+      {!ultimos.length?<Empty icon="💰">Sin cierres en el período</Empty>:(
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:500}}>
             <thead>
               <tr style={{background:"#F9F6F1"}}>
-                {["Fecha","Turno","Persona","MP/FUDO","FUDO Tar.","PostNet","Digital","Uber","Efectivo","Vta. Sist.","Dif.","📎"].map(h=>(
-                  <th key={h} style={{padding:"6px 8px",textAlign:h==="Fecha"||h==="Turno"||h==="Persona"||h==="📎"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".6rem",letterSpacing:".04em",textTransform:"uppercase",whiteSpace:"nowrap",borderBottom:"2px solid #E8DCC8"}}>{h}</th>
+                {["Fecha","Turno","Persona","MP/FUDO","FUDO Tar.","PostNet","Digital","Uber","Efectivo","Vta. Sist.","Dif."].map(h=>(
+                  <th key={h} style={{padding:"6px 8px",textAlign:h==="Fecha"||h==="Turno"||h==="Persona"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".6rem",letterSpacing:".04em",textTransform:"uppercase",whiteSpace:"nowrap",borderBottom:"2px solid #E8DCC8"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {ultimos.map((c,i)=>(
-                <React.Fragment key={c.id}>
-                  <tr style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                    <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>{fmtF(c.fecha)}</td>
-                    <td style={{padding:"6px 8px",whiteSpace:"nowrap",fontSize:".72rem"}}>{c.turno}</td>
-                    <td style={{padding:"6px 8px",fontSize:".72rem"}}>{c.persona}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontWeight:600,fontSize:".72rem"}}>{c.mp?fmt(c.mp):"—"}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.fudoTarjetas?fmt(c.fudoTarjetas):"—"}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.postnet?fmt(c.postnet):"—"}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.digital?fmt(c.digital):"—"}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.uber?fmt(c.uber):"—"}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:600,fontSize:".72rem"}}>{fmt(c.efectivo)}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#2C1A0E",fontWeight:600,fontSize:".72rem"}}>{c.ventaSistema?fmt(c.ventaSistema):"—"}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:".72rem",color:c.diferencia>=0?"#2D6A4F":"#C0392B"}}>{c.diferencia>=0?"+":""}{fmt(c.diferencia)}</td>
-                    <td style={{padding:"6px 8px"}}>
-                      {c.fotos&&c.fotos.length>0
-                        ?<button onClick={()=>setVerFotos(c)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".65rem",fontWeight:600,cursor:"pointer",padding:"3px 7px",whiteSpace:"nowrap"}}>Ver foto{c.fotos.length>1?"s":""} ({c.fotos.length})</button>
-                        :<span style={{fontSize:".65rem",color:"#E8DCC8"}}>—</span>}
-                    </td>
-                  </tr>
-
+              {grupos.map(g=>(
+                <React.Fragment key={g.dia}>
+                  {g.items.map((c,i)=>(
+                    <tr key={c.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                      <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>{fmtF(c.fecha)}</td>
+                      <td style={{padding:"6px 8px",whiteSpace:"nowrap",fontSize:".72rem"}}>{c.turno}</td>
+                      <td style={{padding:"6px 8px",fontSize:".72rem"}}>{c.persona}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontWeight:600,fontSize:".72rem"}}>{c.mp?fmt(c.mp):"—"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.fudoTarjetas?fmt(c.fudoTarjetas):"—"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.postnet?fmt(c.postnet):"—"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.digital?fmt(c.digital):"—"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontSize:".72rem"}}>{c.uber?fmt(c.uber):"—"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:600,fontSize:".72rem"}}>{fmt(c.efectivo)}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#2C1A0E",fontWeight:600,fontSize:".72rem"}}>{c.ventaSistema?fmt(c.ventaSistema):"—"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:".72rem",color:c.diferencia>=0?"#2D6A4F":"#C0392B",whiteSpace:"nowrap"}}>{esDifGrande(c)?"⚠️ ":""}{c.diferencia>=0?"+":""}{fmt(c.diferencia)}</td>
+                    </tr>
+                  ))}
+                  {g.items.length>1&&(
+                    <tr>
+                      <td colSpan={11} style={{padding:"5px 8px",fontSize:".7rem",fontWeight:700,color:"#2C1A0E",textAlign:"right",borderTop:"1px solid #E8DCC8",background:"#F2EAE0"}}>Subtotal {fmtF(g.items[0].fecha)}: {fmt(g.subtotal)}</td>
+                    </tr>
+                  )}
                 </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
-    )}
+      )}
+    </div>
     {confElim&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
@@ -5847,7 +5892,6 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
   const[confElim,setConfElim]=useState(null);
   const[editItem,setEditItem]=useState(null);
   const[editForm,setEditForm]=useState({});
-  const[editFotos,setEditFotos]=useState([]);
   const[buscar,setBuscar]=useState("");
 
   const abrirEditar=c=>{
@@ -5865,7 +5909,6 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
       ventaSistema:String(c.ventaSistema||0),
       obs:c.obs||"",
     });
-    setEditFotos(c.fotos||[]);
   };
 
   const eliminar=async()=>{
@@ -5880,6 +5923,13 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
   const difEdit=totalEdit-n(editForm.ventaSistema);
 
   const guardarEdit=async()=>{
+    const c0=editItem;
+    // Deja rastro de qué cambió: los 3 campos que impactan Caja Disponible/Digital (efectivo, digital,
+    // venta sistema). Si ninguno cambió, no se agrega nada al historial (ej: solo corregiste la persona u obs).
+    const cambios=[];
+    if(n(editForm.efectivo)!==Number(c0.efectivo||0))cambios.push(`Efectivo ${fmt(c0.efectivo||0)} → ${fmt(n(editForm.efectivo))}`);
+    if(totalDigEdit!==Number(c0.totalDigital||0))cambios.push(`Digital ${fmt(c0.totalDigital||0)} → ${fmt(totalDigEdit)}`);
+    if(n(editForm.ventaSistema)!==Number(c0.ventaSistema||0))cambios.push(`Venta sistema ${fmt(c0.ventaSistema||0)} → ${fmt(n(editForm.ventaSistema))}`);
     const nuevos=cierresCaja.map(c=>{
       if(c.id!==editItem.id)return c;
       return{
@@ -5891,33 +5941,13 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
         postnet:n(editForm.postnet),digital:n(editForm.digital),uber:n(editForm.uber),
         efectivo:n(editForm.efectivo),totalDigital:totalDigEdit,
         total:totalEdit,ventaSistema:n(editForm.ventaSistema),
-        diferencia:difEdit,obs:editForm.obs,fotos:editFotos,
+        diferencia:difEdit,obs:editForm.obs,
+        historialEdits:cambios.length?[{fecha:new Date().toISOString(),cambios},...(c.historialEdits||[])]:c.historialEdits,
       };
     });
     await saveCierresCaja(nuevos);
     setEditItem(null);
     toast("Cierre actualizado ✓");
-  };
-
-  const agregarFotoEdit=async e=>{
-    const files=Array.from(e.target.files);
-    const comp=await Promise.all(files.map(f=>new Promise(res=>{
-      const r=new FileReader();
-      r.onload=async ev=>{
-        const img=new Image();
-        img.onload=()=>{
-          let{width:w,height:h}=img;
-          if(w>900){h=Math.round(h*900/w);w=900;}
-          const c=document.createElement("canvas");c.width=w;c.height=h;
-          c.getContext("2d").drawImage(img,0,0,w,h);
-          res(c.toDataURL("image/jpeg",0.7));
-        };
-        img.src=ev.target.result;
-      };
-      r.readAsDataURL(f);
-    })));
-    setEditFotos(prev=>[...prev,...comp]);
-    e.target.value="";
   };
 
   const sorted=[...cierresCaja]
@@ -5943,7 +5973,7 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:480}}>
         <thead>
           <tr style={{background:"#F9F6F1"}}>
-            {["Fecha","Turno","Persona","Efectivo","Fotos","Acciones"].map(h=>(
+            {["Fecha","Turno","Persona","Efectivo","","Acciones"].map(h=>(
               <th key={h} style={{padding:"6px 8px",textAlign:h==="Acciones"||h==="Efectivo"?"right":"left",fontWeight:700,color:"#7B7063",fontSize:".63rem",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
             ))}
           </tr>
@@ -5956,9 +5986,9 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
               <td style={{padding:"6px 8px"}}>{c.persona}</td>
               <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:600}}>{fmt(c.efectivo)}</td>
               <td style={{padding:"6px 8px"}}>
-                {c.fotos&&c.fotos.length>0
-                  ?<span style={{fontSize:".68rem",color:"#2D6A4F",fontWeight:600}}>📷 {c.fotos.length}</span>
-                  :<span style={{fontSize:".68rem",color:"#E74C3C"}}>Sin foto</span>}
+                {c.historialEdits&&c.historialEdits.length>0
+                  ?<span title={c.historialEdits.map(h=>fmtFL(h.fecha)+": "+h.cambios.join(" · ")).join("\n")} style={{fontSize:".65rem",color:"#B7860B",fontWeight:600,cursor:"help"}}>✏️ editado</span>
+                  :null}
               </td>
               <td style={{padding:"6px 8px",textAlign:"right"}}>
                 <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
@@ -6040,26 +6070,14 @@ function CierresAdmin({cierresCaja,saveCierresCaja}){
 
           <EF label="Observaciones" fkey="obs" type="text"/>
 
-          {/* FOTOS */}
-          <div style={{marginBottom:14}}>
-            <label style={{display:"block",fontSize:".72rem",fontWeight:600,color:"#2C1A0E",marginBottom:8}}>📷 Fotos del cierre</label>
-            <label style={{display:"flex",alignItems:"center",gap:10,border:"2px dashed #E8DCC8",borderRadius:10,padding:"10px 14px",cursor:"pointer",background:"#F9F6F1",marginBottom:8}}>
-              <input type="file" accept="image/*" multiple onChange={agregarFotoEdit} style={{display:"none"}}/>
-              <span style={{fontSize:"1.2rem"}}>📷</span>
-              <span style={{fontSize:".78rem",color:"#7B7063"}}>Agregar fotos</span>
-            </label>
-            {editFotos.length>0&&(
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {editFotos.map((f,j)=>(
-                  <div key={j} style={{position:"relative"}}>
-                    <img src={f} style={{width:64,height:64,objectFit:"cover",borderRadius:8,border:"2px solid #E8DCC8"}} alt=""/>
-                    <button onClick={()=>setEditFotos(prev=>prev.filter((_,k)=>k!==j))}
-                      style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",background:"#E74C3C",border:"none",color:"#fff",fontSize:".7rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {editItem.historialEdits&&editItem.historialEdits.length>0&&(
+            <div style={{marginBottom:14,background:"#F9F6F1",borderRadius:10,padding:"10px 12px"}}>
+              <div style={{fontSize:".65rem",fontWeight:700,letterSpacing:".06em",textTransform:"uppercase",color:"#7B7063",marginBottom:6}}>Historial de correcciones</div>
+              {editItem.historialEdits.map((h,j)=>(
+                <div key={j} style={{fontSize:".72rem",color:"#7B7063",marginBottom:3}}>{fmtFL(h.fecha)}: {h.cambios.join(" · ")}</div>
+              ))}
+            </div>
+          )}
 
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setEditItem(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
@@ -6244,7 +6262,7 @@ function TabAdmin({proveedores,saveProveedores,cajaInicial,saveCajaInicial,askPa
 
     {seccion==="cierresadmin"&&(
       <Card title="Gestión de cierres de caja">
-        <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:12}}>Eliminá registros incorrectos. Los cierres afectan la caja disponible.</p>
+        <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:12}}>Editá o eliminá registros incorrectos. Los cierres afectan la Caja Disponible y la Caja Digital — si corregís Efectivo, Digital o Venta sistema, queda anotado en el historial de correcciones del cierre.</p>
         <CierresAdmin cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja}/>
       </Card>
     )}
