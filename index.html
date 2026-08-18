@@ -658,7 +658,7 @@ function App({role="full",cerrarSesion}){
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores} pagos={pagos} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} calcDigital={calcDigital}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
-        {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saldo={saldo}/>}
+        {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saldo={saldo} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock} calcDeuda={calcDeuda}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass}/>}
@@ -4075,7 +4075,7 @@ function TabDashboard({boletas,cierres,cierresCaja,pagos,sueldos,gastos,proveedo
 
 
 
-function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,ajustesCajaEfectivo,saldo}){
+function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,ajustesCajaEfectivo,saldo,proveedores,pagarConExcedente,empleados,saveEmpleados,liquidaciones}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -4093,6 +4093,111 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const[retiroFecha,setRetiroFecha]=useState(hoyLocal());
   const[retiroBusy,setRetiroBusy]=useState(false);
   const[verHistorialRetiro,setVerHistorialRetiro]=useState(false);
+
+  // Registrar pago (igual mecanismo que en Caja Digital): agrupa proveedor, sueldo o gasto, todo lo que se
+  // pueda pagar acá, con forma de pago Efectivo por defecto ya que estamos parados en Caja Disponible.
+  const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
+  const[tipoPago,setTipoPago]=useState("proveedor"); // "proveedor" | "sueldo" | "gasto"
+  const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
+  const[montoPago,setMontoPago]=useState("");const[formaPago,setFormaPago]=useState("Efectivo");
+  const[obsPago,setObsPago]=useState("");const[fechaPago,setFechaPago]=useState(hoyLocal());
+  const[busyPago,setBusyPago]=useState(false);
+  const[nuevoRegModal,setNuevoRegModal]=useState(false);
+  const[nuevoRegNombre,setNuevoRegNombre]=useState("");
+  const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
+  const[empSueldo,setEmpSueldo]=useState("");
+  const[conceptoSueldo,setConceptoSueldo]=useState("Sueldo");
+  const[hsExtrasSueldo,setHsExtrasSueldo]=useState("");
+  const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const CATS_BASE_DIG=['Alquiler','Contadora','Abogada','Conciliaciones','Amex','Impuestos','Carta Documento','Disney','FUDO','Fumigador','Mantenimiento','Movistar','Rapiboy','Retiro para sueldos'];
+  const[catsGasto,setCatsGasto]=useState(()=>{
+    try{
+      const s=localStorage.getItem("amapola_cats_gastos");
+      const guardadas=s?JSON.parse(s):[];
+      return Array.from(new Set([...CATS_BASE_DIG,...guardadas]));
+    }catch{return CATS_BASE_DIG;}
+  });
+  const[catGasto,setCatGasto]=useState("");
+  const[nuevaCatModal,setNuevaCatModal]=useState(false);
+  const[nuevaCat,setNuevaCat]=useState("");
+  const proveedoresActivos=(proveedores||[]).filter(p=>p.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  const agregarRegistrador=async()=>{
+    const nombre=nuevoRegNombre.trim();
+    if(!nombre){toast("Ingresá un nombre");return;}
+    if(registradores.some(r=>norm(r.nombre)===norm(nombre))){toast("Ya existe");setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);return;}
+    const nuevo={id:uid(),nombre,apellido:"",dni:"",domicilio:"",telPropio:"",telContacto:"",estado:"Activo"};
+    await saveEmpleados([...(empleados||[]),nuevo]);
+    setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);
+    toast("Agregado ✓");
+  };
+
+  const agregarCategoriaGasto=()=>{
+    if(!nuevaCat.trim()){toast("Ingresá el nombre de la categoría");return;}
+    if(catsGasto.includes(nuevaCat.trim())){toast("Ya existe esa categoría");return;}
+    const nuevas=[...catsGasto,nuevaCat.trim()];
+    setCatsGasto(nuevas);
+    localStorage.setItem("amapola_cats_gastos",JSON.stringify(nuevas));
+    setCatGasto(nuevaCat.trim());
+    setNuevaCat("");setNuevaCatModal(false);
+    toast("Categoría creada ✓");
+  };
+
+  const limpiarFormPago=()=>{
+    setProv("");setEmp("");setEmpSueldo("");setConceptoSueldo("Sueldo");setHsExtrasSueldo("");
+    setCatGasto("");
+    setMontoPago("");setObsPago("");setFechaPago(hoyLocal());
+  };
+
+  const guardarPago=async()=>{
+    // Igual mecanismo que "Antes bloqueaba" en Caja Digital: si supera lo disponible (acá, caja efectivo),
+    // se permite igual con confirm de por medio en vez de bloquear directo.
+    if(formaPago==="Efectivo"&&Number(montoPago)>Number(saldo||0)){
+      if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(Number(saldo||0)-Number(montoPago))}. ¿Confirmás igual?`))return false;
+    }
+
+    if(tipoPago==="proveedor"){
+      if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
+      setBusyPago(true);
+      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
+      await pagarConExcedente(pagoBase,pagos,savePagos);
+      setBusyPago(false);limpiarFormPago();
+      toast("Pago registrado ✓");
+      return true;
+    }
+
+    if(tipoPago==="sueldo"){
+      if(!empSueldo||!montoPago){toast("Elegí un empleado e ingresá el monto");return false;}
+      if(conceptoSueldo==="Sueldo"){
+        const per=(fechaPago||hoyLocal()).slice(0,7);
+        const empMatch=(empleados||[]).find(e=>norm(e.nombre)===norm(empSueldo)||norm(e.nombre).startsWith(norm(empSueldo))||norm(empSueldo).startsWith(norm(e.nombre)));
+        const liq=empMatch?(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada"):null;
+        if(liq){
+          const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
+          if(pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)){
+            if(!confirm("⚠️ "+empSueldo+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(pagado)+"). ¿Registrar este pago de todas formas?"))return false;
+          }
+        }
+      }
+      setBusyPago(true);
+      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO}]);
+      setBusyPago(false);limpiarFormPago();
+      toast("Sueldo registrado ✓");
+      return true;
+    }
+
+    // gasto (pago digital u otro)
+    if(!catGasto||!montoPago){toast("Elegí una categoría e ingresá el monto");return false;}
+    setBusyPago(true);
+    const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+    const registro={id:uid(),tipo:"gasto",categoria:catGasto,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
+    await saveGastos([...(gastos||[]),registro]);
+    setBusyPago(false);limpiarFormPago();
+    toast("Pago registrado ✓");
+    return true;
+  };
 
   const pagosEf    = (pagos||[]).filter(p=>p.forma==="Efectivo").map(p=>({...p,_cat:"pago",  _label:p.proveedor,_signo:-1}));
   const sueldosEf  = (sueldos||[]).filter(s=>s.forma==="Efectivo").map(s=>({...s,_cat:"sueldo",_label:s.empleado+" · "+(s.concepto||"Sueldo"),_signo:-1}));
@@ -4278,7 +4383,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   </>);
 
   return(<>
-    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro y cada sueldo pagado con esa plata — tocá 'Ver historial' para abrirlo en una pantalla aparte. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
+    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague: un pago a Proveedor, un Sueldo o un Gasto — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Gastos. Por defecto la forma de pago es Efectivo (ya que estás en Caja Disponible), pero también podés elegir Transferencia, Amex o Retiro si hace falta — es el mismo botón que hay en Caja Digital, nada más que acá arranca en Efectivo. Si el monto supera lo que tenés disponible en caja, te avisa y te deja confirmar igual (la caja queda en negativo).\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro y cada sueldo pagado con esa plata — tocá 'Ver historial' para abrirlo en una pantalla aparte. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
 
     <div style={{background:"#2D6A4F",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Saldo final del período</div>
@@ -4292,6 +4397,124 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
         ))}
       </div>
     </div>
+
+    <div style={{marginBottom:16}}>
+      <button onClick={()=>setNuevoPagoModal(true)} style={{padding:"10px 16px",border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontSize:".82rem",fontWeight:600,cursor:"pointer"}}>+ Registrar pago</button>
+    </div>
+
+    {nuevoPagoModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nuevo pago</p>
+            <button onClick={()=>setNuevoPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+          </div>
+
+          {nuevaCatModal&&(
+            <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+              <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+                <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
+                <input value={nuevaCat} onChange={e=>setNuevaCat(e.target.value)} placeholder="Ej: Seguro, Contador, ..."
+                  autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCategoriaGasto()}
+                  style={{...iS,marginBottom:16}}/>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+                  <button onClick={agregarCategoriaGasto} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TIPO DE PAGO */}
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            {[["proveedor","Proveedor"],["sueldo","Sueldo"],["gasto","Gasto"]].map(([v,l])=>(
+              <button key={v} onClick={()=>{setTipoPago(v);limpiarFormPago();}} style={{flex:1,padding:"8px 6px",borderRadius:10,border:"1px solid "+(tipoPago===v?"#2C1A0E":"#E8DCC8"),background:tipoPago===v?"#2C1A0E":"#fff",color:tipoPago===v?"#fff":"#7B7063",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>{l}</button>
+            ))}
+          </div>
+
+          {tipoPago==="proveedor"&&(<>
+            <Field label="Proveedor">
+              <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
+                <option value="">— Elegí un proveedor —</option>
+                {proveedoresActivos.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Registrado por">
+              <div style={{display:"flex",gap:8}}>
+                <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí —</option>
+                  {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
+                </select>
+                <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+          </>)}
+
+          {tipoPago==="sueldo"&&(<>
+            <Field label="Empleado">
+              <select value={empSueldo} onChange={e=>setEmpSueldo(e.target.value)} style={sS}>
+                <option value="">— Elegí un empleado —</option>
+                {EMPS.map(e=><option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Concepto">
+              <select value={conceptoSueldo} onChange={e=>{setConceptoSueldo(e.target.value);setHsExtrasSueldo("");}} style={sS}>
+                {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </Field>
+            {conceptoSueldo==="HS Extras"&&(
+              <Field label="Cantidad de horas extras">
+                <Inp type="number" value={hsExtrasSueldo} onChange={setHsExtrasSueldo} placeholder="Ej: 4"/>
+              </Field>
+            )}
+          </>)}
+
+          {tipoPago==="gasto"&&(
+            <Field label="Categoría">
+              <div style={{display:"flex",gap:8}}>
+                <select value={catGasto} onChange={e=>setCatGasto(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí una categoría —</option>
+                  {catsGasto.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+                <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
+                  style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+          )}
+
+          <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
+          <Field label="Forma de pago">
+            <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
+              <option value="Efectivo">Efectivo (descuenta de caja)</option>
+              <option value="Transferencia">Transferencia (descuenta disponible digital)</option>
+              {(tipoPago==="proveedor"||tipoPago==="gasto")&&<option value="Amex">Amex</option>}
+              {tipoPago==="sueldo"&&<option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>}
+            </select>
+          </Field>
+          {formaPago==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
+          {formaPago==="Transferencia"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🏦 Este pago descontará del disponible digital, no de esta caja.</div>}
+          {formaPago==="Amex"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💳 No descuenta caja ni banco — queda cargado al resumen de la tarjeta.</div>}
+          {formaPago==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta caja ni banco — se paga con efectivo ya retirado antes (cargado como Gasto "Retiro para sueldos").</div>}
+          <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: pago parcial, boleta #..."/></Field>
+          <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
+
+          <Btn bg="#2D6A4F" onClick={async()=>{if(await guardarPago())setNuevoPagoModal(false);}} disabled={busyPago}>{busyPago?"Guardando…":"Registrar pago"}</Btn>
+        </div>
+      </div>
+    )}
+
+    {nuevoRegModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
+          <input value={nuevoRegNombre} onChange={e=>setNuevoRegNombre(e.target.value)} placeholder="Nombre" autoFocus onKeyDown={e=>e.key==="Enter"&&agregarRegistrador()} style={{...iS,marginBottom:16}}/>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{setNuevoRegModal(false);setNuevoRegNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={agregarRegistrador} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
+          </div>
+        </div>
+      </div>
+    )}
 
     <div style={{background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"14px 20px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
