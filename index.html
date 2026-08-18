@@ -496,6 +496,18 @@ function App({role="full",cerrarSesion}){
     const deducciones=0;
     return{ini,ingresos,egTransf:egTotal,saldoReal,deducciones};
   };
+  // Único punto de entrada para "Actualizar saldo banco" (usado desde Caja Digital, Gerencia y Cierres de Caja).
+  // Antes cada pantalla llamaba directo a saveCajaDigitalSaldo() sin dejar ajuste en el historial —
+  // eso hacía que calcDigital() no moviera el corte (ultimoAjuste) y los movimientos por transferencia
+  // posteriores se volvieran a sumar sobre un saldo que ya los tenía adentro. Unificado acá (2026-08-18).
+  const actualizarSaldoBanco=async(saldoNuevo,nota,fecha)=>{
+    if(!nota||!nota.trim()){toast("Ingresá el motivo del ajuste");return false;}
+    const saldoAnterior=Number(cajaDigitalSaldo)||0;
+    await saveCajaDigitalSaldo(saldoNuevo);
+    const nuevoAjuste={id:uid(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString(),saldoAnterior,saldoNuevo,diferencia:saldoNuevo-saldoAnterior,nota:nota.trim()};
+    await saveCajaDigitalAjustes([nuevoAjuste,...(cajaDigitalAjustes||[])]);
+    return true;
+  };
   // Pares de proveedores que comparten crédito (excedente de A → B y viceversa)
   const PARES_CREDITO=[["Avenida Efectivo","Avenida Digital"]];// nombres deben calzar EXACTO con proveedores.nombre
 
@@ -657,9 +669,9 @@ function App({role="full",cerrarSesion}){
         {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras}/>}
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores} pagos={pagos} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} calcDigital={calcDigital}/>}
-        {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo}/>}
+        {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} actualizarSaldoBanco={actualizarSaldoBanco}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
-        {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
+        {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} actualizarSaldoBanco={actualizarSaldoBanco} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock} calcDeuda={calcDeuda}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} saveGastos={saveGastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo} setTab={setTab}/>}
@@ -670,7 +682,7 @@ function App({role="full",cerrarSesion}){
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
-        {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} calcDigital={calcDigital}/>}
+        {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
       {lightbox&&<Lightbox src={lightbox} onClose={()=>setLightbox(null)}/>}
@@ -1008,7 +1020,14 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
       const filtradas=[...boletas]
         .filter(b=>{const f=b.fecha.slice(0,10);return(!desdeF||f>=desdeF)&&(!hastaF||f<=hastaF);})
         .filter(b=>!filtroProvBol||norm(b.proveedor)===norm(filtroProvBol))
-        .sort((a,b2)=>new Date(b2.fecha)-new Date(a.fecha));
+        .sort((a,b2)=>{
+          // Más nueva primero. Como la fecha guarda solo el día (mediodía fijo), varias boletas cargadas
+          // el mismo día empatan en fecha — ahí desempata por id (que arranca con la hora de creación) para
+          // que la última que cargaste quede arriba de todo, no abajo del grupo del día.
+          const d=new Date(b2.fecha)-new Date(a.fecha);
+          if(d!==0)return d;
+          return String(b2.id||"").localeCompare(String(a.id||""));
+        });
       const total=filtradas.reduce((s,b)=>s+Number(b.monto||0),0);
       return(
         <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
@@ -4741,7 +4760,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   </>);
 }
 
-function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaDigitalAjustes,saveCajaDigitalAjustes,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,cierresCaja,proveedores,pagarConExcedente,empleados,saveEmpleados,liquidaciones}){
+function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaDigitalAjustes,saveCajaDigitalAjustes,actualizarSaldoBanco,pagos,savePagos,sueldos,saveSueldos,gastos,saveGastos,cierresCaja,proveedores,pagarConExcedente,empleados,saveEmpleados,liquidaciones}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -4753,6 +4772,8 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   const[buscar,setBuscar]=useState("");
   const[saldoBanco,setSaldoBanco]=useState("");
   const[notaBanco,setNotaBanco]=useState("");
+  const[fechaBanco,setFechaBanco]=useState(hoyLocal());
+  const[editAjusteId,setEditAjusteId]=useState(null);
   const[savingBanco,setSavingBanco]=useState(false);
   const[verSaldoBanco,setVerSaldoBanco]=useState(false);
   const[editItem,setEditItem]=useState(null);
@@ -4868,22 +4889,44 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     return true;
   };
 
+  const limpiarAjusteBanco=()=>{setEditAjusteId(null);setSaldoBanco("");setNotaBanco("");setFechaBanco(hoyLocal());};
+
   const actualizarBanco=async()=>{
     if(!saldoBanco){toast("Ingresá el saldo real");return;}
+    if(!notaBanco.trim()){toast("Ingresá el motivo del ajuste");return;}
     setSavingBanco(true);
-    const saldoAnterior=Number(cajaDigitalSaldo)||0;
     const saldoNuevo=Number(saldoBanco);
-    await saveCajaDigitalSaldo(saldoNuevo);
-    const nuevoAjuste={
-      fecha:new Date().toISOString(),
-      saldoAnterior,
-      saldoNuevo,
-      diferencia:saldoNuevo-saldoAnterior,
-      nota:notaBanco.trim(),
-    };
-    await saveCajaDigitalAjustes([nuevoAjuste,...(cajaDigitalAjustes||[])]);
-    setSavingBanco(false);setSaldoBanco("");setNotaBanco("");
+    if(editAjusteId){
+      // Editar un ajuste existente: si es el más reciente (el que rige el saldo actual), el saldo real de
+      // Caja Digital también se corrige. Si es uno viejo, solo se corrige el texto del historial — no
+      // afecta el cálculo (calcDigital solo mira cajaDigitalSaldo y la fecha del ajuste más reciente).
+      const esUltimo=cajaDigitalAjustes&&cajaDigitalAjustes[0]&&cajaDigitalAjustes[0].id===editAjusteId;
+      const fechaISO=fechaBanco?fechaLocalISO(fechaBanco):new Date().toISOString();
+      const nuevas=(cajaDigitalAjustes||[]).map(a=>a.id===editAjusteId?{...a,saldoNuevo,fecha:fechaISO,diferencia:saldoNuevo-Number(a.saldoAnterior||0),nota:notaBanco.trim()}:a);
+      await saveCajaDigitalAjustes(nuevas);
+      if(esUltimo)await saveCajaDigitalSaldo(saldoNuevo);
+      setSavingBanco(false);limpiarAjusteBanco();
+      toast("Ajuste actualizado ✓");
+      return;
+    }
+    const ok=await actualizarSaldoBanco(saldoNuevo,notaBanco,fechaBanco);
+    setSavingBanco(false);
+    if(ok===false)return;
+    limpiarAjusteBanco();
     toast("Saldo banco actualizado ✓");
+  };
+
+  const editarAjusteBanco=a=>{
+    if(a.tipo==="prestamo"){toast("Los préstamos se editan desde Amex");return;}
+    if(!a.id){toast("Este ajuste es de antes de la mejora y no se puede editar — registrá uno nuevo si hace falta corregir.");return;}
+    setEditAjusteId(a.id);setSaldoBanco(String(a.saldoNuevo));setNotaBanco(a.nota||"");setFechaBanco(a.fecha?a.fecha.slice(0,10):hoyLocal());
+  };
+
+  const eliminarAjusteBanco=async a=>{
+    if(!confirm("¿Eliminar este ajuste del historial? El saldo actual de Caja Digital no se modifica automáticamente al borrarlo."))return;
+    await saveCajaDigitalAjustes((cajaDigitalAjustes||[]).filter(x=>x.id!==a.id));
+    toast("Eliminado");
+    if(editAjusteId===a.id)limpiarAjusteBanco();
   };
 
   // Movimientos digitales
@@ -4955,7 +4998,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   return(<>
-    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague en digital: un pago a Proveedor, un Sueldo o un Gasto (Pagos Digitales) — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Pagos Digitales. Por defecto la forma de pago es Transferencia, pero también podés elegir Efectivo (o Amex/Retiro según el tipo) si hace falta.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• Los préstamos que cargues en 🏦 Amex → 'Registrar préstamo' aparecen acá como una fila de Haber (🏦, monto recibido) el mismo día que los cargaste — es la inyección de dinero real, a diferencia de una corrección de saldo banco (que no se lista como movimiento porque no es plata que entró, es solo un ajuste contable). Filtrá por 'Préstamos' para verlos solos.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
+    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague en digital: un pago a Proveedor, un Sueldo o un Gasto (Pagos Digitales) — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Pagos Digitales. Por defecto la forma de pago es Transferencia, pero también podés elegir Efectivo (o Amex/Retiro según el tipo) si hace falta.\n• ⚙️ Saldo banco: actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte. Ahora pide motivo (obligatorio) y fecha del ajuste, te muestra la diferencia contra el saldo anterior mientras escribís, y podés Editar o Eliminar cualquier ajuste ya cargado desde el historial de ese mismo cuadro (excepto los préstamos, que se editan desde Amex). Este mismo botón de actualizar saldo también existe en Gerencia — usés el que usés, queda igual de registrado acá.\n• Los préstamos que cargues en 🏦 Amex → 'Registrar préstamo' aparecen acá como una fila de Haber (🏦, monto recibido) el mismo día que los cargaste — es la inyección de dinero real, a diferencia de una corrección de saldo banco (que no se lista como movimiento porque no es plata que entró, es solo un ajuste contable). Filtrá por 'Préstamos' para verlos solos.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
     <div style={{display:"flex",alignItems:"stretch",gap:10,marginBottom:12,flexWrap:"wrap"}}>
@@ -4963,7 +5006,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
         <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
         <div style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
       </div>
-      <button onClick={()=>setVerSaldoBanco(true)} style={{padding:"8px 14px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>⚙️ Saldo banco</button>
+      <button onClick={()=>{limpiarAjusteBanco();setVerSaldoBanco(true);}} style={{padding:"8px 14px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>⚙️ Saldo banco</button>
       <button onClick={()=>setNuevoPagoModal(true)} style={{padding:"8px 14px",border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>+ Registrar pago</button>
     </div>
 
@@ -5086,23 +5129,33 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"88dvh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Actualizar saldo banco</p>
-            <button onClick={()=>setVerSaldoBanco(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>{editAjusteId?"Editar ajuste":"Actualizar saldo banco"}</p>
+            <button onClick={()=>{setVerSaldoBanco(false);limpiarAjusteBanco();}} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
           </div>
-          <input value={saldoBanco} onChange={e=>setSaldoBanco(e.target.value)} placeholder="Ingresar saldo real del banco" style={{...iS,marginBottom:8}}/>
-          <input value={notaBanco} onChange={e=>setNotaBanco(e.target.value)} placeholder="Motivo del ajuste (opcional, ej: liquidación vieja acreditada)" style={{...iS,marginBottom:10}}/>
-          <button onClick={actualizarBanco} disabled={savingBanco} style={{width:"100%",padding:11,borderRadius:10,border:"none",background:"#B7860B",color:"#fff",fontWeight:700,fontSize:".84rem",cursor:"pointer"}}>
-            {savingBanco?"Guardando…":"Actualizar"}
-          </button>
+          <input type="number" value={saldoBanco} onChange={e=>setSaldoBanco(e.target.value)} placeholder="Ingresar saldo real del banco" style={{...iS,marginBottom:8}}/>
+          {saldoBanco&&(()=>{
+            const ajusteEditando=editAjusteId?(cajaDigitalAjustes||[]).find(a=>a.id===editAjusteId):null;
+            const base=ajusteEditando?Number(ajusteEditando.saldoAnterior)||0:Number(cajaDigitalSaldo)||0;
+            const dif=Number(saldoBanco)-base;
+            return(<div style={{fontSize:".78rem",marginBottom:8,color:dif>=0?"#2D6A4F":"#C0392B",fontWeight:600}}>{dif>=0?"+":""}{fmt(dif)} respecto al saldo anterior ({fmt(base)})</div>);
+          })()}
+          <input value={notaBanco} onChange={e=>setNotaBanco(e.target.value)} placeholder="Motivo del ajuste (obligatorio)" style={{...iS,marginBottom:8}}/>
+          <Field label="Fecha del ajuste"><Inp type="date" value={fechaBanco} onChange={setFechaBanco}/></Field>
+          <div style={{display:"flex",gap:10,marginTop:8}}>
+            {editAjusteId&&<button onClick={limpiarAjusteBanco} style={{flex:1,padding:11,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar edición</button>}
+            <button onClick={actualizarBanco} disabled={savingBanco} style={{flex:1,padding:11,borderRadius:10,border:"none",background:"#B7860B",color:"#fff",fontWeight:700,fontSize:".84rem",cursor:"pointer"}}>
+              {savingBanco?"Guardando…":editAjusteId?"Guardar cambios":"Actualizar"}
+            </button>
+          </div>
 
           {cajaDigitalAjustes&&cajaDigitalAjustes.length>0&&(
             <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #E8DCC8"}}>
               <div style={{fontSize:".65rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#7B7063",marginBottom:8}}>Historial de ajustes</div>
-              <div style={{overflowX:"auto",maxHeight:220,overflowY:"auto"}}>
+              <div style={{overflowX:"auto",maxHeight:260,overflowY:"auto"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:".72rem"}}>
                   <thead>
                     <tr style={{background:"#F9F6F1"}}>
-                      {["Fecha","Anterior → Nuevo","Diferencia"].map(h=>(
+                      {["Fecha","Anterior → Nuevo","Diferencia",""].map(h=>(
                         <th key={h} style={{padding:"6px 8px",textAlign:h==="Diferencia"?"right":"left",fontWeight:700,color:"#7B7063",fontSize:".6rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
                       ))}
                     </tr>
@@ -5116,6 +5169,12 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
                           {a.nota&&<div style={{fontSize:".64rem",color:"#7B7063",fontStyle:"italic",marginTop:1}}>{a.nota}</div>}
                         </td>
                         <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:a.diferencia>=0?"#2D6A4F":"#C0392B"}}>{a.diferencia>=0?"+":""}{fmt(a.diferencia)}</td>
+                        <td style={{padding:"6px 8px",whiteSpace:"nowrap"}}>
+                          {a.tipo!=="prestamo"&&a.id&&(<>
+                            <button onClick={()=>editarAjusteBanco(a)} style={{background:"none",border:"none",color:"#2D6A4F",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:8}}>Editar</button>
+                            <button onClick={()=>eliminarAjusteBanco(a)} style={{background:"none",border:"none",color:"#C0392B",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+                          </>)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -5266,23 +5325,26 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 }
 
 
-function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,saveCajaDigitalSaldo}){
+function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSaldoBanco}){
   const[saldoBanco,setSaldoBanco]=useState("");
+  const[notaBanco,setNotaBanco]=useState("");
   const[savingBanco,setSavingBanco]=useState(false);
   const{ingresos,egTransf,saldoReal,deducciones}=calcDigital();
 
   const actualizarBanco=async()=>{
     if(!saldoBanco){toast("Ingresá el saldo real");return;}
     setSavingBanco(true);
-    await saveCajaDigitalSaldo(Number(saldoBanco));
-    setSavingBanco(false);setSaldoBanco("");
+    const ok=await actualizarSaldoBanco(Number(saldoBanco),notaBanco);
+    setSavingBanco(false);
+    if(ok===false)return;
+    setSaldoBanco("");setNotaBanco("");
     toast("Saldo banco actualizado ✓");
   };
 
   const totalDisponible=saldo+saldoReal;
 
   return(<>
-    <ST help={"Vista consolidada para gerencia.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia.\n\nPara actualizar el saldo banco de Caja Digital, ingresá el valor real desde la sección Caja Digital o directamente desde acá."}>Gerencia</ST><SS>Resumen de efectivo y caja digital disponible.</SS>
+    <ST help={"Vista consolidada para gerencia.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia.\n\nPara actualizar el saldo banco de Caja Digital, ingresá el valor real y el motivo (obligatorio) desde acá o desde la sección Caja Digital — es el mismo ajuste, queda en el mismo historial."}>Gerencia</ST><SS>Resumen de efectivo y caja digital disponible.</SS>
 
     {/* TOTAL CONSOLIDADO */}
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
@@ -5318,20 +5380,23 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,saveCajaDigi
           </div>
         ))}
       </div>
-      <div style={{display:"flex",gap:8}}>
+      <div style={{display:"flex",gap:8,marginBottom:8}}>
         <input type="number" value={saldoBanco} onChange={e=>setSaldoBanco(e.target.value)}
-          placeholder="Ingresar saldo inicial banco"
+          placeholder="Ingresar saldo real banco"
           style={{flex:1,background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".85rem",outline:"none",fontFamily:"inherit"}}/>
         <button onClick={actualizarBanco} disabled={savingBanco}
           style={{padding:"9px 16px",border:"none",borderRadius:8,background:"#B7860B",color:"#fff",fontWeight:600,fontSize:".82rem",cursor:"pointer",flexShrink:0}}>
           {savingBanco?"…":"Actualizar"}
         </button>
       </div>
+      <input value={notaBanco} onChange={e=>setNotaBanco(e.target.value)}
+        placeholder="Motivo del ajuste (obligatorio)"
+        style={{width:"100%",background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".82rem",outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
     </div>
   </>);
 }
 
-function TabCierresCaja({cierresCaja,saveCierresCaja,cajaDigitalSaldo,saveCajaDigitalSaldo,calcDigital}){
+function TabCierresCaja({cierresCaja,saveCierresCaja}){
   const TURNOS=["Mostrador Día","Mostrador Noche","PosFUDO1","PosFUDO2"];
   const hoy=hoyLocal();
 
@@ -5347,8 +5412,6 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,cajaDigitalSaldo,saveCajaDi
   const[ventaSistema,setVentaSistema]=useState("");
   const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
-  const[saldoBanco,setSaldoBanco]=useState("");
-  const[savingBanco,setSavingBanco]=useState(false);
   const[fotos,setFotos]=useState([]);
   const[confElim,setConfElim]=useState(null);
   const[verFotos,setVerFotos]=useState(null);
@@ -5400,16 +5463,6 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,cajaDigitalSaldo,saveCajaDi
     setFotos([]);
     toast("Cierre registrado ✓");
   };
-
-  const actualizarBanco=async()=>{
-    if(!saldoBanco){toast("Ingresá el saldo real");return;}
-    setSavingBanco(true);
-    await saveCajaDigitalSaldo(Number(saldoBanco));
-    setSavingBanco(false);setSaldoBanco("");
-    toast("Saldo banco actualizado ✓");
-  };
-
-  const {ingresos,egTransf,saldoReal,deducciones}=calcDigital();
 
   // Últimos cierres
   const ultimos=[...cierresCaja].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).slice(0,10);
@@ -6664,7 +6717,7 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
         await saveCajaDigitalSaldo(saldoNuevo);
         // fecha = momento real en que se aplicó el ajuste (para que el corte de calcDigital sea correcto).
         // fechaMovimiento = fecha que elegiste como "Fecha del préstamo" — es la que se muestra en el Libro diario.
-        await saveCajaDigitalAjustes([{fecha:new Date().toISOString(),fechaMovimiento:fechaLocalISO(fechaCompra),saldoAnterior,saldoNuevo,diferencia:mr,nota:"Préstamo Amex: "+descripcion.trim()+" (recibido "+fmt(mr)+", a devolver "+fmt(mt)+")",tipo:"prestamo"},...(cajaDigitalAjustes||[])]);
+        await saveCajaDigitalAjustes([{id:uid(),fecha:new Date().toISOString(),fechaMovimiento:fechaLocalISO(fechaCompra),saldoAnterior,saldoNuevo,diferencia:mr,nota:"Préstamo Amex: "+descripcion.trim()+" (recibido "+fmt(mr)+", a devolver "+fmt(mt)+")",tipo:"prestamo"},...(cajaDigitalAjustes||[])]);
         toast("Préstamo registrado ✓ · "+fmt(mr)+" sumado a Caja Digital");
       }else{
         toast("Compra registrada");
@@ -7555,7 +7608,11 @@ function AdminBoletas({boletas,saveBoletas,proveedores,empleados,stock,saveStock
   const[busy,setBusy]=useState(false);
 
   const lista=[...boletas]
-    .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    .sort((a,b)=>{
+      const d=new Date(b.fecha)-new Date(a.fecha);
+      if(d!==0)return d;
+      return String(b.id||"").localeCompare(String(a.id||""));
+    });
 
   const filtrada=busqueda.trim()
     ?lista.filter(b=>
