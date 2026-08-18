@@ -101,7 +101,14 @@ const norm=s=>String(s||"").trim().toLowerCase();
 const fmtH=iso=>new Date(iso).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
 const fmtF=iso=>new Date(iso).toLocaleDateString("es-AR",{day:"numeric",month:"short"});
 const hoyLocal=()=>{const d=new Date();const off=d.getTimezoneOffset();const local=new Date(d.getTime()-off*60000);return local.toISOString().slice(0,10);};
-const fechaLocalISO=fecha=>fecha?`${fecha}T12:00:00.000-03:00`:new Date().toISOString();
+// Si la fecha elegida es HOY, guarda la hora real del momento en que se carga (así los movimientos
+// quedan ordenados de verdad dentro del día, no todos a las 12:00). Si es una fecha pasada (o futura,
+// backdateada a mano), no hay forma de saber la hora real, así que sigue usando mediodía fijo como antes.
+const fechaLocalISO=fecha=>{
+  if(!fecha)return new Date().toISOString();
+  if(fecha===hoyLocal())return new Date().toISOString();
+  return `${fecha}T12:00:00.000-03:00`;
+};
 const fmtFL=iso=>new Date(iso).toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"});
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 // Proveedores de Catálogo/Stock que a propósito NO tienen su propio registro en Proveedores —
@@ -881,7 +888,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
       if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(pagoMonto))}. ¿Confirmás igual?`))return;
     }
     setPagoBusy(true);
-    const pagoBase={tipo:"pago",proveedor:prov,empleado:emp.trim()||"—",monto:Number(pagoMonto),forma:pagoForma,obs:pagoObs.trim(),fecha:pagoFecha?new Date(pagoFecha+"T12:00:00").toISOString():new Date().toISOString()};
+    const pagoBase={tipo:"pago",proveedor:prov,empleado:emp.trim()||"—",monto:Number(pagoMonto),forma:pagoForma,obs:pagoObs.trim(),fecha:pagoFecha?fechaLocalISO(pagoFecha):new Date().toISOString()};
     await pagarConExcedente(pagoBase,pagos,savePagos);
     setPagoBusy(false);setPagoModal(false);setPagoMonto("");setPagoObs("");setPagoForma("Efectivo");setPagoFecha(hoyLocal());
     toast("Pago registrado ✓");
