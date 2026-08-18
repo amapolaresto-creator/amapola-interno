@@ -4170,7 +4170,12 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const saldoRetiro=totalRetirado-totalUsadoDeRetiro;
   const retirosCreados=gastosEf.filter(g=>(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).map(g=>({...g,_tipoRetiro:"retiro"}));
   const retirosUsados=(sueldos||[]).filter(s=>s.forma==="Retiro").map(s=>({...s,_cat:"sueldo",_label:s.empleado+" · "+(s.concepto||"Sueldo"),_tipoRetiro:"uso"}));
-  const movsRetiro=[...retirosCreados,...retirosUsados].sort((a,b)=>a.fecha.localeCompare(b.fecha)).reverse();
+  const movsRetiroAsc=[...retirosCreados,...retirosUsados].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  let _acumRetiro=0;
+  const movsRetiro=movsRetiroAsc.map(m=>{
+    _acumRetiro+=m._tipoRetiro==="retiro"?Number(m.monto||0):-Number(m.monto||0);
+    return{...m,_saldoR:_acumRetiro};
+  }).reverse();
 
   const guardarRetiro=async()=>{
     if(!retiroMonto){toast("Ingresá el monto retirado");return;}
@@ -4192,20 +4197,43 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       <div style={{fontSize:".68rem",color:"#B7860B",opacity:.85}}>Retirado en total: {fmt(totalRetirado)} · Ya usado en sueldos: {fmt(totalUsadoDeRetiro)}</div>
     </div>
     {!movsRetiro.length?<Empty icon="💰">Todavía no hay movimientos</Empty>:(
-      <div style={{background:"#fff",borderRadius:14,padding:"6px 20px",boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
-        {movsRetiro.map((m,i)=>(
-          <div key={m._cat+m.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"10px 0",borderBottom:i<movsRetiro.length-1?"1px solid #F2EAE0":"none",fontSize:".82rem"}}>
-            <div style={{minWidth:0,flex:1}}>
-              <div style={{fontWeight:600,color:"#2C1A0E"}}>{m._tipoRetiro==="retiro"?"Retiro de caja":m._label}</div>
-              <div style={{fontSize:".68rem",color:"#7B7063"}}>{fmtF(m.fecha)}{m.obs?" · "+m.obs:""}</div>
-            </div>
-            <div style={{fontWeight:700,color:m._tipoRetiro==="retiro"?"#2D6A4F":"#C0392B",whiteSpace:"nowrap"}}>{m._tipoRetiro==="retiro"?"+":"-"}{fmt(m.monto)}</div>
-            <div style={{display:"flex",gap:4,flexShrink:0}}>
-              <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".65rem",fontWeight:600,cursor:"pointer",padding:"4px 8px"}}>✏️</button>
-              <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".65rem",fontWeight:600,cursor:"pointer",padding:"4px 8px"}}>✕</button>
-            </div>
-          </div>
-        ))}
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:520}}>
+          <thead>
+            <tr style={{background:"#F9F6F1"}}>
+              {["Fecha","Concepto","Debe","Haber","Saldo",""].map(h=>(
+                <th key={h||"acc"} style={{padding:"7px 8px",textAlign:["Fecha","Concepto",""].includes(h)?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {movsRetiro.map((m,i)=>(
+              <tr key={m._cat+m.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>{fmtF(m.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(m.fecha)}</span></td>
+                <td style={{padding:"6px 8px"}}>
+                  <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{m._tipoRetiro==="retiro"?"Retiro de caja":m._label}</div>
+                  {m.obs&&<div style={{fontSize:".63rem",color:"#7B7063",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{m.obs}</div>}
+                </td>
+                <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>{m._tipoRetiro!=="retiro"?fmt(m.monto):"—"}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>{m._tipoRetiro==="retiro"?fmt(m.monto):"—"}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldoR>=0?"#2C1A0E":"#C0392B"}}>{fmt(m._saldoR)}</td>
+                <td style={{padding:"6px 8px"}}>
+                  <div style={{display:"flex",gap:4}}>
+                    <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
+                    <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            <tr style={{background:"#2C1A0E"}}>
+              <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
+              <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalUsadoDeRetiro)}</td>
+              <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalRetirado)}</td>
+              <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:saldoRetiro>=0?"#a9dfbf":"#f5b7b1"}}>{fmt(saldoRetiro)}</td>
+              <td/>
+            </tr>
+          </tbody>
+        </table>
       </div>
     )}
     {editItem&&(
