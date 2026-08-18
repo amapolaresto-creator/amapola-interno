@@ -4588,7 +4588,11 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   const sueldosTr = (sueldos||[]).filter(s=>s.forma==="Transferencia").map(s=>({...s,_cat:"sueldo",_label:s.empleado+" · "+(s.concepto||"Sueldo"),_signo:-1}));
   const gastosTr  = (gastos||[]).filter(g=>g.forma==="Transferencia").map(g=>({...g,_cat:"gasto", _label:g.categoria,_signo:-1}));
   const cierresDig= (cierresCaja||[]).filter(c=>Number(c.totalDigital||0)>0).map(c=>({...c,_cat:"cierre",_label:"Cierre "+c.turno,monto:c.totalDigital,_signo:1}));
-  const allMovs   = [...pagosTr,...sueldosTr,...gastosTr,...cierresDig].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  // Préstamos (inyección de dinero de Amex a Caja Digital) — ajustes de saldo etiquetados tipo:"prestamo"
+  // desde TabAmex. Los demás ajustes ("Actualizar saldo banco") NO se listan acá: son correcciones del
+  // saldo contado, no un movimiento real. El préstamo sí es plata real que entró, por eso se lista.
+  const prestamosInj=(cajaDigitalAjustes||[]).filter(a=>a.tipo==="prestamo").map(a=>({id:"prestamo-"+a.fecha,fecha:a.fecha,_cat:"prestamo",_label:a.nota||"Préstamo Amex",monto:a.diferencia,_signo:1}));
+  const allMovs   = [...pagosTr,...sueldosTr,...gastosTr,...cierresDig,...prestamosInj].sort((a,b)=>a.fecha.localeCompare(b.fecha));
 
   // Filtro fechas
   const desdeF = filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
@@ -4619,7 +4623,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   const totalEgresos=filtradosAsc.filter(m=>m._signo<0).reduce((s,m)=>s+Number(m.monto||0),0);
   const totalIngresos=filtradosAsc.filter(m=>m._signo>0).reduce((s,m)=>s+Number(m.monto||0),0);
 
-  const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":"🏠";
+  const iconoCat=c=>c==="cierre"?"💵":c==="pago"?"💸":c==="sueldo"?"👤":c==="prestamo"?"🏦":"🏠";
 
   const abrirEditar=m=>{
     setEditItem(m);
@@ -4648,7 +4652,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   return(<>
-    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague en digital: un pago a Proveedor, un Sueldo o un Gasto (Pagos Digitales) — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Pagos Digitales. Por defecto la forma de pago es Transferencia, pero también podés elegir Efectivo (o Amex/Retiro según el tipo) si hace falta.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
+    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague en digital: un pago a Proveedor, un Sueldo o un Gasto (Pagos Digitales) — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Pagos Digitales. Por defecto la forma de pago es Transferencia, pero también podés elegir Efectivo (o Amex/Retiro según el tipo) si hace falta.\n• Actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte.\n• Los préstamos que cargues en 🏦 Amex → 'Registrar préstamo' aparecen acá como una fila de Haber (🏦, monto recibido) el mismo día que los cargaste — es la inyección de dinero real, a diferencia de una corrección de saldo banco (que no se lista como movimiento porque no es plata que entró, es solo un ajuste contable). Filtrá por 'Préstamos' para verlos solos.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
     <div style={{display:"flex",alignItems:"stretch",gap:10,marginBottom:12,flexWrap:"wrap"}}>
@@ -4845,7 +4849,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 
       {/* FILTROS TIPO */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."]].map(([v,l])=>(
+        {[["todo","Todo"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."],["prestamo","Préstamos"]].map(([v,l])=>(
           <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#2C1A0E":"transparent",color:filtroTipo===v?"#E8DCC8":"#7B7063"}}>{l}</button>
         ))}
       </div>
@@ -4892,7 +4896,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
                   <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>{m._signo>0?fmt(m.monto):""}</td>
                   <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:m._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(m._saldo)}</td>
                   <td style={{padding:"6px 8px"}}>
-                    {m._cat!=="cierre"&&(
+                    {m._cat!=="cierre"&&m._cat!=="prestamo"&&(
                       <div style={{display:"flex",gap:4}}>
                         <button onClick={()=>abrirEditar(m)} style={{background:"#EAF5F0",border:"none",borderRadius:6,color:"#2D6A4F",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✏️</button>
                         <button onClick={()=>setConfElim(m)} style={{background:"#FFF0EF",border:"none",borderRadius:6,color:"#E74C3C",fontSize:".6rem",fontWeight:600,cursor:"pointer",padding:"3px 6px"}}>✕</button>
@@ -6327,7 +6331,7 @@ function TabAmex({amexCuotas,saveAmexCuotas,proveedores,pagos,cajaDigitalSaldo,s
         const saldoAnterior=Number(cajaDigitalSaldo)||0;
         const saldoNuevo=saldoAnterior+mr;
         await saveCajaDigitalSaldo(saldoNuevo);
-        await saveCajaDigitalAjustes([{fecha:new Date().toISOString(),saldoAnterior,saldoNuevo,diferencia:mr,nota:"Préstamo Amex: "+descripcion.trim()+" (recibido "+fmt(mr)+", a devolver "+fmt(mt)+")"},...(cajaDigitalAjustes||[])]);
+        await saveCajaDigitalAjustes([{fecha:new Date().toISOString(),saldoAnterior,saldoNuevo,diferencia:mr,nota:"Préstamo Amex: "+descripcion.trim()+" (recibido "+fmt(mr)+", a devolver "+fmt(mt)+")",tipo:"prestamo"},...(cajaDigitalAjustes||[])]);
         toast("Préstamo registrado ✓ · "+fmt(mr)+" sumado a Caja Digital");
       }else{
         toast("Compra registrada");
