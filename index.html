@@ -2191,7 +2191,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🧮 Conteo">
-          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una. Un cartel arriba muestra hace cuánto fue el último conteo de ese proveedor/sector y cuántos productos ya cargaste en la pasada actual. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Desde el botón "🧮 Historial de conteo" saltás directo al historial, donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal.
+          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una. Un cartel arriba muestra hace cuánto fue el último conteo de ese proveedor/sector y cuántos productos ya cargaste en la pasada actual. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Desde el botón "🧮 Historial de conteo" se abre una pantalla aparte con todos los conteos hechos (botón "← Volver al conteo" para regresar), donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal.
         </Sec>
 
         <Sec title="🍳 Producción">
@@ -2728,6 +2728,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const[mostrarInactivos,setMostrarInactivos]=useState(false);
   const[colapsados,setColapsados]=useState({});
   const[agruparPor,setAgruparPor]=useState("proveedor");
+  const[verHistorial,setVerHistorial]=useState(false);
   const sectoresCat=[...new Set([...stock.map(s=>s.sector),...catalogo.map(c=>c.sector)].filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
   const tdS={padding:"7px 8px"};
@@ -2909,6 +2910,62 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     <Empty icon="🧮">Todavía no hay productos en el catálogo. Cargalos primero desde 🗂️ Catálogo.</Empty>
   );
 
+  if(verHistorial)return(<>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+      <p style={{fontFamily:"Georgia,serif",fontSize:"1.15rem"}}>🧮 Historial de conteos</p>
+      <button onClick={()=>setVerHistorial(false)} style={{padding:"9px 16px",border:"none",borderRadius:10,background:"#E8DCC8",color:"#2C1A0E",fontSize:".8rem",fontWeight:600,cursor:"pointer"}}>← Volver al conteo</button>
+    </div>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+      <select value={fProv} onChange={e=>setFProv(e.target.value)} style={{...sS,flex:"1 1 200px"}}>
+        <option value="">Todos los proveedores</option>
+        {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
+      </select>
+    </div>
+    {!conteosHist||!conteosHist.length?<Empty icon="🧮">{fProv?`Todavía no hay ningún conteo con productos de ${fProv}`:"Todavía no hiciste ningún conteo"}</Empty>:conteosHist.map(c=>{
+      const abierto=!!expandido[c.id];
+      const conDif=(c.items||[]).filter(i=>i.diferencia!==0);
+      const tituloNota=fProv?`Proveedor: ${fProv}`:c.alcance;
+      return(
+        <div key={c.id} style={{background:"#fff",borderRadius:12,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)",overflow:"hidden"}}>
+          <div onClick={()=>setExpandido({...expandido,[c.id]:!abierto})} style={{padding:"12px 16px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+            <div>
+              <div style={{fontWeight:600,fontSize:".85rem"}}>{abierto?"▾":"▸"} {fmtF(c.fecha)} {fmtH(c.fecha)} · {fProv?`Proveedor: ${fProv}`:c.alcance}</div>
+              <div style={{fontSize:".7rem",color:"#7B7063",marginTop:2}}>{(c.items||[]).length} contados · {conDif.length} con diferencia{c.registradoPor?` · ${c.registradoPor}`:""}</div>
+            </div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              <SmBtn color="#2D6A4F" onClick={e=>{e.stopPropagation();verNotaConteo(c,c.items,tituloNota);}}>📄 Nota de conteo</SmBtn>
+              <SmBtn color="#C0392B" onClick={e=>{e.stopPropagation();eliminarConteo(c);}}>Eliminar</SmBtn>
+            </div>
+          </div>
+          {abierto&&(
+            <div style={{overflowX:"auto",borderTop:"1px solid #F2EAE0"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:".76rem",minWidth:480}}>
+                <thead>
+                  <tr style={{background:"#F9F6F1"}}>
+                    <th style={thS}>Producto</th>
+                    <th style={{...thS,textAlign:"right"}}>Teórico</th>
+                    <th style={{...thS,textAlign:"right"}}>Contado</th>
+                    <th style={{...thS,textAlign:"right"}}>Diferencia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(c.items||[]).map((it,i)=>(
+                    <tr key={i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                      <td style={tdS}>{it.nombre}</td>
+                      <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>{it.teorico} {it.unidad}</td>
+                      <td style={{...tdS,textAlign:"right"}}>{it.contado} {it.unidad}</td>
+                      <td style={{...tdS,textAlign:"right",fontWeight:700,color:it.diferencia>0?"#2D6A4F":it.diferencia<0?"#C0392B":"#B7A98F"}}>{it.diferencia>0?"+":""}{it.diferencia}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </>);
+
   return(<>
     <Card title="Nuevo conteo">
       <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Elegí qué contar (o dejalo en todos), corregí lo que sea distinto de lo que muestra el sistema y guardá. La diferencia queda registrada como el consumo/venta implícito de ese período.</p>
@@ -2922,7 +2979,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
           <option value="">Todos los sectores</option>
           {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
-        <button onClick={()=>document.getElementById("historial-conteos")?.scrollIntoView({behavior:"smooth"})} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🧮 Historial de conteo</button>
+        <button onClick={()=>setVerHistorial(true)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🧮 Historial de conteo{conteosHist&&conteosHist.length>0?` (${conteosHist.length})`:""}</button>
         <button onClick={()=>setMostrarInactivos(!mostrarInactivos)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:mostrarInactivos?"#7B7063":"#F2EAE0",color:mostrarInactivos?"#fff":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{mostrarInactivos?"← Volver a activos":`😴 Ver inactivos (${inactivosCount})`}</button>
       </div>
 
@@ -3016,53 +3073,6 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     {gruposCnt.length>0&&(
       <Btn bg="#2C1A0E" onClick={guardarConteo} disabled={busy||!tocados.length}>{busy?"Guardando…":`Guardar conteo (${tocados.length} producto${tocados.length!==1?"s":""})`}</Btn>
     )}
-
-    <div id="historial-conteos" style={{marginTop:28}}>
-      <div style={{fontWeight:700,fontSize:".85rem",color:"#2C1A0E",marginBottom:10}}>Historial de conteos{fProv?` · ${fProv}`:""}</div>
-      {!conteosHist||!conteosHist.length?<Empty icon="🧮">{fProv?`Todavía no hay ningún conteo con productos de ${fProv}`:"Todavía no hiciste ningún conteo"}</Empty>:conteosHist.map(c=>{
-        const abierto=!!expandido[c.id];
-        const conDif=(c.items||[]).filter(i=>i.diferencia!==0);
-        const tituloNota=fProv?`Proveedor: ${fProv}`:c.alcance;
-        return(
-          <div key={c.id} style={{background:"#fff",borderRadius:12,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)",overflow:"hidden"}}>
-            <div onClick={()=>setExpandido({...expandido,[c.id]:!abierto})} style={{padding:"12px 16px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-              <div>
-                <div style={{fontWeight:600,fontSize:".85rem"}}>{abierto?"▾":"▸"} {fmtF(c.fecha)} {fmtH(c.fecha)} · {fProv?`Proveedor: ${fProv}`:c.alcance}</div>
-                <div style={{fontSize:".7rem",color:"#7B7063",marginTop:2}}>{(c.items||[]).length} contados · {conDif.length} con diferencia{c.registradoPor?` · ${c.registradoPor}`:""}</div>
-              </div>
-              <div style={{display:"flex",gap:6,flexShrink:0}}>
-                <SmBtn color="#2D6A4F" onClick={e=>{e.stopPropagation();verNotaConteo(c,c.items,tituloNota);}}>📄 Nota de conteo</SmBtn>
-                <SmBtn color="#C0392B" onClick={e=>{e.stopPropagation();eliminarConteo(c);}}>Eliminar</SmBtn>
-              </div>
-            </div>
-            {abierto&&(
-              <div style={{overflowX:"auto",borderTop:"1px solid #F2EAE0"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:".76rem",minWidth:480}}>
-                  <thead>
-                    <tr style={{background:"#F9F6F1"}}>
-                      <th style={thS}>Producto</th>
-                      <th style={{...thS,textAlign:"right"}}>Teórico</th>
-                      <th style={{...thS,textAlign:"right"}}>Contado</th>
-                      <th style={{...thS,textAlign:"right"}}>Diferencia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(c.items||[]).map((it,i)=>(
-                      <tr key={i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                        <td style={tdS}>{it.nombre}</td>
-                        <td style={{...tdS,textAlign:"right",color:"#7B7063"}}>{it.teorico} {it.unidad}</td>
-                        <td style={{...tdS,textAlign:"right"}}>{it.contado} {it.unidad}</td>
-                        <td style={{...tdS,textAlign:"right",fontWeight:700,color:it.diferencia>0?"#2D6A4F":it.diferencia<0?"#C0392B":"#B7A98F"}}>{it.diferencia>0?"+":""}{it.diferencia}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
   </>);
 }
 function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
