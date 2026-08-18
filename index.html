@@ -5515,8 +5515,18 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
     })
     .slice(0,filtroFecha==="todos"?30:200);
 
+  const exportarCierres=()=>{
+    if(!ultimos.length){toast("No hay cierres para exportar en este período");return;}
+    const rows=[["Fecha","Turno","Persona","MP/FUDO","FUDO Tarjetas","PostNet","Digital","Uber Eat","Efectivo","Total","Venta Sistema","Diferencia","Observaciones"]];
+    ultimos.forEach(c=>rows.push([fmtF(c.fecha),c.turno,c.persona,c.mp||0,c.fudoTarjetas||0,c.postnet||0,c.digital||0,c.uber||0,c.efectivo||0,c.total||0,c.ventaSistema||0,c.diferencia||0,c.obs||""]));
+    const csv=rows.map(r=>r.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"}));
+    a.download=`amapola_cierres_${hoyLocal()}.csv`;a.click();
+  };
+
   return(<>
-    <ST help={"Registrá acá el cierre de cada turno con el detalle de ventas por canal.\n\n• MP/FUDO, FUDO Tarjetas, PostNet, Digital, Uber Eat: ingresos digitales del turno.\n• Efectivo: dinero en efectivo contado al cerrar.\n• Venta del sistema: total que figura en FUDO — sirve para calcular la diferencia y detectar faltantes.\n• La diferencia (positiva o negativa) queda registrada en el historial, y si supera el 3% de la venta del sistema se marca con ⚠️ para que salte a la vista.\n• Podés filtrar y buscar por persona o turno en 'Últimos cierres'."}>Cierres de Caja</ST><SS>Registrá cada cierre al finalizar el turno.</SS>
+    <ST help={"Registrá acá el cierre de cada turno con el detalle de ventas por canal.\n\n• MP/FUDO, FUDO Tarjetas, PostNet, Digital, Uber Eat: ingresos digitales del turno.\n• Efectivo: dinero en efectivo contado al cerrar.\n• Venta del sistema: total que figura en FUDO — sirve para calcular la diferencia y detectar faltantes.\n• La diferencia (positiva o negativa) queda registrada en el historial, y si supera el 3% de la venta del sistema se marca con ⚠️ para que salte a la vista.\n• Podés filtrar y buscar por persona o turno en 'Últimos cierres', y con '⬇ Exportar Excel' bajás en CSV (se abre directo en Excel) los cierres que estés viendo con ese filtro."}>Cierres de Caja</ST><SS>Registrá cada cierre al finalizar el turno.</SS>
 
 
 
@@ -5611,7 +5621,10 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
 
     {/* ÚLTIMOS CIERRES */}
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>Últimos cierres</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:8,flexWrap:"wrap"}}>
+        <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063"}}>Últimos cierres</div>
+        <button onClick={exportarCierres} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #E8DCC8",background:"#F9F6F1",color:"#2C1A0E",fontSize:".72rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⬇ Exportar Excel</button>
+      </div>
 
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[["todos","Últimos 30"],["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
