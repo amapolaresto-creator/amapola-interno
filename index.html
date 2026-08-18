@@ -5646,10 +5646,10 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
               </tr>
             </thead>
             <tbody>
-              {grupos.map(g=>(
+              {grupos.map((g,gi)=>(
                 <React.Fragment key={g.dia}>
                   {g.items.map((c,i)=>(
-                    <tr key={c.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                    <tr key={c.id} style={{background:gi%2===0?"#fff":"#F9F6F1",borderTop:i===0&&gi>0?"2px solid #E8DCC8":"none"}}>
                       <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>{fmtF(c.fecha)}</td>
                       <td style={{padding:"6px 8px",whiteSpace:"nowrap",fontSize:".72rem"}}>{c.turno}</td>
                       <td style={{padding:"6px 8px",fontSize:".72rem"}}>{c.persona}</td>
