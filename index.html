@@ -104,6 +104,13 @@ const hoyLocal=()=>{const d=new Date();const off=d.getTimezoneOffset();const loc
 const fechaLocalISO=fecha=>fecha?`${fecha}T12:00:00.000-03:00`:new Date().toISOString();
 const fmtFL=iso=>new Date(iso).toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"});
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+// Proveedores de Catálogo/Stock que a propósito NO tienen su propio registro en Proveedores —
+// la deuda/plata de estos se trackea bajo otro(s) nombre(s) separados por forma de pago
+// (ej. "AVENIDA" agrupa el stock, pero la plata va por "Avenida Efectivo"/"Avenida Digital").
+// No auto-crear un Proveedor con estos nombres, y no mostrar sus variantes de plata en los
+// desplegables de Stock/Catálogo/Conteo/Pedidos. Si aparece otro caso así, agregarlo acá.
+const PROVEEDORES_SIN_CUENTA_PROPIA=new Set(["AVENIDA"]);
+const PROVEEDORES_SOLO_PLATA=new Set(["Avenida Efectivo","Avenida Digital"]);
 
 async function compress(b64,maxW=900,q=0.72){
   return new Promise(res=>{
@@ -1418,7 +1425,7 @@ function UltimosPagos({pagos,cierres,cajaInicial,cierresCaja,sueldos,gastos,ajus
 
   const egresos = [
     ...pagosEf.map(p=>({...p,_cat:"pago",  _signo:-1})),
-    ...sueldosEf.map(s=>({...s,_cat:"sueldo",_signo:-1})),
+    ...sueldosEf.map(s=>({...s,_cat:"sueldo",_signo:-1,proveedor:s.empleado+" · "+(s.concepto||"Sueldo")})),
     ...gastosEf.map(g=>({...g,_cat:"gasto", _signo:-1,proveedor:g.categoria})),
   ];
   const ingresos = [...cierresEf,...cierresNEf].map(c=>({...c,_signo:1}));
@@ -2228,7 +2235,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
   const[sub,setSub]=useState(subInicial||"inventario");
   const[verManual,setVerManual]=useState(false);
   const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
-  const proveedoresCat=[...new Set([...catalogo.map(c=>c.proveedor),...(proveedores||[]).map(p=>p.nombre)].filter(Boolean))].sort();
+  const proveedoresCat=[...new Set([...catalogo.map(c=>c.proveedor),...(proveedores||[]).map(p=>p.nombre).filter(n=>!PROVEEDORES_SOLO_PLATA.has(n))].filter(Boolean))].sort();
   const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
   return(<>
@@ -2357,7 +2364,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
     await saveCatalogo([...catalogo,nuevoCat]);
     const nuevoStock={id:uid(),catalogoId:nuevoCat.id,nombre:nuevoCat.producto,proveedor:proveedorFinal,sector,cantidad:Number(cantidad),minimo:Number(minimo)||0,unidad,movimientos:[],fecha:new Date().toISOString(),registradoPor:registradoPor||null};
     await saveStock([...stock,nuevoStock]);
-    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
+    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal))||PROVEEDORES_SIN_CUENTA_PROPIA.has(proveedorFinal);
     if(!yaEsProveedor){
       const nuevoProv={id:uid(),nombre:proveedorFinal,deudaInicial:0,obs:"",fecha:new Date().toISOString()};
       await saveProveedores([...(proveedores||[]),nuevoProv]);
@@ -3366,7 +3373,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
     setBusy(true);
     const nuevo={id:uid(),proveedor:proveedorFinal,sector,producto:producto.trim().toUpperCase(),unidad,minimo:Number(minimo)||0,maximo:Number(maximo)||0};
     await saveCatalogo([...catalogo,nuevo]);
-    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
+    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal))||PROVEEDORES_SIN_CUENTA_PROPIA.has(proveedorFinal);
     if(!yaEsProveedor){
       const nuevoProv={id:uid(),nombre:proveedorFinal,deudaInicial:0,obs:"",fecha:new Date().toISOString()};
       await saveProveedores([...(proveedores||[]),nuevoProv]);
@@ -3408,7 +3415,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
       const cambio=stockActualizado.some((s,i)=>s.nombre!==stock[i].nombre||s.proveedor!==stock[i].proveedor||s.sector!==stock[i].sector);
       if(cambio)await saveStock(stockActualizado);
     }
-    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal));
+    const yaEsProveedor=(proveedores||[]).some(p=>norm(p.nombre)===norm(proveedorFinal))||PROVEEDORES_SIN_CUENTA_PROPIA.has(proveedorFinal);
     if(!yaEsProveedor){
       const nuevoProv={id:uid(),nombre:proveedorFinal,deudaInicial:0,obs:"",fecha:new Date().toISOString()};
       await saveProveedores([...(proveedores||[]),nuevoProv]);
