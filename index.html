@@ -4515,7 +4515,12 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   const guardarPago=async()=>{
-    if(formaPago==="Transferencia"&&Number(montoPago)>saldoReal){toast("⚠️ Supera el disponible digital");return false;}
+    // Antes bloqueaba directo si superaba el disponible digital. Adrian pidió (2026-08-18) poder pagar
+    // igual aunque no alcance — el saldo de Caja Digital queda en negativo, con un confirm de por medio
+    // para que no sea sin querer.
+    if(formaPago==="Transferencia"&&Number(montoPago)>saldoReal){
+      if(!confirm(`⚠️ Esto supera el disponible digital (${fmt(saldoReal)}) — la Caja Digital va a quedar en ${fmt(saldoReal-Number(montoPago))}. ¿Confirmás igual?`))return false;
+    }
 
     if(tipoPago==="proveedor"){
       if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
