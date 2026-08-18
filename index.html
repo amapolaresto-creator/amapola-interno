@@ -4386,17 +4386,9 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
     <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague: un pago a Proveedor, un Sueldo o un Gasto — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Gastos. Por defecto la forma de pago es Efectivo (ya que estás en Caja Disponible), pero también podés elegir Transferencia, Amex o Retiro si hace falta — es el mismo botón que hay en Caja Digital, nada más que acá arranca en Efectivo. Si el monto supera lo que tenés disponible en caja, te avisa y te deja confirmar igual (la caja queda en negativo).\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro y cada sueldo pagado con esa plata — tocá 'Ver historial' para abrirlo en una pantalla aparte. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
 
     <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap",alignItems:"stretch"}}>
-      <div style={{flex:"2 1 280px",background:"#2D6A4F",borderRadius:14,padding:"18px 20px"}}>
-        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Saldo final del período</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldoBase+totalIngresos-totalEgresos+totalAjustes)}</div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {[["Saldo base",fmt(saldoBase)],["Ingresos",fmt(totalIngresos)],["Egresos",fmt(totalEgresos)],["Ajustes",(totalAjustes>=0?"+":"")+fmt(totalAjustes)]].map(([l,v])=>(
-            <div key={l} style={{flex:1,background:"rgba(255,255,255,.12)",borderRadius:10,padding:"8px 10px"}}>
-              <div style={{fontSize:".58rem",color:"#fff",opacity:.6,textTransform:"uppercase"}}>{l}</div>
-              <div style={{fontSize:".85rem",fontWeight:700,color:"#fff",marginTop:2}}>{v}</div>
-            </div>
-          ))}
-        </div>
+      <div style={{flex:"2 1 220px",background:"#2D6A4F",borderRadius:14,padding:"18px 20px"}}>
+        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>Caja Disponible Efectivo</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 0"}}>{fmt(saldoBase+totalIngresos-totalEgresos+totalAjustes)}</div>
       </div>
 
       <div style={{flex:"2 1 220px",background:"#FEF9E7",border:"1px solid #F5D98B",borderRadius:14,padding:"18px 20px"}}>
