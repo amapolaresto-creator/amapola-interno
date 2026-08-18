@@ -104,9 +104,20 @@ const hoyLocal=()=>{const d=new Date();const off=d.getTimezoneOffset();const loc
 // Si la fecha elegida es HOY, guarda la hora real del momento en que se carga (así los movimientos
 // quedan ordenados de verdad dentro del día, no todos a las 12:00). Si es una fecha pasada (o futura,
 // backdateada a mano), no hay forma de saber la hora real, así que sigue usando mediodía fijo como antes.
+//
+// OJO: acá NO se puede usar new Date().toISOString() a secas — eso devuelve la hora en UTC (con "Z"), y
+// como Argentina está a -3, cualquier cierre cargado entre ~21:00 y medianoche queda con fecha del día
+// SIGUIENTE en UTC. Como en varios lados de la app se agrupa/filtra por fecha.slice(0,10) (los primeros
+// 10 caracteres del ISO), eso hacía que cierres cargados de noche aparecieran agrupados con el día
+// equivocado. Por eso se arma el ISO a mano con el offset real, igual que hoyLocal().
+const horaLocalISO=()=>{
+  const d=new Date();
+  const off=d.getTimezoneOffset();
+  const local=new Date(d.getTime()-off*60000);
+  return local.toISOString().slice(0,-1)+"-03:00";
+};
 const fechaLocalISO=fecha=>{
-  if(!fecha)return new Date().toISOString();
-  if(fecha===hoyLocal())return new Date().toISOString();
+  if(!fecha||fecha===hoyLocal())return horaLocalISO();
   return `${fecha}T12:00:00.000-03:00`;
 };
 const fmtFL=iso=>new Date(iso).toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"});
@@ -511,7 +522,7 @@ function App({role="full",cerrarSesion}){
     if(!nota||!nota.trim()){toast("Ingresá el motivo del ajuste");return false;}
     const saldoAnterior=Number(cajaDigitalSaldo)||0;
     await saveCajaDigitalSaldo(saldoNuevo);
-    const nuevoAjuste={id:uid(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString(),saldoAnterior,saldoNuevo,diferencia:saldoNuevo-saldoAnterior,nota:nota.trim()};
+    const nuevoAjuste={id:uid(),fecha:fechaLocalISO(fecha),saldoAnterior,saldoNuevo,diferencia:saldoNuevo-saldoAnterior,nota:nota.trim()};
     await saveCajaDigitalAjustes([nuevoAjuste,...(cajaDigitalAjustes||[])]);
     return true;
   };
@@ -861,7 +872,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
     if(dup&&!confirm(`Ya hay una boleta de ${prov} por ${fmt(montoNum)} cargada ese día. ¿Registrar igual?`))return;
     setBusy(true);
     const boletaId=uid();
-    const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
+    const fechaISO=fechaLocalISO(fecha);
     // Guardar boleta con detalle de productos
     await saveBoletas([...boletas,{id:boletaId,tipo:"boleta",proveedor:prov,empleado:emp.trim(),monto:Number(monto)||0,obs:obs.trim(),fecha:fechaISO,productos:lineas}]);
     // Generar entradas de stock por cada producto comprado
@@ -888,7 +899,7 @@ function TabBoletas({boletas,saveBoletas,proveedores,saveProveedores,pagos,saveP
       if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(pagoMonto))}. ¿Confirmás igual?`))return;
     }
     setPagoBusy(true);
-    const pagoBase={tipo:"pago",proveedor:prov,empleado:emp.trim()||"—",monto:Number(pagoMonto),forma:pagoForma,obs:pagoObs.trim(),fecha:pagoFecha?fechaLocalISO(pagoFecha):new Date().toISOString()};
+    const pagoBase={tipo:"pago",proveedor:prov,empleado:emp.trim()||"—",monto:Number(pagoMonto),forma:pagoForma,obs:pagoObs.trim(),fecha:fechaLocalISO(pagoFecha)};
     await pagarConExcedente(pagoBase,pagos,savePagos);
     setPagoBusy(false);setPagoModal(false);setPagoMonto("");setPagoObs("");setPagoForma("Efectivo");setPagoFecha(hoyLocal());
     toast("Pago registrado ✓");
@@ -1176,7 +1187,7 @@ function TabCaja({cierres,saveCierres,ini,tot,eg,saldo,cajaInicial,saveCajaInici
   const guardarCierre=async()=>{
     if(!emp.trim()||!monto){toast("Completá empleado y monto");return;}
     setBusy(true);
-    await saveCierres([...cierres,{id:uid(),tipo:"cierre",empleado:emp.trim(),turno,monto:Number(monto),obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
+    await saveCierres([...cierres,{id:uid(),tipo:"cierre",empleado:emp.trim(),turno,monto:Number(monto),obs:obs.trim(),fecha:fechaLocalISO(fecha)}]);
     setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());toast("Cierre registrado ✓");
   };
   return(<>
@@ -1282,7 +1293,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
       if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(monto))}. ¿Confirmás igual?`))return false;
     }
     setBusy(true);
-    const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
+    const fechaISO=fechaLocalISO(fecha);
     const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(monto),forma,obs:obs.trim(),fecha:fechaISO};
     await pagarConExcedente(pagoBase,pagos,savePagos);
     // Mercadería descargada (opcional): suma al stock igual que una boleta
@@ -1315,7 +1326,7 @@ function TabPagos({pagos,savePagos,proveedores,saldo,cierres,cajaInicial,cierres
       if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(Number(saldo||0)-Number(retiroMonto))}. ¿Confirmás igual?`))return;
     }
     setRetiroBusy(true);
-    await saveGastos([...(gastos||[]),{id:uid(),tipo:"gasto",categoria:RETIRO_SUELDOS_CAT,monto:Number(retiroMonto),forma:"Efectivo",obs:retiroObs.trim(),registradoPor:retiroEmp.trim(),fecha:retiroFecha?fechaLocalISO(retiroFecha):new Date().toISOString()}]);
+    await saveGastos([...(gastos||[]),{id:uid(),tipo:"gasto",categoria:RETIRO_SUELDOS_CAT,monto:Number(retiroMonto),forma:"Efectivo",obs:retiroObs.trim(),registradoPor:retiroEmp.trim(),fecha:fechaLocalISO(retiroFecha)}]);
     setRetiroBusy(false);setRetiroModal(false);setRetiroMonto("");setRetiroObs("");setRetiroFecha(hoyLocal());setRetiroEmp("");
     toast("Retiro registrado ✓");
   };
@@ -1905,7 +1916,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
       if(chk&&!confirm("⚠️ "+emp+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(chk.pagado)+"). ¿Registrar este pago de todas formas?"))return;
     }
     setBusy(true);
-    await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:emp,concepto,hsExtras:concepto==="HS Extras"?Number(hsExtras)||0:null,monto:Number(monto),forma,obs:obs.trim(),fecha:fecha?fechaLocalISO(fecha):new Date().toISOString()}]);
+    await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:emp,concepto,hsExtras:concepto==="HS Extras"?Number(hsExtras)||0:null,monto:Number(monto),forma,obs:obs.trim(),fecha:fechaLocalISO(fecha)}]);
     setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setConcepto("Sueldo");setHsExtras("");toast("Sueldo registrado ✓");
   };
   const crearEmp=()=>{
@@ -2430,7 +2441,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
     if(movTipo==="salida"&&Number(movCant)>Number(item.cantidad)){toast(`⚠️ Solo hay ${item.cantidad} ${item.unidad} disponibles`);return;}
     const delta=movTipo==="entrada"?Number(movCant):-Number(movCant);
     const nuevaCant=Math.max(0,item.cantidad+delta);
-    const fechaISO=movFecha?fechaLocalISO(movFecha):new Date().toISOString();
+    const fechaISO=fechaLocalISO(movFecha);
     const mov={id:uid(),tipo:movTipo,cantidad:Number(movCant),obs:movObs.trim(),fecha:fechaISO,registradoPor:registradoPor||null};
     const nuevos=stock.map(s=>s.id===item.id?{...s,cantidad:nuevaCant,movimientos:[mov,...(s.movimientos||[])].slice(0,50)}:s);
     await saveStock(nuevos);
@@ -3159,7 +3170,7 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
     if(!empleado){toast("Elegí quién lo elaboró");return;}
     setBusy(true);
     const prod=productosInternos.find(c=>c.id===prodId);
-    const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
+    const fechaISO=fechaLocalISO(fecha);
     const stockActual=[...stock];
     const idx=stockActual.findIndex(s=>s.catalogoId===prodId);
     const mov={id:uid(),tipo:"entrada",origen:"produccion",cantidad:Number(cantidad),elaboradoPor:empleado,obs:obs.trim()||"Producción del día",fecha:fechaISO,registradoPor:registradoPor||null};
@@ -3811,7 +3822,7 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
     if(!itemId){toast("Elegí un producto del inventario");return;}
     if(!cantidad||Number(cantidad)<=0){toast("Ingresá la cantidad");return;}
     setBusy(true);
-    const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
+    const fechaISO=fechaLocalISO(fecha);
     const cant=Number(cantidad);
     const mov={id:uid(),tipo:"salida",origen:"desperdicio",cantidad:cant,obs:`${motivo}${obs.trim()?" — "+obs.trim():""}`,fecha:fechaISO,registradoPor:registradoPor||null};
     const existeFila=stock.some(s=>s.id===itemId);
@@ -4220,7 +4231,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
     if(tipoPago==="proveedor"){
       if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
       setBusyPago(true);
-      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      const fechaISO=fechaLocalISO(fechaPago);
       const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
       await pagarConExcedente(pagoBase,pagos,savePagos);
       setBusyPago(false);limpiarFormPago();
@@ -4242,7 +4253,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
         }
       }
       setBusyPago(true);
-      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      const fechaISO=fechaLocalISO(fechaPago);
       await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO}]);
       setBusyPago(false);limpiarFormPago();
       toast("Sueldo registrado ✓");
@@ -4252,7 +4263,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
     // gasto (pago digital u otro)
     if(!catGasto||!montoPago){toast("Elegí una categoría e ingresá el monto");return false;}
     setBusyPago(true);
-    const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+    const fechaISO=fechaLocalISO(fechaPago);
     const registro={id:uid(),tipo:"gasto",categoria:catGasto,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
     await saveGastos([...(gastos||[]),registro]);
     setBusyPago(false);limpiarFormPago();
@@ -4351,7 +4362,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(Number(saldo||0)-Number(retiroMonto))}. ¿Confirmás igual?`))return;
     }
     setRetiroBusy(true);
-    await saveGastos([...(gastos||[]),{id:uid(),tipo:"gasto",categoria:RETIRO_SUELDOS_CAT,monto:Number(retiroMonto),forma:"Efectivo",obs:retiroObs.trim(),registradoPor:retiroEmp.trim(),fecha:retiroFecha?fechaLocalISO(retiroFecha):new Date().toISOString()}]);
+    await saveGastos([...(gastos||[]),{id:uid(),tipo:"gasto",categoria:RETIRO_SUELDOS_CAT,monto:Number(retiroMonto),forma:"Efectivo",obs:retiroObs.trim(),registradoPor:retiroEmp.trim(),fecha:fechaLocalISO(retiroFecha)}]);
     setRetiroBusy(false);setRetiroModal(false);setRetiroMonto("");setRetiroObs("");setRetiroFecha(hoyLocal());setRetiroEmp("");
     toast("Retiro registrado ✓");
   };
@@ -4362,7 +4373,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
     setContarBusy(true);
     const real=Number(contarReal);
     const diferencia=real-Number(saldo||0);
-    const nuevo={id:uid(),monto:diferencia,motivo:contarMotivo.trim()||"Conteo de caja",saldoAntes:Number(saldo||0),saldoDespues:real,fecha:contarFecha?fechaLocalISO(contarFecha):new Date().toISOString()};
+    const nuevo={id:uid(),monto:diferencia,motivo:contarMotivo.trim()||"Conteo de caja",saldoAntes:Number(saldo||0),saldoDespues:real,fecha:fechaLocalISO(contarFecha)};
     await saveAjustesCajaEfectivo([nuevo,...(ajustesCajaEfectivo||[])]);
     setContarBusy(false);setContarModal(false);setContarReal("");setContarMotivo("");setContarFecha(hoyLocal());
     toast(diferencia===0?"Sin diferencia — caja OK ✓":"Ajuste registrado ✓ · "+(diferencia>0?"+":"")+fmt(diferencia));
@@ -4856,7 +4867,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     if(tipoPago==="proveedor"){
       if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
       setBusyPago(true);
-      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      const fechaISO=fechaLocalISO(fechaPago);
       const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
       await pagarConExcedente(pagoBase,pagos,savePagos);
       setBusyPago(false);limpiarFormPago();
@@ -4878,7 +4889,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
         }
       }
       setBusyPago(true);
-      const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+      const fechaISO=fechaLocalISO(fechaPago);
       await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO}]);
       setBusyPago(false);limpiarFormPago();
       toast("Sueldo registrado ✓");
@@ -4888,7 +4899,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
     // gasto (pago digital)
     if(!catGasto||!montoPago){toast("Elegí una categoría e ingresá el monto");return false;}
     setBusyPago(true);
-    const fechaISO=fechaPago?fechaLocalISO(fechaPago):new Date().toISOString();
+    const fechaISO=fechaLocalISO(fechaPago);
     const registro={id:uid(),tipo:"gasto",categoria:catGasto,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
     await saveGastos([...(gastos||[]),registro]);
     setBusyPago(false);limpiarFormPago();
@@ -4908,7 +4919,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
       // Caja Digital también se corrige. Si es uno viejo, solo se corrige el texto del historial — no
       // afecta el cálculo (calcDigital solo mira cajaDigitalSaldo y la fecha del ajuste más reciente).
       const esUltimo=cajaDigitalAjustes&&cajaDigitalAjustes[0]&&cajaDigitalAjustes[0].id===editAjusteId;
-      const fechaISO=fechaBanco?fechaLocalISO(fechaBanco):new Date().toISOString();
+      const fechaISO=fechaLocalISO(fechaBanco);
       const nuevas=(cajaDigitalAjustes||[]).map(a=>a.id===editAjusteId?{...a,saldoNuevo,fecha:fechaISO,diferencia:saldoNuevo-Number(a.saldoAnterior||0),nota:notaBanco.trim()}:a);
       await saveCajaDigitalAjustes(nuevas);
       if(esUltimo)await saveCajaDigitalSaldo(saldoNuevo);
@@ -5458,7 +5469,7 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
     const cierreId=uid();
     const nuevo={
       id:cierreId,tipo:"cierre_caja",
-      fecha:fecha?fechaLocalISO(fecha):new Date().toISOString(),
+      fecha:fechaLocalISO(fecha),
       turno,persona:persona.trim(),
       mp:n(mp),fudoTarjetas:n(fudoTarjetas),postnet:n(postnet),
       digital:n(digital),uber:n(uber),
@@ -6287,7 +6298,7 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
     if(!monto||isNaN(v)||v===0){toast("Ingresá un monto distinto de cero");return;}
     if(!motivo.trim()){toast("Ingresá el motivo del ajuste");return;}
     setBusy(true);
-    const fechaISO=fecha?fechaLocalISO(fecha):new Date().toISOString();
+    const fechaISO=fechaLocalISO(fecha);
     if(editId){
       // Al editar solo se corrige monto/motivo/fecha de ESTE ajuste — el saldoAntes/saldoDespues que
       // quedó guardado en su momento no se recalcula en cascada contra los ajustes posteriores (el saldo
@@ -6431,7 +6442,7 @@ function PenalidadesPanel({empleados,penalidades,savePenalidades,mostrarHistoria
   const agregar=async(emp,motivo)=>{
     if(!motivo||!motivo.trim())return;
     setBusy(true);
-    const fecha=fechaInput?fechaLocalISO(fechaInput):new Date().toISOString();
+    const fecha=fechaLocalISO(fechaInput);
     const periodoNuevo=periodoDeFechaInput;
     const registro={id:uid(),empleadoId:emp.id,periodo:periodoNuevo,motivo:motivo.trim(),fecha};
     await savePenalidades([registro,...(penalidades||[])]);
@@ -6558,7 +6569,7 @@ function HsExtrasPanel({empleados,horasExtras,saveHorasExtras,mostrarHistorial,p
     const h=Number(horasInput);
     if(!horasInput||!(h>0)){toast("Cargá la cantidad de horas");return;}
     setBusy(true);
-    const fecha=fechaInput?fechaLocalISO(fechaInput):new Date().toISOString();
+    const fecha=fechaLocalISO(fechaInput);
     const registro={id:uid(),empleadoId:emp.id,periodo:periodoDeFechaInput,horas:h,obs:obsInput.trim(),fecha};
     await saveHorasExtras([registro,...(horasExtras||[])]);
     setBusy(false);cerrar();
@@ -7118,7 +7129,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     setPagoBusy(true);
     const empleadoNombre=(emp.nombre+" "+(emp.apellido||"")).trim();
     const concepto="Liquidación "+mesLabel(periodo);
-    const fechaISO=pagoFecha?fechaLocalISO(pagoFecha):new Date().toISOString();
+    const fechaISO=fechaLocalISO(pagoFecha);
     const grupoPagoId=uid();
     const nuevos=[];
     if(mReservado>0)nuevos.push({id:uid(),tipo:"sueldo",empleado:empleadoNombre,concepto,monto:mReservado,forma:"Retiro",obs:pagoObs.trim(),fecha:fechaISO,liquidacionId:liq.id,grupoPagoId});
