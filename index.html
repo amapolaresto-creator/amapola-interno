@@ -4083,6 +4083,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const[desde,setDesde]=useState("");
   const[hasta,setHasta]=useState("");
   const[filtroTipo,setFiltroTipo]=useState("todo");
+  const[filtroDH,setFiltroDH]=useState("todos");
   const[buscar,setBuscar]=useState("");
   const[editItem,setEditItem]=useState(null);
   const[editForm,setEditForm]=useState({});
@@ -4216,6 +4217,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   const filtrados = allMovs
     .filter(m=>(!desdeF||m.fecha.slice(0,10)>=desdeF)&&(!hastaF||m.fecha.slice(0,10)<=hastaF))
     .filter(m=>filtroTipo==="todo"||m._cat===filtroTipo)
+    .filter(m=>filtroDH==="todos"||(filtroDH==="debe"&&m._signo<0)||(filtroDH==="haber"&&m._signo>0))
     .filter(m=>!buscar||(m._label||"").toLowerCase().includes(buscar.toLowerCase())||fmtF(m.fecha).includes(buscar));
 
   let saldoAcum = Number(cajaInicial)||0;
@@ -4557,6 +4559,16 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
         <button key={v} onClick={()=>setFiltroTipo(v)} style={{padding:"4px 10px",borderRadius:20,border:"1px solid #E8DCC8",cursor:"pointer",fontSize:".7rem",fontWeight:600,background:filtroTipo===v?"#2C1A0E":"transparent",color:filtroTipo===v?"#E8DCC8":"#7B7063"}}>{l}</button>
       ))}
     </div>
+
+    {/* FILTRO DEBE / HABER */}
+    <div style={{display:"flex",gap:6,marginBottom:10}}>
+      {[["todos","Todos"],["debe","💸 Solo Debe"],["haber","💵 Solo Haber"]].map(([v,l])=>(
+        <button key={v} onClick={()=>setFiltroDH(v)} style={{flex:1,padding:"5px 8px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,
+          background:filtroDH===v?(v==="debe"?"#C0392B":v==="haber"?"#2D6A4F":"#2C1A0E"):"#E8DCC8",
+          color:filtroDH===v?"#fff":"#2C1A0E"}}>{l}</button>
+      ))}
+    </div>
+
     <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar..." style={{...iS,marginBottom:14,fontSize:".82rem"}}/>
 
     {!filas.length?<Empty icon="📒">Sin movimientos en el período</Empty>:(
