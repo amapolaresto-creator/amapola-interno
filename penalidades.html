@@ -44,7 +44,7 @@ async function sbSetPenalidades(value){
   if(!r.ok){const t=await r.text().catch(()=>"");throw new Error(`HTTP ${r.status}: ${t.slice(0,80)}`);}
 }
 
-const PIN_CODE="716";
+const PIN_CODE="0716";
 function App(){
   const[pinOk,setPinOk]=useState(()=>{try{return localStorage.getItem("amapola_penalidades_pin")==="1";}catch{return false;}});
   const[pinInput,setPinInput]=useState("");
