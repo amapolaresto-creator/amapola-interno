@@ -2005,10 +2005,17 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
     if(a===b)return true;
     return b.startsWith(a)||a.startsWith(b);
   };
-  const liquidacionYaPagada=(nombreEmp,per)=>{
+  // Liquidación confirmada de ese empleado+período (si existe) — se usa tanto para el aviso de "ya está
+  // pagada" como para enlazar automáticamente el pago (liquidacionId) cuando el concepto es "Sueldo", ya
+  // que el pago real de una liquidación ahora se registra acá (o en Caja Disponible/Caja Digital) en vez
+  // de tener un botón de pago aparte dentro de Liquidación de sueldos.
+  const liquidacionConfirmadaDe=(nombreEmp,per)=>{
     const empMatch=(empleados||[]).find(e=>nombreCoincideSueldo(nombreEmp,e.nombre));
     if(!empMatch)return null;
-    const liq=(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada");
+    return(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada")||null;
+  };
+  const liquidacionYaPagada=(nombreEmp,per)=>{
+    const liq=liquidacionConfirmadaDe(nombreEmp,per);
     if(!liq)return null;
     const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
     return pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)?{liq,pagado}:null;
@@ -2039,14 +2046,17 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
       if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(monto))}. ¿Confirmás igual?`))return;
     }
     if(forma==="Retiro"&&Number(monto)>saldoRetiro){toast("⚠️ Supera el saldo de caja retiro para sueldos ("+fmt(saldoRetiro)+")");return;}
+    let liquidacionId=null;
     if(concepto==="Sueldo"){
       const per=(fecha||hoyLocal()).slice(0,7);
       const chk=liquidacionYaPagada(emp,per);
       if(chk&&!confirm("⚠️ "+emp+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(chk.pagado)+"). ¿Registrar este pago de todas formas?"))return;
+      const liq=liquidacionConfirmadaDe(emp,per);
+      if(liq)liquidacionId=liq.id;
     }
     setBusy(true);
-    await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:emp,concepto,hsExtras:concepto==="HS Extras"?Number(hsExtras)||0:null,monto:Number(monto),forma,obs:obs.trim(),fecha:fechaLocalISO(fecha)}]);
-    setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setConcepto("Sueldo");setHsExtras("");toast("Sueldo registrado ✓");
+    await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:emp,concepto,hsExtras:concepto==="HS Extras"?Number(hsExtras)||0:null,monto:Number(monto),forma,obs:obs.trim(),fecha:fechaLocalISO(fecha),...(liquidacionId?{liquidacionId}:{})}]);
+    setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setConcepto("Sueldo");setHsExtras("");toast(liquidacionId?"Sueldo registrado ✓ — vinculado a la liquidación del período":"Sueldo registrado ✓");
   };
   const crearEmp=()=>{
     if(!nuevoEmp.trim()){toast("Ingresá un nombre");return;}
@@ -2060,7 +2070,7 @@ function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liqui
   const totalMes=sueldos.filter(s=>{const d=new Date(s.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,s)=>a+Number(s.monto||0),0);
 
   return(<>
-    <ST help={"Registrá acá los pagos de sueldos, anticipos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Anticipo, Horas extra y Vacaciones.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual (la caja queda en negativo).\n• Si vas a pagar varios sueldos con plata que ya sacaste antes de la caja: primero registrá el retiro desde Pagos o Caja Disponible ('💰 Retirar p/ sueldos'). Después, cada sueldo pagado con esa plata se registra acá con forma 'Retiro' — así no se descuenta la caja dos veces. Ahí sí NO te deja cargar más 'Retiro' del que realmente hay disponible en esa caja aparte (bloqueo directo, no es un tema de caja física sino de que esa plata ya no existe en esa cuenta aparte).\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
+    <ST help={"Registrá acá los pagos de sueldos, adelantos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual (la caja queda en negativo).\n• Si registrás un pago concepto 'Sueldo' y ese empleado tiene una liquidación confirmada de Liquidación de sueldos para ese período, el pago queda enlazado solo a esa liquidación — así la Nómina de Liquidación muestra 'Pago parcial' o '💵 Pagada' sin que tengas que hacer nada más ahí. Es lo mismo si pagás desde Caja Disponible o Caja Digital: es un solo mecanismo, no importa por dónde lo cargues.\n• Si vas a pagar varios sueldos con plata que ya sacaste antes de la caja: primero registrá el retiro desde Pagos o Caja Disponible ('💰 Retirar p/ sueldos'). Después, cada sueldo pagado con esa plata se registra acá con forma 'Retiro' — así no se descuenta la caja dos veces. Ahí sí NO te deja cargar más 'Retiro' del que realmente hay disponible en esa caja aparte (bloqueo directo, no es un tema de caja física sino de que esa plata ya no existe en esa cuenta aparte).\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
     {crearModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
         <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
@@ -4429,11 +4439,17 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
 
     if(tipoPago==="sueldo"){
       if(!empSueldo||!montoPago){toast("Elegí un empleado e ingresá el monto");return false;}
+      // Si el concepto es "Sueldo" y hay una liquidación confirmada de ese empleado+período, este pago
+      // queda enlazado a ella (liquidacionId) — así la Nómina de Liquidación de sueldos sigue mostrando
+      // "Pago parcial"/"Pagada" aunque el pago se registre acá y no desde el botón de Liquidación (que ya
+      // no existe: el pago real se hace desde Caja Disponible, Caja Digital o Sueldos).
+      let liquidacionId=null;
       if(conceptoSueldo==="Sueldo"){
         const per=(fechaPago||hoyLocal()).slice(0,7);
         const empMatch=(empleados||[]).find(e=>norm(e.nombre)===norm(empSueldo)||norm(e.nombre).startsWith(norm(empSueldo))||norm(empSueldo).startsWith(norm(e.nombre)));
         const liq=empMatch?(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada"):null;
         if(liq){
+          liquidacionId=liq.id;
           const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
           if(pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)){
             if(!confirm("⚠️ "+empSueldo+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(pagado)+"). ¿Registrar este pago de todas formas?"))return false;
@@ -4442,9 +4458,9 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
       }
       setBusyPago(true);
       const fechaISO=fechaLocalISO(fechaPago);
-      await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO}]);
+      await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO,...(liquidacionId?{liquidacionId}:{})}]);
       setBusyPago(false);limpiarFormPago();
-      toast("Sueldo registrado ✓");
+      toast(liquidacionId?"Sueldo registrado ✓ — vinculado a la liquidación del período":"Sueldo registrado ✓");
       return true;
     }
 
@@ -4659,7 +4675,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   </>);
 
   return(<>
-    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague: un pago a Proveedor, un Sueldo o un Gasto — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Gastos. Por defecto la forma de pago es Efectivo (ya que estás en Caja Disponible), pero también podés elegir Transferencia, Amex o Retiro si hace falta — es el mismo botón que hay en Caja Digital, nada más que acá arranca en Efectivo. Si el monto supera lo que tenés disponible en caja, te avisa y te deja confirmar igual (la caja queda en negativo) — el mismo criterio se aplica ahora en Pagos y Sueldos, para que no cambie según por dónde cargues el pago.\n• 🧮 Contar caja: cuando hacés un arqueo físico, escribí acá lo que contaste — la app calcula sola la diferencia contra el sistema y la deja guardada como ajuste (con motivo y fecha), sin que tengas que restarlo vos a mano. Es lo mismo que 'Actualizar saldo banco' en Caja Digital, pero para el efectivo.\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro (y quién lo hizo) y cada sueldo pagado con esa plata — tocá 'Ver historial' para abrirlo en una pantalla aparte. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento, y ahora pide quién retira.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
+    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague: un pago a Proveedor, un Sueldo o un Gasto — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Gastos. Por defecto la forma de pago es Efectivo (ya que estás en Caja Disponible), pero también podés elegir Transferencia, Amex o Retiro si hace falta — es el mismo botón que hay en Caja Digital, nada más que acá arranca en Efectivo. Si el monto supera lo que tenés disponible en caja, te avisa y te deja confirmar igual (la caja queda en negativo) — el mismo criterio se aplica ahora en Pagos y Sueldos, para que no cambie según por dónde cargues el pago.\n• Si el pago es tipo Sueldo con concepto 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período en Liquidación de sueldos, el pago se enlaza solo a esa liquidación — así queda marcada como pagada ahí sin que tengas que ir a hacer nada aparte.\n• 🧮 Contar caja: cuando hacés un arqueo físico, escribí acá lo que contaste — la app calcula sola la diferencia contra el sistema y la deja guardada como ajuste (con motivo y fecha), sin que tengas que restarlo vos a mano. Es lo mismo que 'Actualizar saldo banco' en Caja Digital, pero para el efectivo.\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro (y quién lo hizo) y cada sueldo pagado con esa plata — tocá 'Ver historial' para abrirlo en una pantalla aparte. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento, y ahora pide quién retira.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
 
     <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap",alignItems:"stretch"}}>
       <div style={{flex:"2 1 220px",background:"#2D6A4F",borderRadius:14,padding:"18px 20px"}}>
@@ -5065,11 +5081,17 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 
     if(tipoPago==="sueldo"){
       if(!empSueldo||!montoPago){toast("Elegí un empleado e ingresá el monto");return false;}
+      // Si el concepto es "Sueldo" y hay una liquidación confirmada de ese empleado+período, este pago
+      // queda enlazado a ella (liquidacionId) — así la Nómina de Liquidación de sueldos sigue mostrando
+      // "Pago parcial"/"Pagada" aunque el pago se registre acá y no desde el botón de Liquidación (que ya
+      // no existe: el pago real se hace desde Caja Disponible, Caja Digital o Sueldos).
+      let liquidacionId=null;
       if(conceptoSueldo==="Sueldo"){
         const per=(fechaPago||hoyLocal()).slice(0,7);
         const empMatch=(empleados||[]).find(e=>norm(e.nombre)===norm(empSueldo)||norm(e.nombre).startsWith(norm(empSueldo))||norm(empSueldo).startsWith(norm(e.nombre)));
         const liq=empMatch?(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada"):null;
         if(liq){
+          liquidacionId=liq.id;
           const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
           if(pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)){
             if(!confirm("⚠️ "+empSueldo+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(pagado)+"). ¿Registrar este pago de todas formas?"))return false;
@@ -5078,9 +5100,9 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
       }
       setBusyPago(true);
       const fechaISO=fechaLocalISO(fechaPago);
-      await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO}]);
+      await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO,...(liquidacionId?{liquidacionId}:{})}]);
       setBusyPago(false);limpiarFormPago();
-      toast("Sueldo registrado ✓");
+      toast(liquidacionId?"Sueldo registrado ✓ — vinculado a la liquidación del período":"Sueldo registrado ✓");
       return true;
     }
 
@@ -5204,7 +5226,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   return(<>
-    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague en digital: un pago a Proveedor, un Sueldo o un Gasto (Pagos Digitales) — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Pagos Digitales. Por defecto la forma de pago es Transferencia, pero también podés elegir Efectivo (o Amex/Retiro según el tipo) si hace falta.\n• ⚙️ Saldo banco: actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte. Ahora pide motivo (obligatorio) y fecha del ajuste, te muestra la diferencia contra el saldo anterior mientras escribís, y podés Editar o Eliminar cualquier ajuste ya cargado desde el historial de ese mismo cuadro (excepto los préstamos, que se editan desde Amex). Este mismo botón de actualizar saldo también existe en Gerencia — usés el que usés, queda igual de registrado acá.\n• Los préstamos que cargues en 🏦 Amex → 'Registrar préstamo' aparecen acá como una fila de Haber (🏦, monto recibido) el mismo día que los cargaste — es la inyección de dinero real, a diferencia de una corrección de saldo banco (que no se lista como movimiento porque no es plata que entró, es solo un ajuste contable). Filtrá por 'Préstamos' para verlos solos.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
+    <ST help={"Caja Digital muestra el saldo del banco: arranca del último saldo real que ingresaste a mano y desde ahí se actualiza sola con cada ingreso digital (cierre de turno) y cada egreso por transferencia (pago a proveedor, sueldo o pago digital).\n\n• Los pagos por transferencia que registrás en Pagos, Sueldos o Pagos Digitales descuentan este saldo automáticamente y quedan anotados en el Libro diario · Digital de acá abajo.\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague en digital: un pago a Proveedor, un Sueldo o un Gasto (Pagos Digitales) — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Pagos Digitales. Por defecto la forma de pago es Transferencia, pero también podés elegir Efectivo (o Amex/Retiro según el tipo) si hace falta.\n• Si el pago es tipo Sueldo con concepto 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período en Liquidación de sueldos, el pago se enlaza solo a esa liquidación — así queda marcada como pagada ahí sin que tengas que ir a hacer nada aparte.\n• ⚙️ Saldo banco: actualizá el saldo cada vez que revisés el banco, así corregís cualquier diferencia (por ejemplo transferencias que tardan en acreditarse) — eso arranca un nuevo corte. Ahora pide motivo (obligatorio) y fecha del ajuste, te muestra la diferencia contra el saldo anterior mientras escribís, y podés Editar o Eliminar cualquier ajuste ya cargado desde el historial de ese mismo cuadro (excepto los préstamos, que se editan desde Amex). Este mismo botón de actualizar saldo también existe en Gerencia — usés el que usés, queda igual de registrado acá.\n• Los préstamos que cargues en 🏦 Amex → 'Registrar préstamo' aparecen acá como una fila de Haber (🏦, monto recibido) el mismo día que los cargaste — es la inyección de dinero real, a diferencia de una corrección de saldo banco (que no se lista como movimiento porque no es plata que entró, es solo un ajuste contable). Filtrá por 'Préstamos' para verlos solos.\n• El cruce de movimientos digitales de siempre lo ves en el Dashboard."}>Caja Digital</ST><SS>Saldo del banco y libro diario de movimientos digitales.</SS>
 
     {/* PANEL BANCO */}
     <div style={{display:"flex",alignItems:"stretch",gap:10,marginBottom:12,flexWrap:"wrap"}}>
@@ -7167,7 +7189,7 @@ function ManualLiquidacionModal({onClose}){
         </div>
 
         <Sec title="Qué hace esta sección">
-          Acá armás el sueldo de cada empleado, mes a mes: cargás lo que suma (Haberes) y lo que resta (Descuentos), el sistema calcula el Neto a cobrar, y al confirmar generás un recibo para imprimir o guardar en PDF. Esto NO registra un pago ni descuenta la Caja Disponible — el pago real se carga aparte, con el botón 💵 Pago (o manualmente en la pestaña Sueldos).
+          Acá armás el sueldo de cada empleado, mes a mes: cargás lo que suma (Haberes) y lo que resta (Descuentos), el sistema calcula el Neto a cobrar, y al confirmar generás un recibo para imprimir o guardar en PDF. Esto NO registra un pago ni descuenta ninguna caja — el pago real se carga aparte, desde Caja Disponible, Caja Digital o la pestaña Sueldos (con concepto "Sueldo" y la forma que corresponda: Efectivo, Transferencia o Retiro).
         </Sec>
 
         <Sec title="Paso a paso">
@@ -7177,7 +7199,7 @@ function ManualLiquidacionModal({onClose}){
           4. Revisá el Neto a cobrar al final de la pantalla.<br/>
           5. "Guardar borrador" guarda sin cerrar — se puede seguir editando después.<br/>
           6. "Confirmar y generar recibo" cierra la liquidación de ese mes y abre el recibo listo para imprimir.<br/>
-          7. Con la liquidación confirmada, aparece el botón 💵 Pago para registrar cómo se le pagó.
+          7. Con la liquidación confirmada, registrá el pago desde Caja Disponible, Caja Digital o Sueldos — elegí empleado, concepto "Sueldo" y la forma que corresponda. La app detecta sola que existe una liquidación confirmada de ese período y lo enlaza, así la columna Estado de acá pasa a mostrar "Pago parcial" o "💵 Pagada" sin que tengas que hacer nada más.
         </Sec>
 
         <Sec title="Haberes (lo que suma)">
@@ -7249,11 +7271,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verAdelantosAdmin,setVerAdelantosAdmin]=useState(false);
   const[verHsExtrasAdmin,setVerHsExtrasAdmin]=useState(false);
   const[verManual,setVerManual]=useState(false);
-  const[pagoModal,setPagoModal]=useState(null);
-  const[pagoMontos,setPagoMontos]=useState({reservado:"",efectivo:"",digital:""});
-  const[pagoObs,setPagoObs]=useState("");
-  const[pagoFecha,setPagoFecha]=useState(hoyLocal());
-  const[pagoBusy,setPagoBusy]=useState(false);
 
   const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
   const liqDe=(empId,per)=>(liquidaciones||[]).find(l=>l.empleadoId===empId&&l.periodo===per);
@@ -7273,55 +7290,14 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const adelantosDe=(emp,per)=>(sueldos||[]).filter(s=>s.concepto==="Adelanto"&&(s.fecha||"").slice(0,7)===per&&nombreCoincide(s.empleado,emp.nombre));
   const adelantosSinEmparejar=per=>(sueldos||[]).filter(s=>s.concepto==="Adelanto"&&(s.fecha||"").slice(0,7)===per&&!empleadosActivos.some(e=>nombreCoincide(s.empleado,e.nombre)));
 
-  // Pago de una liquidación confirmada: puede salir de lo Reservado (retiro para sueldos, forma "Retiro"),
-  // de Efectivo (forma "Efectivo", descuenta Caja Disponible) o de Digital (forma "Transferencia").
-  // Mixto = cargar más de una fuente a la vez. Admite pagos parciales: lo ya pagado se calcula sumando
-  // los registros de Sueldos vinculados a la liquidación (liquidacionId) — no hace falta que cierre
-  // exacto de una sola vez, se puede completar en varias veces hasta llegar al neto.
-  const totalRetirado=(gastos||[]).filter(g=>g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).reduce((s,g)=>s+Number(g.monto||0),0);
-  const totalUsadoDeRetiro=(sueldos||[]).filter(s=>s.forma==="Retiro").reduce((s,x)=>s+Number(x.monto||0),0);
-  const saldoRetiro=totalRetirado-totalUsadoDeRetiro;
+  // El pago real de una liquidación confirmada ya NO se registra desde acá (se sacó el botón 💰 Pago):
+  // Adrian paga directo desde Caja Disponible, Caja Digital o la pestaña Sueldos (Efectivo/Transferencia/
+  // Retiro), que son las mismas "3 cajas" que ya usa para todo lo demás. Esos tres lugares, al registrar
+  // un pago concepto "Sueldo", buscan solos si hay una liquidación confirmada de ese empleado+período y le
+  // ponen el liquidacionId correspondiente — así pagadoDe() de acá abajo sigue sumando bien sin que haga
+  // falta un flujo de pago aparte dentro de este módulo. Admite pagos parciales igual que antes: si un
+  // pago no cubre el neto completo, queda como pago parcial hasta que se complete con otro.
   const pagadoDe=liqId=>(sueldos||[]).filter(s=>s.liquidacionId===liqId).reduce((s2,s)=>s2+Number(s.monto||0),0);
-
-  const abrirPago=emp=>{
-    const liq=liqDe(emp.id,periodo);
-    if(!liq||liq.estado!=="confirmada"){toast("Confirmá la liquidación antes de registrar el pago");return;}
-    const pendiente=Math.max(0,Number(liq.neto||0)-pagadoDe(liq.id));
-    setPagoModal(emp);
-    setPagoMontos({reservado:"",efectivo:String(Math.round(pendiente*100)/100),digital:""});
-    setPagoObs("");
-    setPagoFecha(hoyLocal());
-  };
-  const setSoloFuente=(campo,monto)=>{
-    setPagoMontos({reservado:campo==="reservado"?String(monto):"",efectivo:campo==="efectivo"?String(monto):"",digital:campo==="digital"?String(monto):""});
-  };
-  const pagoSuma=()=>num(pagoMontos.reservado)+num(pagoMontos.efectivo)+num(pagoMontos.digital);
-
-  const confirmarPago=async()=>{
-    const emp=pagoModal;
-    const liq=liqDe(emp.id,periodo);
-    if(!emp||!liq)return;
-    const neto=Number(liq.neto)||0;
-    const pendiente=Math.max(0,neto-pagadoDe(liq.id));
-    const mReservado=num(pagoMontos.reservado),mEfectivo=num(pagoMontos.efectivo),mDigital=num(pagoMontos.digital);
-    const suma=mReservado+mEfectivo+mDigital;
-    if(suma<=0){toast("Cargá al menos un monto");return;}
-    if(Math.round(suma*100)>Math.round(pendiente*100)+1){toast("La suma cargada ("+fmt(suma)+") supera lo que falta pagar ("+fmt(pendiente)+")");return;}
-    if(mEfectivo>saldo){toast("⚠️ La parte en Efectivo supera la Caja Disponible");return;}
-    if(mReservado>saldoRetiro){toast("⚠️ La parte de Caja retiro supera lo disponible ("+fmt(saldoRetiro)+")");return;}
-    setPagoBusy(true);
-    const empleadoNombre=(emp.nombre+" "+(emp.apellido||"")).trim();
-    const concepto="Liquidación "+mesLabel(periodo);
-    const fechaISO=fechaLocalISO(pagoFecha);
-    const grupoPagoId=uid();
-    const nuevos=[];
-    if(mReservado>0)nuevos.push({id:uid(),tipo:"sueldo",empleado:empleadoNombre,concepto,monto:mReservado,forma:"Retiro",obs:pagoObs.trim(),fecha:fechaISO,liquidacionId:liq.id,grupoPagoId});
-    if(mEfectivo>0)nuevos.push({id:uid(),tipo:"sueldo",empleado:empleadoNombre,concepto,monto:mEfectivo,forma:"Efectivo",obs:pagoObs.trim(),fecha:fechaISO,liquidacionId:liq.id,grupoPagoId});
-    if(mDigital>0)nuevos.push({id:uid(),tipo:"sueldo",empleado:empleadoNombre,concepto,monto:mDigital,forma:"Transferencia",obs:pagoObs.trim(),fecha:fechaISO,liquidacionId:liq.id,grupoPagoId});
-    await saveSueldos([...(sueldos||[]),...nuevos]);
-    setPagoBusy(false);setPagoModal(null);
-    toast(Math.round(suma*100)>=Math.round(pendiente*100)?"Pago registrado ✓ — liquidación saldada":"Pago parcial registrado ✓");
-  };
 
   // Horas extras: cantidad de horas × valor hora (básico/208×2). Bono: 0 llegadas tarde/faltas = bono base x2;
   // 1 a 4 = sin cambios (tolerancia); ≥5 = bono base - (cantidad×5000), con tope en el propio bono base (nunca negativo).
@@ -7735,7 +7711,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
                         <SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn>
                         <SmBtn onClick={()=>abrirLiquidacion(e)}>{liq?"Editar":"Liquidar"}</SmBtn>
                         {liq&&liq.estado==="confirmada"&&<SmBtn onClick={()=>verReciboDe(liq,e)}>🧾 Recibo</SmBtn>}
-                        {liq&&liq.estado==="confirmada"&&!totalmentePagada&&<SmBtn color="#2D6A4F" onClick={()=>abrirPago(e)}>{parcialmentePagada?"💵 Completar pago":"💵 Pago"}</SmBtn>}
                       </div>
                     </td>
                   </tr>
@@ -7748,74 +7723,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         <Empty icon="👷">No hay empleados activos cargados.</Empty>
       )}
     </Card>
-
-    {pagoModal&&(()=>{
-      const liq=liqDe(pagoModal.id,periodo);
-      const neto=liq?Number(liq.neto)||0:0;
-      const yaPagado=liq?pagadoDe(liq.id):0;
-      const pendiente=Math.max(0,Math.round((neto-yaPagado)*100)/100);
-      const suma=pagoSuma();
-      const dentroDelLimite=Math.round(suma*100)<=Math.round(pendiente*100)+1;
-      const habilitado=suma>0&&dentroDelLimite;
-      const completaLiquidacion=habilitado&&Math.round(suma*100)>=Math.round(pendiente*100);
-      return(
-        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-              <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>💵 Registrar pago</p>
-              <button onClick={()=>setPagoModal(null)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
-            </div>
-            <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:16}}>{pagoModal.nombre} {pagoModal.apellido||""} · {mesLabel(periodo)}</p>
-
-            <div style={{background:"#F9F6F1",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:".78rem",color:"#7B7063"}}>Neto a pagar</span>
-                <span style={{fontFamily:"Georgia,serif",fontSize:"1.15rem",fontWeight:700,color:"#2C1A0E"}}>{fmt(neto)}</span>
-              </div>
-              {yaPagado>0&&(<>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
-                  <span style={{fontSize:".74rem",color:"#7B7063"}}>Ya pagado antes</span>
-                  <span style={{fontSize:".82rem",color:"#8E44AD",fontWeight:600}}>{fmt(yaPagado)}</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
-                  <span style={{fontSize:".74rem",color:"#7B7063"}}>Pendiente</span>
-                  <span style={{fontSize:".82rem",color:"#C0392B",fontWeight:700}}>{fmt(pendiente)}</span>
-                </div>
-              </>)}
-            </div>
-
-            <p style={{fontSize:".74rem",color:"#7B7063",marginBottom:8}}>Elegí de dónde sale (podés combinar más de una fuente — mixto — o cargar menos del pendiente para un pago parcial):</p>
-            <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              <SmBtn onClick={()=>setSoloFuente("reservado",pendiente)}>Toda Caja retiro</SmBtn>
-              <SmBtn onClick={()=>setSoloFuente("efectivo",pendiente)}>Todo Efectivo</SmBtn>
-              <SmBtn onClick={()=>setSoloFuente("digital",pendiente)}>Todo Digital</SmBtn>
-            </div>
-
-            <Field label={<>💰 Caja retiro para sueldos <span style={{fontWeight:400,color:"#7B7063"}}>(disponible: {fmt(saldoRetiro)})</span></>}>
-              <Inp type="number" value={pagoMontos.reservado} onChange={v=>setPagoMontos(m=>({...m,reservado:v}))} placeholder="0"/>
-            </Field>
-            <Field label={<>Efectivo <span style={{fontWeight:400,color:"#7B7063"}}>(caja disponible: {fmt(saldo)})</span></>}>
-              <Inp type="number" value={pagoMontos.efectivo} onChange={v=>setPagoMontos(m=>({...m,efectivo:v}))} placeholder="0"/>
-            </Field>
-            <Field label="Digital (transferencia)">
-              <Inp type="number" value={pagoMontos.digital} onChange={v=>setPagoMontos(m=>({...m,digital:v}))} placeholder="0"/>
-            </Field>
-
-            <p style={{fontSize:".78rem",margin:"4px 0 14px",color:!dentroDelLimite?"#C0392B":completaLiquidacion?"#2D6A4F":"#B7860B",fontWeight:600}}>
-              Cargado: {fmt(suma)} de {fmt(pendiente)} pendiente{!dentroDelLimite?" — supera lo pendiente":completaLiquidacion?" ✓ (salda la liquidación)":suma>0?" (queda pago parcial)":""}
-            </p>
-
-            <Field label="Observaciones (opcional)"><TA value={pagoObs} onChange={setPagoObs} placeholder="Notas del pago..."/></Field>
-            <Field label="Fecha del pago"><Inp type="date" value={pagoFecha} onChange={setPagoFecha}/></Field>
-
-            <div style={{display:"flex",gap:10,marginTop:8}}>
-              <button onClick={()=>setPagoModal(null)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={confirmarPago} disabled={pagoBusy||!habilitado} style={{flex:1,padding:12,borderRadius:10,border:"none",background:(pagoBusy||!habilitado)?"#bbb":"#2D6A4F",color:"#fff",fontWeight:600,cursor:(pagoBusy||!habilitado)?"default":"pointer"}}>{pagoBusy?"Guardando…":completaLiquidacion?"Registrar pago":"Registrar pago parcial"}</button>
-            </div>
-          </div>
-        </div>
-      );
-    })()}
   </>);
 }
 
