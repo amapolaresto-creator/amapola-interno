@@ -37,6 +37,8 @@ const SITE_USER="amapolaresto@gmail.com";
 const SITE_PASS="Barcala716";
 const COCINA_USER="cocina";
 const COCINA_LOGIN_PASS="AmapolaResto";
+const FRONT_USER="front";
+const FRONT_LOGIN_PASS="AmapolaResto";
 const EMAILJS_SERVICE_ID="service_2atbj0b";
 const EMAILJS_TEMPLATE_ID="template_hyvcfgo";
 const EMAILJS_PUBLIC_KEY="8CZtiZa3Uhq8PBm_x";
@@ -286,6 +288,16 @@ function LoginGate({onSuccess}){
         }).catch(()=>{});
       }
       onSuccess("cocina");
+    }else if(u===FRONT_USER&&pass===FRONT_LOGIN_PASS){
+      localStorage.setItem("amapola_site_auth","1");
+      localStorage.setItem("amapola_site_role","front");
+      if(window.emailjs){
+        emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
+          fecha:new Date().toLocaleString("es-AR"),
+          dispositivo:navigator.userAgent+" (Front)",
+        }).catch(()=>{});
+      }
+      onSuccess("front");
     }else{
       setErr(true);setPass("");
     }
@@ -324,10 +336,12 @@ function Root(){
 
 function App({role="full",cerrarSesion}){
   const cocinaOnly=role==="cocina";
+  const frontOnly=role==="front";
   const[phase,setPhase]=useState("init");
   const[errMsg,setErrMsg]=useState("");
   const[tab,setTab]=useState(()=>{
     if(cocinaOnly)return"stock";
+    if(frontOnly)return"stock";
     try{
       const p=new URLSearchParams(window.location.search);
       if(p.get("ir")==="penalidades")return"penalidades";
@@ -647,7 +661,9 @@ function App({role="full",cerrarSesion}){
     {id:"admin",      label:"⚙️ Admin"},
   ];
   const stockBajoCount=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo)).length;
-  const TABS=cocinaOnly?[{id:"stock",label:"📦 Stock"}]:[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
+  const TABS=cocinaOnly?[{id:"stock",label:"📦 Stock"}]
+    :frontOnly?[{id:"stock",label:"📦 Stock"},{id:"cierres",label:"💰 Cierres de Caja"}]
+    :[...TABS_PUBLIC,...(adminUnlocked?TABS_ADMIN:[{id:"admin-lock",label:"🔒 Admin"}])];
 
   return(
     <div className="amapola-main" style={{background:"#F9F6F1",minHeight:"100dvh",color:"#2C1A0E"}}>
@@ -678,10 +694,12 @@ function App({role="full",cerrarSesion}){
               <span>{relojActual.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}</span>
               <span style={{fontSize:".64rem",opacity:.85,marginTop:1}}>🕐 {relojActual.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</span>
             </div>
-            <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
-              <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
-              <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
-            </div>
+            {!frontOnly&&(
+              <div onClick={()=>setTab("caja")} style={{background:"#2D6A4F",color:"#fff",borderRadius:20,padding:"5px 14px",fontSize:".78rem",fontWeight:600,cursor:"pointer",textAlign:"right"}}>
+                <span style={{opacity:.7,fontSize:".62rem",display:"block"}}>DISPONIBLE</span>
+                <span style={{fontSize:"1rem"}}>{fmt(saldo)}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -730,8 +748,8 @@ function App({role="full",cerrarSesion}){
         {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
-        {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} empleados={empleados} saveEmpleados={saveEmpleados}/>}
+        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":frontOnly?"Front":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
+        {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} empleados={empleados} saveEmpleados={saveEmpleados} soloUltimoDia={frontOnly}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
       {lightbox&&<Lightbox src={lightbox} onClose={()=>setLightbox(null)}/>}
@@ -5624,7 +5642,7 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
   </>);
 }
 
-function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
+function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados,soloUltimoDia}){
   const TURNOS=["Mostrador Día","Mostrador Noche","PosFUDO1","PosFUDO2"];
   const hoy=hoyLocal();
   const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
@@ -5706,15 +5724,27 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
   const inicioMes2=new Date(hoy2.getFullYear(),hoy2.getMonth(),1);
   const desdeCalc=filtroFecha==="hoy"?hoy:filtroFecha==="mes"?iso2(inicioMes2):filtroFecha==="custom"?desdeF:null;
   const hastaCalc=filtroFecha==="hoy"?hoy:filtroFecha==="mes"?iso2(hoy2):filtroFecha==="custom"?hastaF:null;
-  const ultimos=[...cierresCaja]
-    .filter(c=>{const f=c.fecha.slice(0,10);return(!desdeCalc||f>=desdeCalc)&&(!hastaCalc||f<=hastaCalc);})
-    .filter(c=>!buscar||norm(c.persona).includes(norm(buscar))||norm(c.turno).includes(norm(buscar)))
-    .sort((a,b)=>{
-      const d=new Date(b.fecha)-new Date(a.fecha);
-      if(d!==0)return d;
-      return String(b.id||"").localeCompare(String(a.id||""));
-    })
-    .slice(0,filtroFecha==="todos"?30:200);
+  // Acceso Front (rol restringido, solo Stock y Cierres de Caja): en vez de los filtros normales, el
+  // historial queda fijo al ÚLTIMO día que tiene algún cierre cargado — así puede constatar si el cierre
+  // de ese turno/día ya se hizo o no, sin ver el historial completo de días anteriores.
+  const fechaUltimoDia=cierresCaja.length?cierresCaja.reduce((max,c)=>{const f=c.fecha.slice(0,10);return f>max?f:max;},""):null;
+  const ultimos=soloUltimoDia
+    ? [...cierresCaja]
+        .filter(c=>fechaUltimoDia&&c.fecha.slice(0,10)===fechaUltimoDia)
+        .sort((a,b)=>{
+          const d=new Date(b.fecha)-new Date(a.fecha);
+          if(d!==0)return d;
+          return String(b.id||"").localeCompare(String(a.id||""));
+        })
+    : [...cierresCaja]
+        .filter(c=>{const f=c.fecha.slice(0,10);return(!desdeCalc||f>=desdeCalc)&&(!hastaCalc||f<=hastaCalc);})
+        .filter(c=>!buscar||norm(c.persona).includes(norm(buscar))||norm(c.turno).includes(norm(buscar)))
+        .sort((a,b)=>{
+          const d=new Date(b.fecha)-new Date(a.fecha);
+          if(d!==0)return d;
+          return String(b.id||"").localeCompare(String(a.id||""));
+        })
+        .slice(0,filtroFecha==="todos"?30:200);
 
   const exportarCierres=()=>{
     if(!ultimos.length){toast("No hay cierres para exportar en este período");return;}
@@ -5823,22 +5853,26 @@ function TabCierresCaja({cierresCaja,saveCierresCaja,empleados,saveEmpleados}){
     {/* ÚLTIMOS CIERRES */}
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:8,flexWrap:"wrap"}}>
-        <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063"}}>Últimos cierres</div>
-        <button onClick={exportarCierres} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #E8DCC8",background:"#F9F6F1",color:"#2C1A0E",fontSize:".72rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⬇ Exportar Excel</button>
+        <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063"}}>{soloUltimoDia?"Cierres del último día":"Últimos cierres"}</div>
+        {!soloUltimoDia&&<button onClick={exportarCierres} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #E8DCC8",background:"#F9F6F1",color:"#2C1A0E",fontSize:".72rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⬇ Exportar Excel</button>}
       </div>
 
-      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["todos","Últimos 30"],["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
-          <button key={v} onClick={()=>setFiltroFecha(v)} style={{padding:"6px 12px",borderRadius:20,border:"none",background:filtroFecha===v?"#2C1A0E":"#F2EAE0",color:filtroFecha===v?"#fff":"#7B7063",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>{l}</button>
-        ))}
-      </div>
-      {filtroFecha==="custom"&&(
-        <div style={{display:"flex",gap:8,marginBottom:10}}>
-          <input type="date" value={desdeF} onChange={e=>setDesdeF(e.target.value)} style={{...iS,fontSize:".8rem"}}/>
-          <input type="date" value={hastaF} onChange={e=>setHastaF(e.target.value)} style={{...iS,fontSize:".8rem"}}/>
+      {soloUltimoDia?(
+        <p style={{fontSize:".76rem",color:"#7B7063",marginBottom:14}}>{fechaUltimoDia?`Mostrando los cierres de ${fmtF(fechaUltimoDia+"T12:00:00")} — el último día con cierres cargados, para chequear si ya se registró el de este turno.`:"Todavía no hay ningún cierre cargado."}</p>
+      ):(<>
+        <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+          {[["todos","Últimos 30"],["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setFiltroFecha(v)} style={{padding:"6px 12px",borderRadius:20,border:"none",background:filtroFecha===v?"#2C1A0E":"#F2EAE0",color:filtroFecha===v?"#fff":"#7B7063",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>{l}</button>
+          ))}
         </div>
-      )}
-      <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar por persona o turno..." style={{...iS,marginBottom:14,fontSize:".82rem"}}/>
+        {filtroFecha==="custom"&&(
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <input type="date" value={desdeF} onChange={e=>setDesdeF(e.target.value)} style={{...iS,fontSize:".8rem"}}/>
+            <input type="date" value={hastaF} onChange={e=>setHastaF(e.target.value)} style={{...iS,fontSize:".8rem"}}/>
+          </div>
+        )}
+        <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar por persona o turno..." style={{...iS,marginBottom:14,fontSize:".82rem"}}/>
+      </>)}
 
       {!ultimos.length?<Empty icon="💰">Sin cierres en el período</Empty>:(
         <div style={{overflowX:"auto"}}>
