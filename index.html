@@ -2389,7 +2389,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🧮 Conteo">
-          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una. Un cartel arriba muestra hace cuánto fue el último conteo de ese proveedor/sector y cuántos productos ya cargaste en la pasada actual. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️. Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Desde el botón "🧮 Historial de conteo" se abre una pantalla aparte con todos los conteos hechos (botón "← Volver al conteo" para regresar), donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal.
+          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Arriba de todo podés elegir la <b>fecha del conteo</b> (arranca en hoy, pero se puede cambiar) — así, si contaste antes y cargás la app más tarde, el registro queda con la fecha real y no con la del momento en que lo tipeaste. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una — cada grupo muestra en su encabezado hace cuánto fue su último conteo puntual, para ver de un vistazo qué proveedor/sector está más atrasado sin tener que expandir cada uno. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️ — se marcan si son al menos el 30% del teórico, o si son 5 unidades o más Y representan al menos el 10% del teórico (para no marcar de más en productos que se mueven en cantidades grandes). Antes de guardar te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Si empezás a cargar un conteo y tocás otra sección de Stock antes de guardar, te avisa que vas a perder lo tipeado. Desde el botón "🧮 Historial de conteo" se abre una pantalla aparte con todos los conteos hechos, filtrable por proveedor y por rango de fechas (Desde/Hasta) (botón "← Volver al conteo" para regresar), donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal.
         </Sec>
 
         <Sec title="🍳 Producción">
@@ -2425,7 +2425,12 @@ function ManualStockModal({onClose}){
 function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor,proveedores,saveProveedores,empleados}){
   const[sub,setSub]=useState(subInicial||"inventario");
   const[verManual,setVerManual]=useState(false);
+  const[conteoDirty,setConteoDirty]=useState(false);
   const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
+  const cambiarSub=nuevo=>{
+    if(sub==="conteo"&&nuevo!=="conteo"&&conteoDirty&&!confirm("Tenés valores de conteo sin guardar. ¿Salir igual? Se van a perder."))return;
+    setSub(nuevo);
+  };
   const proveedoresCat=[...new Set([...catalogo.map(c=>c.proveedor),...(proveedores||[]).map(p=>p.nombre).filter(n=>!PROVEEDORES_SOLO_PLATA.has(n))].filter(Boolean))].sort();
   const stockBajo=stock.filter(s=>Number(s.minimo)>0&&Number(s.cantidad)<=Number(s.minimo));
 
@@ -2438,18 +2443,18 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     <SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
     {stockBajo.length>0&&sub!=="inventario"&&(
-      <div onClick={()=>setSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+      <div onClick={()=>cambiarSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:"1rem"}}>⚠️</span>
         <span style={{fontSize:".8rem",color:"#C0392B",fontWeight:600}}>{stockBajo.length} producto{stockBajo.length!==1?"s":""} con stock bajo · Ver inventario</span>
       </div>
     )}
     <div style={{display:"flex",gap:6,marginBottom:18,flexWrap:"wrap"}}>
       {SUBS.map(s=>(
-        <button key={s.id} onClick={()=>setSub(s.id)} style={{flex:"1 1 auto",padding:"9px 8px",borderRadius:10,border:"none",background:sub===s.id?"#2C1A0E":"#E8DCC8",color:sub===s.id?"#fff":"#2C1A0E",fontSize:".74rem",fontWeight:600,cursor:"pointer"}}>{s.label}</button>
+        <button key={s.id} onClick={()=>cambiarSub(s.id)} style={{flex:"1 1 auto",padding:"9px 8px",borderRadius:10,border:"none",background:sub===s.id?"#2C1A0E":"#E8DCC8",color:sub===s.id?"#fff":"#2C1A0E",fontSize:".74rem",fontWeight:600,cursor:"pointer"}}>{s.label}</button>
       ))}
     </div>
     {sub==="inventario"&&<StockInventario stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} registradoPor={registradoPor} proveedores={proveedores} saveProveedores={saveProveedores}/>}
-    {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor}/>}
+    {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor} onDirtyChange={setConteoDirty}/>}
     {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor} empleados={empleados}/>}
     {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} catalogo={catalogo} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
     {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores} stock={stock} saveStock={saveStock}/>}
@@ -2920,7 +2925,7 @@ function notaConteoHTML(c,items,titulo){
     +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar como imagen o PDF</button>"
     +"</body></html>";
 }
-function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conteos,saveConteos,registradoPor}){
+function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conteos,saveConteos,registradoPor,onDirtyChange}){
   const[fProv,setFProv]=useState("");
   const[fSector,setFSector]=useState("");
   const[fQuery,setFQuery]=useState("");
@@ -2931,10 +2936,17 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const[colapsados,setColapsados]=useState({});
   const[agruparPor,setAgruparPor]=useState("proveedor");
   const[verHistorial,setVerHistorial]=useState(false);
+  const[fechaConteo,setFechaConteo]=useState(hoyLocal());
+  const[desdeHist,setDesdeHist]=useState("");
+  const[hastaHist,setHastaHist]=useState("");
   const sectoresCat=[...new Set([...stock.map(s=>s.sector),...catalogo.map(c=>c.sector)].filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
   const tdS={padding:"7px 8px"};
   const UNIDADES=["unidades","kg","g","litros","ml","cajas","bolsas","porciones","paquetes"];
+
+  useEffect(()=>{
+    if(onDirtyChange)onDirtyChange(Object.values(valores).some(v=>v!==undefined&&v!==""));
+  },[valores]);
 
   const toggleActivo=async(catalogoId,activoActual)=>{
     if(!catalogoId)return;
@@ -2984,6 +2996,14 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   gruposCnt.sort((a,b)=>a.key.localeCompare(b.key));
   gruposCnt.forEach(g=>g.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)));
 
+  // Último conteo por grupo puntual (mismo criterio que claveGrupo, pero sobre los ítems ya guardados
+  // en el historial) — para ver de un vistazo qué proveedor/sector está más atrasado sin expandir cada uno.
+  const claveGrupoItem=it=>agruparPor==="sector"?(it.sector||"Sin sector"):(it.proveedor||"Sin proveedor");
+  const ultimoConteoDeGrupo=key=>{
+    const reg=(conteos||[]).find(c=>(c.items||[]).some(it=>claveGrupoItem(it)===key));
+    return reg?reg.fecha:null;
+  };
+
   const colapsarTodos=()=>{const t={};gruposCnt.forEach(g=>{t[g.key]=true;});setColapsados(t);};
   const expandirTodos=()=>setColapsados({});
 
@@ -2996,10 +3016,15 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const tocados=filtrado.filter(s=>valores[s.id]!==undefined&&valores[s.id]!==""&&!isNaN(Number(valores[s.id])));
 
   // Diferencia "grande": probablemente un error de tipeo más que consumo normal — se resalta aparte.
+  // Ajustado para no marcar de más productos de alto volumen: una diferencia absoluta chica (≥5) solo
+  // cuenta si además representa una porción mínima del teórico (≥10%); una diferencia relativa grande
+  // (≥30% del teórico) siempre se marca, sin importar el número absoluto.
   const esDiferenciaGrande=(s,d)=>{
     if(d===null||d===0)return false;
     const teorico=s.sinCargar?0:Number(s.cantidad);
-    return Math.abs(d)>=5||(teorico>0&&Math.abs(d)>teorico*0.3);
+    if(teorico<=0)return Math.abs(d)>=5;
+    const pct=Math.abs(d)/teorico;
+    return pct>=0.3||(Math.abs(d)>=5&&pct>=0.1);
   };
 
   // Último conteo registrado para el alcance actual (proveedor y/o sector elegidos arriba), y cuántos
@@ -3029,7 +3054,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     const alcanceTxt=fProv?`proveedor ${fProv}`:fSector?`sector ${fSector}`:"todo el inventario";
     if(!confirm(`Vas a registrar un conteo de ${tocados.length} producto${tocados.length!==1?"s":""} (${alcanceTxt}), ${conDiferencia} con diferencia. ¿Confirmás?`))return;
     setBusy(true);
-    const fecha=new Date().toISOString();
+    const fecha=fechaLocalISO(fechaConteo||hoyLocal());
     const nuevosStock=[];
     const itemsConteo=tocados.map(s=>{
       const v=valorDe(s);
@@ -3054,7 +3079,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     const registro={id:uid(),fecha,alcance:fProv?`Proveedor: ${fProv}`:fSector?`Sector: ${fSector}`:"Todo el inventario",items:itemsConteo,registradoPor:registradoPor||null};
     await saveConteos([registro,...(conteos||[])]);
     toast(`✓ Conteo guardado: ${itemsConteo.length} producto${itemsConteo.length!==1?"s":""}`);
-    setValores({});setBusy(false);
+    setValores({});setBusy(false);setFechaConteo(hoyLocal());
   };
 
   // Cambiar la unidad de medida de un producto desde acá mismo (Conteo): actualiza el catálogo (fuente
@@ -3072,9 +3097,13 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
 
   // Historial de conteos filtrado por el proveedor elegido arriba (fProv) — si un conteo fue de "Todo el
   // inventario" o de un sector, se muestran solo los ítems de ese proveedor dentro de ese registro.
-  const conteosHist=fProv
+  const conteosHist=(fProv
     ?(conteos||[]).map(c=>({...c,items:(c.items||[]).filter(it=>it.proveedor===fProv)})).filter(c=>c.items.length>0)
-    :(conteos||[]);
+    :(conteos||[])
+  ).filter(c=>{
+    const f=c.fecha.slice(0,10);
+    return(!desdeHist||f>=desdeHist)&&(!hastaHist||f<=hastaHist);
+  });
 
   const verNotaConteo=(c,items,titulo)=>{
     const w=window.open("","_blank");
@@ -3117,11 +3146,20 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
       <p style={{fontFamily:"Georgia,serif",fontSize:"1.15rem"}}>🧮 Historial de conteos</p>
       <button onClick={()=>setVerHistorial(false)} style={{padding:"9px 16px",border:"none",borderRadius:10,background:"#E8DCC8",color:"#2C1A0E",fontSize:".8rem",fontWeight:600,cursor:"pointer"}}>← Volver al conteo</button>
     </div>
-    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16,alignItems:"flex-end"}}>
       <select value={fProv} onChange={e=>setFProv(e.target.value)} style={{...sS,flex:"1 1 200px"}}>
         <option value="">Todos los proveedores</option>
         {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
       </select>
+      <div>
+        <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
+        <input type="date" value={desdeHist} onChange={e=>setDesdeHist(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+      </div>
+      <div>
+        <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label>
+        <input type="date" value={hastaHist} onChange={e=>setHastaHist(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+      </div>
+      {(desdeHist||hastaHist)&&<button onClick={()=>{setDesdeHist("");setHastaHist("");}} style={{padding:"9px 12px",borderRadius:10,border:"1px solid #E8DCC8",background:"transparent",color:"#7B7063",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>Limpiar fechas</button>}
     </div>
     {!conteosHist||!conteosHist.length?<Empty icon="🧮">{fProv?`Todavía no hay ningún conteo con productos de ${fProv}`:"Todavía no hiciste ningún conteo"}</Empty>:conteosHist.map(c=>{
       const abierto=!!expandido[c.id];
@@ -3171,6 +3209,11 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   return(<>
     <Card title="Nuevo conteo">
       <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Elegí qué contar (o dejalo en todos), corregí lo que sea distinto de lo que muestra el sistema y guardá. La diferencia queda registrada como el consumo/venta implícito de ese período.</p>
+      <div style={{marginBottom:12}}>
+        <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Fecha del conteo</label>
+        <input type="date" value={fechaConteo} onChange={e=>setFechaConteo(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px",width:170}}/>
+        {fechaConteo&&fechaConteo!==hoyLocal()&&<div style={{fontSize:".65rem",color:"#B7860B",marginTop:3}}>⚠️ Vas a registrar este conteo con fecha atrasada</div>}
+      </div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         <input value={fQuery} onChange={e=>setFQuery(e.target.value)} placeholder="Buscar producto..." style={{flex:"2 1 160px",padding:"9px 12px",border:"1.5px solid #E8DCC8",borderRadius:10,fontSize:".82rem",background:"#fff",color:"#2C1A0E"}}/>
         <select value={fProv} onChange={e=>setFProv(e.target.value)} style={{...sS,flex:"1 1 120px"}}>
@@ -3217,11 +3260,15 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
 
     {!gruposCnt.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposCnt.map(g=>{
       const cerrado=!!colapsados[g.key];
+      const ultimoGrupo=ultimoConteoDeGrupo(g.key);
       return(
       <div key={g.key} style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",overflow:"hidden",marginBottom:14}}>
         <div onClick={()=>setColapsados({...colapsados,[g.key]:!cerrado})} style={{background:"#F4EEE3",padding:"9px 16px",fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:".88rem",color:"#2C1A0E",borderBottom:cerrado?"none":"1px solid #E8DCC8",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",userSelect:"none"}}>
           <span>{cerrado?"▸":"▾"} {g.key}</span>
-          <span style={{fontSize:".65rem",color:"#7B7063",fontStyle:"normal"}}>{g.items.length} producto{g.items.length!==1?"s":""}</span>
+          <span style={{display:"flex",gap:8,alignItems:"center"}}>
+            <span style={{fontSize:".6rem",color:"#7B7063",fontStyle:"normal",background:"#fff",borderRadius:10,padding:"2px 8px",whiteSpace:"nowrap"}}>🕒 {ultimoGrupo?diasDesde(ultimoGrupo):"nunca"}</span>
+            <span style={{fontSize:".65rem",color:"#7B7063",fontStyle:"normal",whiteSpace:"nowrap"}}>{g.items.length} producto{g.items.length!==1?"s":""}</span>
+          </span>
         </div>
         {!cerrado&&(
         <div style={{overflowX:"auto"}}>
