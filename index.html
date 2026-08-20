@@ -7310,6 +7310,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[fechaPago,setFechaPago]=useState(hoyLocal());
   const[conceptoPago,setConceptoPago]=useState("Sueldo");
   const[hsExtrasPago,setHsExtrasPago]=useState("");
+  const[pagoModal,setPagoModal]=useState(false);
   const[crearModalPago,setCrearModalPago]=useState(false);const[nuevoEmpPago,setNuevoEmpPago]=useState("");
   const[listaEmpsPago,setListaEmpsPago]=useState(EMPS_PAGO);
   useEffect(()=>{
@@ -7319,22 +7320,23 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     });
   },[JSON.stringify(EMPS_PAGO)]);
   const guardarPagoSueldo=async()=>{
-    if(!empPago||!montoPago){toast("Elegí un empleado e ingresá el monto");return;}
+    if(!empPago||!montoPago){toast("Elegí un empleado e ingresá el monto");return false;}
     if(formaPago==="Efectivo"&&Number(montoPago)>saldo){
-      if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(montoPago))}. ¿Confirmás igual?`))return;
+      if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(montoPago))}. ¿Confirmás igual?`))return false;
     }
-    if(formaPago==="Retiro"&&Number(montoPago)>saldoRetiro){toast("⚠️ Supera el saldo de caja retiro para sueldos ("+fmt(saldoRetiro)+")");return;}
+    if(formaPago==="Retiro"&&Number(montoPago)>saldoRetiro){toast("⚠️ Supera el saldo de caja retiro para sueldos ("+fmt(saldoRetiro)+")");return false;}
     let liquidacionId=null;
     if(conceptoPago==="Sueldo"){
       const per=(fechaPago||hoyLocal()).slice(0,7);
       const chk=liquidacionYaPagadaCheck(empPago,per);
-      if(chk&&!confirm("⚠️ "+empPago+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(chk.pagado)+"). ¿Registrar este pago de todas formas?"))return;
+      if(chk&&!confirm("⚠️ "+empPago+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(chk.pagado)+"). ¿Registrar este pago de todas formas?"))return false;
       const liq=liquidacionConfirmadaDe(empPago,per);
       if(liq)liquidacionId=liq.id;
     }
     setBusyPago(true);
     await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:empPago,concepto:conceptoPago,hsExtras:conceptoPago==="HS Extras"?Number(hsExtrasPago)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaLocalISO(fechaPago),...(liquidacionId?{liquidacionId}:{})}]);
     setBusyPago(false);setEmpPago("");setMontoPago("");setObsPago("");setFechaPago(hoyLocal());setConceptoPago("Sueldo");setHsExtrasPago("");toast(liquidacionId?"Sueldo registrado ✓ — vinculado a la liquidación del período":"Sueldo registrado ✓");
+    return true;
   };
   const crearEmpPago=()=>{
     if(!nuevoEmpPago.trim()){toast("Ingresá un nombre");return;}
@@ -7617,45 +7619,51 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
           </div>
         </div>
       )}
-      <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
-        <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMesPago)}</strong>{saldoRetiro>0?<> · Caja retiro disponible: <strong style={{color:"#F5D98B"}}>{fmt(saldoRetiro)}</strong></>:null}</div>
-      </div>
-      <Card title="Registrar pago de sueldo">
-        <Field label="Empleado">
-          <div style={{display:"flex",gap:8}}>
-            <select value={empPago} onChange={e=>setEmpPago(e.target.value)} style={{...sS,flex:1}}>
-              <option value="">— Elegí un empleado —</option>
-              {listaEmpsPago.map(e=><option key={e} value={e}>{e}</option>)}
-            </select>
-            <button onClick={()=>setCrearModalPago(true)} title="Agregar empleado" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+      <Btn bg="#2D6A4F" onClick={()=>setPagoModal(true)}>👤 Pagar sueldo</Btn>
+
+      {pagoModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>👤 Pagar sueldo</p>
+              <button onClick={()=>setPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
+            </div>
+            <Field label="Empleado">
+              <div style={{display:"flex",gap:8}}>
+                <select value={empPago} onChange={e=>setEmpPago(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí un empleado —</option>
+                  {listaEmpsPago.map(e=><option key={e} value={e}>{e}</option>)}
+                </select>
+                <button onClick={()=>setCrearModalPago(true)} title="Agregar empleado" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+            <Field label="Concepto">
+              <select value={conceptoPago} onChange={e=>{setConceptoPago(e.target.value);setHsExtrasPago("");}} style={sS}>
+                {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </Field>
+            {conceptoPago==="HS Extras"&&(
+              <Field label="Cantidad de horas extras">
+                <Inp type="number" value={hsExtrasPago} onChange={setHsExtrasPago} placeholder="Ej: 4"/>
+              </Field>
+            )}
+            <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
+            <Field label="Forma de pago">
+              <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
+                <option value="Efectivo">Efectivo (descuenta de caja)</option>
+                <option value="Transferencia">Transferencia (solo registro)</option>
+                <option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>
+              </select>
+            </Field>
+            {formaPago==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
+            {formaPago==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta la caja disponible — se paga con efectivo que ya retiraste antes. Disponible en caja retiro: <strong>{fmt(saldoRetiro)}</strong></div>}
+            <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: quincena, adelanto..."/></Field>
+            <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
+            <Btn bg="#2D6A4F" onClick={async()=>{if(await guardarPagoSueldo())setPagoModal(false);}} disabled={busyPago}>{busyPago?"Guardando…":"Registrar sueldo"}</Btn>
           </div>
-        </Field>
-        <Field label="Concepto">
-          <select value={conceptoPago} onChange={e=>{setConceptoPago(e.target.value);setHsExtrasPago("");}} style={sS}>
-            {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
-          </select>
-        </Field>
-        {conceptoPago==="HS Extras"&&(
-          <Field label="Cantidad de horas extras">
-            <Inp type="number" value={hsExtrasPago} onChange={setHsExtrasPago} placeholder="Ej: 4"/>
-          </Field>
-        )}
-        <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
-        <Field label="Forma de pago">
-          <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
-            <option value="Efectivo">Efectivo (descuenta de caja)</option>
-            <option value="Transferencia">Transferencia (solo registro)</option>
-            <option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>
-          </select>
-        </Field>
-        {formaPago==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
-        {formaPago==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta la caja disponible — se paga con efectivo que ya retiraste antes. Disponible en caja retiro: <strong>{fmt(saldoRetiro)}</strong></div>}
-        <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: quincena, adelanto..."/></Field>
-        <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
-        <Btn bg="#2D6A4F" onClick={guardarPagoSueldo} disabled={busyPago}>{busyPago?"Guardando…":"Registrar sueldo"}</Btn>
-      </Card>
+        </div>
+      )}
+
       <Card title={`Pagos de hoy (${hoyItemsPago.length})`}>
         {!hoyItemsPago.length?<Empty icon="👥">Sin pagos registrados hoy</Empty>:hoyItemsPago.map(s=>(
           <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
