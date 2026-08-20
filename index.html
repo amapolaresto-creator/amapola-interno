@@ -2936,9 +2936,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
 
 function notaConteoHTML(c,items,titulo){
   const filas=items.map(it=>{
-    const dCol=it.diferencia>0?"#2D6A4F":it.diferencia<0?"#C0392B":"#999";
-    const dTxt=(it.diferencia>0?"+":"")+it.diferencia;
-    return "<tr><td>"+it.nombre+"</td><td style=\"text-align:right;color:#7B7063\">"+it.teorico+" "+(it.unidad||"")+"</td><td style=\"text-align:right;font-weight:700\">"+it.contado+" "+(it.unidad||"")+"</td><td style=\"text-align:right;color:"+dCol+";font-weight:700\">"+dTxt+"</td></tr>";
+    return "<tr><td>"+it.nombre+"</td><td style=\"text-align:right;font-weight:700\">"+it.contado+" "+(it.unidad||"")+"</td></tr>";
   }).join("");
   return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><title>Nota de conteo — "+titulo+"</title>"
     +"<style>body{font-family:Georgia,serif;color:#2C1A0E;padding:36px;max-width:620px;margin:0 auto;}"
@@ -2952,7 +2950,7 @@ function notaConteoHTML(c,items,titulo){
     +"<h1>Amapola Resto</h1><div class=\"sub\">Nota de conteo</div>"
     +"<div class=\"badge\">"+fmtF(c.fecha)+" "+fmtH(c.fecha)+"</div>"
     +"<p style=\"font-size:1.1rem;margin:0 0 16px;\"><strong>"+titulo+"</strong></p>"
-    +"<table><thead><tr><th>Producto</th><th style=\"text-align:right\">Teórico</th><th style=\"text-align:right\">Contado</th><th style=\"text-align:right\">Diferencia</th></tr></thead><tbody>"+filas+"</tbody></table>"
+    +"<table><thead><tr><th>Producto</th><th style=\"text-align:right\">Contado</th></tr></thead><tbody>"+filas+"</tbody></table>"
     +(c.registradoPor?("<p style=\"font-size:.85rem;color:#7B7063;margin-top:16px;\"><strong>Registrado por:</strong> "+c.registradoPor+"</p>"):"")
     +"<div class=\"foot\">Emitido el "+new Date().toLocaleDateString("es-AR")+" · Amapola Interno</div>"
     +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar como imagen o PDF</button>"
