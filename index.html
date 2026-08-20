@@ -7660,23 +7660,22 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
             <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: quincena, adelanto..."/></Field>
             <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
             <Btn bg="#2D6A4F" onClick={async()=>{if(await guardarPagoSueldo())setPagoModal(false);}} disabled={busyPago}>{busyPago?"Guardando…":"Registrar sueldo"}</Btn>
+
+            <p style={{fontSize:".68rem",letterSpacing:".05em",textTransform:"uppercase",color:"#7B7063",fontWeight:700,margin:"22px 0 8px"}}>Pagos de hoy ({hoyItemsPago.length})</p>
+            {!hoyItemsPago.length?<Empty icon="👥">Sin pagos registrados hoy</Empty>:hoyItemsPago.map(s=>(
+              <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
+                <Thumb size={44}>👤</Thumb>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:".9rem"}}>{s.empleado}</div>
+                  <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
+                  {s.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{s.obs}</div>}
+                </div>
+                <div style={{fontWeight:700,fontSize:".78rem",color:"#2D6A4F",whiteSpace:"nowrap"}}>✓ Registrado</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
-
-      <Card title={`Pagos de hoy (${hoyItemsPago.length})`}>
-        {!hoyItemsPago.length?<Empty icon="👥">Sin pagos registrados hoy</Empty>:hoyItemsPago.map(s=>(
-          <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
-            <Thumb size={44}>👤</Thumb>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:".9rem"}}>{s.empleado}</div>
-              <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
-              {s.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{s.obs}</div>}
-            </div>
-            <div style={{fontWeight:700,fontSize:".78rem",color:"#2D6A4F",whiteSpace:"nowrap"}}>✓ Registrado</div>
-          </div>
-        ))}
-      </Card>
 
       {pinModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
