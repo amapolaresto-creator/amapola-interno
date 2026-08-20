@@ -649,8 +649,8 @@ function App({role="full",cerrarSesion}){
     {id:"penalidades",label:"⚡ Penalidades"},
   ];
   const TABS_ADMIN=[
-    {id:"gastos",     label:"📒 Libro Diario"},
-    {id:"historial",  label:"📋 Historial"},
+    {id:"gastos",     label:"🏠 Pagos Varios"},
+    {id:"historial",  label:"📒 Libro Diario"},
     {id:"dashboard",  label:"🏠 Dashboard"},
     {id:"sueldos",    label:"🧾 Liquidación de sueldos"},
     {id:"amex",       label:"💳 Amex"},
@@ -741,7 +741,7 @@ function App({role="full",cerrarSesion}){
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} saveGastos={saveGastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo} setTab={setTab}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} savePagos={savePagos} boletas={boletas} saveBoletas={saveBoletas} gastos={gastos} saveGastos={saveGastos} catalogoStock={catalogoStock} saveCatalogoStock={saveCatalogoStock} stock={stock} saveStock={saveStock} askPass={askPass}/>}
-        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock}/>}
+        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock} saldo={saldo} calcDigital={calcDigital}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} stock={stock} saveStock={saveStock}/> }
         {tab==="sueldos"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} adminUnlocked={adminUnlocked}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
@@ -2025,20 +2025,24 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital}
   const totalMes=gastos.filter(g=>{const d=new Date(g.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,g)=>a+Number(g.monto||0),0);
 
   return(<>
-    <ST help={"Acá ves el historial completo de gastos del negocio (alquiler, servicios, impuestos, pagos a proveedores cargados como gasto, etc.), tanto en efectivo como por transferencia.\n\n• Para cargar un pago nuevo (proveedor, sueldo o gasto), usá + Registrar pago desde Caja Digital.\n• Acá podés editar, borrar y filtrar todo lo ya cargado."}>Libro Diario</ST><SS>Historial completo de gastos del negocio.</SS>
+    <ST help={"Acá ves el historial de pagos varios del negocio (alquiler, servicios, impuestos, pagos a proveedores cargados como gasto, etc.), tanto en efectivo como por transferencia — es un subconjunto de movimientos, no el libro diario completo (para ver TODO — boletas, cierres, pagos, sueldos y ajustes juntos — anda a 📒 Libro Diario, en el menú).\n\n• Para cargar un pago nuevo (proveedor, sueldo o gasto), usá + Registrar pago desde Caja Digital.\n• Acá podés editar, borrar y filtrar todo lo ya cargado."}>Pagos Varios</ST><SS>Historial de pagos varios del negocio (alquiler, servicios, impuestos, etc.).</SS>
 
     <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:16}}>Pagado este mes: <strong style={{color:"#C0392B"}}>{fmt(totalMes)}</strong></div>
 
     <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos} proveedores={proveedores}/>
 
-    <div style={{marginTop:16}}>
-      <div style={{background:"#2D6A4F",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+    <div style={{marginTop:16,display:"flex",gap:8,flexWrap:"wrap"}}>
+      <div style={{flex:1,minWidth:140,background:"#2D6A4F",borderRadius:10,padding:"12px 14px"}}>
         <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#EAF5F0",opacity:.85}}>💵 Caja disponible</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#fff",lineHeight:1.15}}>{fmt(saldo)}</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#fff",lineHeight:1.15}}>{fmt(saldo)}</div>
       </div>
-      <div style={{background:"#2C1A0E",borderRadius:10,padding:"12px 14px"}}>
+      <div style={{flex:1,minWidth:140,background:"#2C1A0E",borderRadius:10,padding:"12px 14px"}}>
         <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
+      </div>
+      <div style={{flex:1,minWidth:140,background:"#B7860B",borderRadius:10,padding:"12px 14px"}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#FEF9E7",opacity:.9}}>⚖️ Consolidado</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#fff",lineHeight:1.15}}>{fmt(Number(saldo||0)+Number(saldoReal||0))}</div>
       </div>
     </div>
   </>);
@@ -2102,7 +2106,7 @@ function LibroDiarioGastos({gastos,saveGastos,proveedores}){
 
   return(
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginTop:16}}>
-      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>📒 Historial de gastos</div>
+      <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:14}}>🏠 Historial de pagos varios</div>
 
       {/* FILTROS FECHA */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
@@ -8061,7 +8065,8 @@ function AdminBoletas({boletas,saveBoletas,proveedores,empleados,stock,saveStock
   );
 }
 
-function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock}){
+function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock,saldo,calcDigital}){
+  const{saldoReal}=calcDigital?calcDigital():{saldoReal:0};
   const[filtro,setFiltro]=useState("todo");
   const[filtroDH,setFiltroDH]=useState("todos");
   const hoy=new Date();
@@ -8172,8 +8177,23 @@ function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInic
   const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
 
   return(<>
-    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con Amex (tarjeta de crédito) aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco — recién se descuentan cuando pagás el resumen de la tarjeta (eso se carga como Gasto, categoría Amex).\n• Los ajustes de caja tampoco aparecen en Debe/Haber ni suman a esos totales — no son una venta ni un pago, son una corrección del saldo contado. Igual se ven reflejados en el Saldo Ef. corrido.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Historial</ST>
-    <SS>Libro diario de todos los movimientos — efectivo y digital.</SS>
+    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con Amex (tarjeta de crédito) aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco — recién se descuentan cuando pagás el resumen de la tarjeta (eso se carga como Gasto, categoría Amex).\n• Los ajustes de caja tampoco aparecen en Debe/Haber ni suman a esos totales — no son una venta ni un pago, son una corrección del saldo contado. Igual se ven reflejados en el Saldo Ef. corrido.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Libro Diario</ST>
+    <SS>Todos los movimientos del negocio — boletas, cierres, pagos, sueldos, gastos y ajustes, en formato debe/haber.</SS>
+
+    <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+      <div style={{flex:1,minWidth:140,background:"#2D6A4F",borderRadius:10,padding:"12px 14px"}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#EAF5F0",opacity:.85}}>💵 Caja disponible</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#fff",lineHeight:1.15}}>{fmt(saldo)}</div>
+      </div>
+      <div style={{flex:1,minWidth:140,background:"#2C1A0E",borderRadius:10,padding:"12px 14px"}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
+      </div>
+      <div style={{flex:1,minWidth:140,background:"#B7860B",borderRadius:10,padding:"12px 14px"}}>
+        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#FEF9E7",opacity:.9}}>⚖️ Consolidado</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#fff",lineHeight:1.15}}>{fmt(Number(saldo||0)+Number(saldoReal||0))}</div>
+      </div>
+    </div>
 
     <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
