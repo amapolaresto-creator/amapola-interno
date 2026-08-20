@@ -743,7 +743,7 @@ function App({role="full",cerrarSesion}){
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} savePagos={savePagos} boletas={boletas} saveBoletas={saveBoletas} gastos={gastos} saveGastos={saveGastos} catalogoStock={catalogoStock} saveCatalogoStock={saveCatalogoStock} stock={stock} saveStock={saveStock} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} stock={stock} saveStock={saveStock}/> }
-        {tab==="sueldos"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras}/>}
+        {tab==="sueldos"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} adminUnlocked={adminUnlocked}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":frontOnly?"Front":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
@@ -7242,7 +7242,7 @@ function ManualLiquidacionModal({onClose}){
     </div>
   );
 }
-function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades,savePenalidades,horasExtras,saveHorasExtras}){
+function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaciones,sueldos,saveSueldos,saldo,gastos,penalidades,savePenalidades,horasExtras,saveHorasExtras,adminUnlocked}){
   const empleadosActivos=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const[periodo,setPeriodo]=useState(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");});
   const[editando,setEditando]=useState(null);
@@ -7259,10 +7259,12 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verHsExtrasAdmin,setVerHsExtrasAdmin]=useState(false);
   const[verManual,setVerManual]=useState(false);
 
-  // Desbloqueo de Nómina/Liquidaciones con la clave de administrador (independiente del "Admin" general
-  // de la app): el registro de pago de sueldo de acá abajo es público (sin clave), pero todo lo demás
-  // (liquidar sueldos, ver nómina, penalidades, adelantos, hs extras) sigue pidiendo la clave.
+  // Desbloqueo de Nómina/Liquidaciones: el registro de pago de sueldo de acá abajo es público (sin clave),
+  // pero todo lo demás (liquidar sueldos, ver nómina, penalidades, adelantos, hs extras) queda oculto hasta
+  // desbloquear. Si ya estás en modo Admin (adminUnlocked, desde el candado general de la app) se muestra
+  // directo, sin pedir la clave de nuevo — el botón de acá abajo es solo para cuando NO estás en modo Admin.
   const[nominaUnlocked,setNominaUnlocked]=useState(false);
+  const nominaVisible=adminUnlocked||nominaUnlocked;
   const[pinModal,setPinModal]=useState(false);
   const[pinInput,setPinInput]=useState("");
   const[pinErr,setPinErr]=useState(false);
@@ -7685,7 +7687,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         </div>
       )}
 
-      {!nominaUnlocked?(
+      {!nominaVisible?(
         <Card title="🔒 Nómina y Liquidaciones">
           <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:14}}>Liquidar sueldos, ver recibos, penalidades, adelantos y horas extras del equipo — esta parte pide la clave de administrador.</p>
           <Btn bg="#2C1A0E" onClick={()=>setPinModal(true)}>Desbloquear con clave de administrador</Btn>
