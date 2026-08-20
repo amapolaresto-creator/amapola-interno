@@ -7483,6 +7483,15 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       fechaConfirmacion:confirmar?new Date().toISOString():(form.fechaConfirmacion||null),
       fecha:form.fecha||new Date().toISOString()};
     await saveLiquidaciones([registro,...(liquidaciones||[]).filter(l=>l.id!==registro.id)]);
+    if(confirmar){
+      // Al confirmar, enlazar retroactivamente pagos "Sueldo" de este empleado+período que ya estaban
+      // cargados pero quedaron sueltos (ej. un adelanto o retiro pagado antes de confirmar la liquidación).
+      const sueltos=(sueldos||[]).filter(s=>s.concepto==="Sueldo"&&(s.fecha||"").slice(0,7)===periodo&&!s.liquidacionId&&nombreCoincideSueldo(s.empleado,editando.nombre));
+      if(sueltos.length){
+        const idsSueltos=new Set(sueltos.map(s=>s.id));
+        await saveSueldos((sueldos||[]).map(s=>idsSueltos.has(s.id)?{...s,liquidacionId:registro.id}:s));
+      }
+    }
     setForm(registro);setBusy(false);
     toast(confirmar?"Liquidación confirmada ✓":"Borrador guardado ✓");
     return registro;
