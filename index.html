@@ -6551,7 +6551,7 @@ function AjusteCajaEfectivo({saldo,ajustes,saveAjustes}){
   );
 }
 
-function reciboHTML(reg,emp){
+function reciboHTML(reg,emp,pagos){
   const[y,m]=reg.periodo.split("-");
   const mesTxt=new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});
   const fila=(label,val)=>Number(val)?("<tr><td>"+label+"</td><td style=\"text-align:right\">"+fmt(val)+"</td></tr>"):"";
@@ -6569,6 +6569,17 @@ function reciboHTML(reg,emp){
     "<div class=\"bonobox\"><table><tr><td>Bono</td><td style=\"text-align:right\">"+fmt(bonoMonto)+"</td></tr></table>"
     +"<div class=\"subrow\">"+bonoDetalle+"</div></div>"
   ):"";
+  const pagosList=(pagos||[]).slice().sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const totalPagado=pagosList.reduce((s,p)=>s+Number(p.monto||0),0);
+  const saldoPend=Math.round((Number(reg.neto||0)-totalPagado)*100)/100;
+  const pagosBox=pagosList.length?(
+    "<div class=\"label\">Pagos recibidos</div><table>"
+    +pagosList.map(p=>"<tr><td>"+fmtF(p.fecha)+" · "+p.forma+(p.obs?(" — "+p.obs):"")+"</td><td style=\"text-align:right\">"+fmt(p.monto)+"</td></tr>").join("")
+    +"<tr><td class=\"tot\">Total pagado</td><td class=\"tot\" style=\"text-align:right\">"+fmt(totalPagado)+"</td></tr></table>"
+    +(saldoPend>0.5?("<div class=\"subrow\" style=\"color:#C0392B;font-weight:700;\">Saldo pendiente: "+fmt(saldoPend)+"</div>")
+      :saldoPend<-0.5?("<div class=\"subrow\" style=\"color:#2D6A4F;font-weight:700;\">Pagado de más: "+fmt(Math.abs(saldoPend))+"</div>")
+      :"<div class=\"subrow\" style=\"color:#2D6A4F;font-weight:700;\">Pagado por completo</div>")
+  ):"<div class=\"label\">Pagos recibidos</div><div class=\"subrow\">Sin pagos registrados todavía</div>";
   return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><title>Recibo — "+emp.nombre+" "+(emp.apellido||"")+"</title>"
     +"<style>body{font-family:Georgia,serif;color:#2C1A0E;padding:36px;max-width:560px;margin:0 auto;}"
     +"h1{font-size:1.3rem;margin:0 0 2px;}.sub{font-size:.8rem;color:#7B7063;margin-bottom:20px;}"
@@ -6595,6 +6606,7 @@ function reciboHTML(reg,emp){
     +"<tr><td class=\"tot\">Total descuentos</td><td class=\"tot\" style=\"text-align:right\">-"+fmt(reg.totalDescuentos)+"</td></tr></table>"
     +bonoBox
     +"<div class=\"neto\">NETO A COBRAR: "+fmt(reg.neto)+"</div>"
+    +"<div style=\"margin-top:18px;\">"+pagosBox+"</div>"
     +(reg.obs?("<p style=\"font-size:.8rem;color:#7B7063;margin-top:16px;\">"+reg.obs+"</p>"):"")
     +"<div class=\"foot\">Emitido el "+new Date().toLocaleDateString("es-AR")+" · Amapola Interno</div>"
     +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar PDF</button>"
@@ -7480,16 +7492,16 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const w=window.open("","_blank");
     const reg=await guardar(true);
     if(!reg){if(w)w.close();return;}
-    if(w){w.document.write(reciboHTML(reg,editando));w.document.close();}
+    if(w){w.document.write(reciboHTML(reg,editando,(sueldos||[]).filter(s=>s.liquidacionId===reg.id)));w.document.close();}
     else toast("Habilitá las ventanas emergentes para ver el recibo");
   };
   const verRecibo=()=>{
     const w=window.open("","_blank");
-    if(w){w.document.write(reciboHTML(form,editando));w.document.close();}
+    if(w){w.document.write(reciboHTML(form,editando,(sueldos||[]).filter(s=>s.liquidacionId===form.id)));w.document.close();}
   };
   const verReciboDe=(liq,emp)=>{
     const w=window.open("","_blank");
-    if(w){w.document.write(reciboHTML(liq,emp));w.document.close();}
+    if(w){w.document.write(reciboHTML(liq,emp,(sueldos||[]).filter(s=>s.liquidacionId===liq.id)));w.document.close();}
     else toast("Habilitá las ventanas emergentes para ver el recibo");
   };
 
