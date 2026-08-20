@@ -644,7 +644,7 @@ function App({role="full",cerrarSesion}){
     {id:"cierres",    label:"💰 Cierres de Caja"},
     {id:"pagos",      label:"💸 Pagos"},
     {id:"proveedores",label:"🏪 Proveedores"},
-    {id:"sueldos",    label:"👥 Sueldos"},
+    {id:"sueldos",    label:"🧾 Liquidación de sueldos"},
     {id:"fichajes",   label:"🕐 Fichajes"},
     {id:"stock",      label:"📦 Stock"},
     {id:"penalidades",label:"⚡ Penalidades"},
@@ -653,7 +653,6 @@ function App({role="full",cerrarSesion}){
     {id:"gastos",     label:"📒 Libro Diario"},
     {id:"historial",  label:"📋 Historial"},
     {id:"dashboard",  label:"🏠 Dashboard"},
-    {id:"liquidacion",label:"🧾 Liquidación de sueldos"},
     {id:"amex",       label:"💳 Amex"},
     {id:"gerencia",   label:"💼 Gerencia"},
     {id:"cajaefectivo",label:"💵 Caja Disponible"},
@@ -733,7 +732,6 @@ function App({role="full",cerrarSesion}){
           sueldos={sueldos} gastos={gastos} proveedores={proveedores}
           calcDeuda={calcDeuda} calcDigital={calcDigital} saldo={saldo}
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
-        {tab==="liquidacion"&&adminUnlocked&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras}/>}
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores} pagos={pagos} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} calcDigital={calcDigital}/>}
         {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} actualizarSaldoBanco={actualizarSaldoBanco}/>}
@@ -745,7 +743,7 @@ function App({role="full",cerrarSesion}){
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} savePagos={savePagos} boletas={boletas} saveBoletas={saveBoletas} gastos={gastos} saveGastos={saveGastos} catalogoStock={catalogoStock} saveCatalogoStock={saveCatalogoStock} stock={stock} saveStock={saveStock} askPass={askPass}/>}
         {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} stock={stock} saveStock={saveStock}/> }
-        {tab==="sueldos"&&<TabSueldos sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} saveGastos={saveGastos} empleados={empleados} liquidaciones={liquidaciones}/>}
+        {tab==="sueldos"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":frontOnly?"Front":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
@@ -2016,151 +2014,10 @@ const RETIRO_SUELDOS_CAT="Retiro para sueldos";
 // para cuando la ganancia se saca de esa plata en vez de la Caja Digital.
 const RETIRO_GANANCIA_CAT="DIGITAL";
 
-function TabSueldos({sueldos,saveSueldos,saldo,gastos,saveGastos,empleados,liquidaciones}){
-  const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
-  // Chequeo anti-duplicado: si el empleado ya tiene la liquidación de ese período pagada del todo,
-  // avisar antes de cargar otro "Sueldo" manual (podría ser un pago repetido sin querer).
-  const nombreCoincideSueldo=(sNombre,empNombre)=>{
-    const a=(sNombre||"").trim().toLowerCase();
-    const b=(empNombre||"").trim().toLowerCase();
-    if(!a||!b)return false;
-    if(a===b)return true;
-    return b.startsWith(a)||a.startsWith(b);
-  };
-  // Liquidación confirmada de ese empleado+período (si existe) — se usa tanto para el aviso de "ya está
-  // pagada" como para enlazar automáticamente el pago (liquidacionId) cuando el concepto es "Sueldo", ya
-  // que el pago real de una liquidación ahora se registra acá (o en Caja Disponible/Caja Digital) en vez
-  // de tener un botón de pago aparte dentro de Liquidación de sueldos.
-  const liquidacionConfirmadaDe=(nombreEmp,per)=>{
-    const empMatch=(empleados||[]).find(e=>nombreCoincideSueldo(nombreEmp,e.nombre));
-    if(!empMatch)return null;
-    return(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada")||null;
-  };
-  const liquidacionYaPagada=(nombreEmp,per)=>{
-    const liq=liquidacionConfirmadaDe(nombreEmp,per);
-    if(!liq)return null;
-    const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
-    return pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)?{liq,pagado}:null;
-  };
-  // Saldo de la caja retiro para sueldos (plata ya sacada de Caja Disponible en Pagos o Caja Disponible,
-  // categoría "Retiro para sueldos") — no debería dejarse cargar más "Retiro" que lo que efectivamente
-  // se sacó y todavía no se usó.
-  const totalRetirado=(gastos||[]).filter(g=>g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).reduce((s,g)=>s+Number(g.monto||0),0);
-  const totalUsadoDeRetiro=(sueldos||[]).filter(s=>s.forma==="Retiro").reduce((s2,s)=>s2+Number(s.monto||0),0)
-    +(gastos||[]).filter(g=>g.forma==="Retiro"&&(g.categoria||"").trim().toLowerCase()===RETIRO_GANANCIA_CAT.toLowerCase()).reduce((s2,g)=>s2+Number(g.monto||0),0);
-  const saldoRetiro=totalRetirado-totalUsadoDeRetiro;
-  const[emp,setEmp]=useState("");const[monto,setMonto]=useState("");
-  const[forma,setForma]=useState("Efectivo");const[obs,setObs]=useState("");
-  const[busy,setBusy]=useState(false);
-  const[fecha,setFecha]=useState(hoyLocal());
-  const[concepto,setConcepto]=useState("Sueldo");
-  const[hsExtras,setHsExtras]=useState("");
-  const[crearModal,setCrearModal]=useState(false);const[nuevoEmp,setNuevoEmp]=useState("");
-  const[listaEmps,setListaEmps]=useState(EMPS);
-  useEffect(()=>{
-    setListaEmps(l=>{
-      const extra=l.filter(n=>!EMPS.includes(n));
-      return[...EMPS,...extra];
-    });
-  },[JSON.stringify(EMPS)]);
-  const guardar=async()=>{
-    if(!emp||!monto){toast("Elegí un empleado e ingresá el monto");return;}
-    if(forma==="Efectivo"&&Number(monto)>saldo){
-      if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(monto))}. ¿Confirmás igual?`))return;
-    }
-    if(forma==="Retiro"&&Number(monto)>saldoRetiro){toast("⚠️ Supera el saldo de caja retiro para sueldos ("+fmt(saldoRetiro)+")");return;}
-    let liquidacionId=null;
-    if(concepto==="Sueldo"){
-      const per=(fecha||hoyLocal()).slice(0,7);
-      const chk=liquidacionYaPagada(emp,per);
-      if(chk&&!confirm("⚠️ "+emp+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(chk.pagado)+"). ¿Registrar este pago de todas formas?"))return;
-      const liq=liquidacionConfirmadaDe(emp,per);
-      if(liq)liquidacionId=liq.id;
-    }
-    setBusy(true);
-    await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:emp,concepto,hsExtras:concepto==="HS Extras"?Number(hsExtras)||0:null,monto:Number(monto),forma,obs:obs.trim(),fecha:fechaLocalISO(fecha),...(liquidacionId?{liquidacionId}:{})}]);
-    setBusy(false);setEmp("");setMonto("");setObs("");setFecha(hoyLocal());setConcepto("Sueldo");setHsExtras("");toast(liquidacionId?"Sueldo registrado ✓ — vinculado a la liquidación del período":"Sueldo registrado ✓");
-  };
-  const crearEmp=()=>{
-    if(!nuevoEmp.trim()){toast("Ingresá un nombre");return;}
-    setListaEmps(l=>[...l,nuevoEmp.trim()]);
-    setEmp(nuevoEmp.trim());setNuevoEmp("");setCrearModal(false);
-    toast("Empleado creado ✓");
-  };
-
-  const hoy=new Date().toDateString();
-  const hoyItems=sueldos.filter(s=>new Date(s.fecha).toDateString()===hoy).slice().reverse();
-  const totalMes=sueldos.filter(s=>{const d=new Date(s.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,s)=>a+Number(s.monto||0),0);
-
-  return(<>
-    <ST help={"Registrá acá los pagos de sueldos, adelantos y horas extras.\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual (la caja queda en negativo).\n• Si registrás un pago concepto 'Sueldo' y ese empleado tiene una liquidación confirmada de Liquidación de sueldos para ese período, el pago queda enlazado solo a esa liquidación — así la Nómina de Liquidación muestra 'Pago parcial' o '💵 Pagada' sin que tengas que hacer nada más ahí. Es lo mismo si pagás desde Caja Disponible o Caja Digital: es un solo mecanismo, no importa por dónde lo cargues.\n• Si vas a pagar varios sueldos con plata que ya sacaste antes de la caja: primero registrá el retiro desde Pagos o Caja Disponible ('💰 Retirar p/ sueldos'). Después, cada sueldo pagado con esa plata se registra acá con forma 'Retiro' — así no se descuenta la caja dos veces. Ahí sí NO te deja cargar más 'Retiro' del que realmente hay disponible en esa caja aparte (bloqueo directo, no es un tema de caja física sino de que esa plata ya no existe en esa cuenta aparte).\n• Esa misma caja retiro también se puede usar para pagar el gasto categoría 'DIGITAL' (retiros de ganancia) desde Caja Disponible o Caja Digital — por eso 'Caja retiro disponible' de acá arriba puede bajar aunque no hayas cargado ningún sueldo con forma Retiro.\n• El historial de pagos está al final de la pantalla."}>Sueldos</ST><SS>Registrá pagos de sueldos a empleados.</SS>
-    {crearModal&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nuevo empleado</p>
-          <input value={nuevoEmp} onChange={e=>setNuevoEmp(e.target.value)} placeholder="Nombre del empleado" autoFocus
-            onKeyDown={e=>e.key==="Enter"&&crearEmp()} style={{...iS,marginBottom:16}}/>
-          <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setCrearModal(false);setNuevoEmp("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={crearEmp} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
-          </div>
-        </div>
-      </div>
-    )}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMes)}</strong>{saldoRetiro>0?<> · Caja retiro disponible: <strong style={{color:"#F5D98B"}}>{fmt(saldoRetiro)}</strong></>:null}</div>
-    </div>
-    <Card title="Registrar pago de sueldo">
-      <Field label="Empleado">
-        <div style={{display:"flex",gap:8}}>
-          <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
-            <option value="">— Elegí un empleado —</option>
-            {listaEmps.map(e=><option key={e} value={e}>{e}</option>)}
-          </select>
-          <button onClick={()=>setCrearModal(true)} title="Agregar empleado" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
-        </div>
-      </Field>
-      <Field label="Concepto">
-        <select value={concepto} onChange={e=>{setConcepto(e.target.value);setHsExtras("");}} style={sS}>
-          {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
-        </select>
-      </Field>
-      {concepto==="HS Extras"&&(
-        <Field label="Cantidad de horas extras">
-          <Inp type="number" value={hsExtras} onChange={setHsExtras} placeholder="Ej: 4"/>
-        </Field>
-      )}
-      <Field label="Monto ($)"><Inp type="number" value={monto} onChange={setMonto} placeholder="0"/></Field>
-      <Field label="Forma de pago">
-        <select value={forma} onChange={e=>setForma(e.target.value)} style={sS}>
-          <option value="Efectivo">Efectivo (descuenta de caja)</option>
-          <option value="Transferencia">Transferencia (solo registro)</option>
-          <option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>
-        </select>
-      </Field>
-      {forma==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
-      {forma==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta la caja disponible — se paga con efectivo que ya retiraste antes. Disponible en caja retiro: <strong>{fmt(saldoRetiro)}</strong></div>}
-      <Field label="Observaciones"><TA value={obs} onChange={setObs} placeholder="Ej: quincena, adelanto..."/></Field>
-      <Field label="Fecha del registro"><Inp type="date" value={fecha} onChange={setFecha}/></Field>
-      <Btn bg="#2D6A4F" onClick={guardar} disabled={busy}>{busy?"Guardando…":"Registrar sueldo"}</Btn>
-    </Card>
-    <Card title={`Pagos de hoy (${hoyItems.length})`}>
-      {!hoyItems.length?<Empty icon="👥">Sin pagos registrados hoy</Empty>:hoyItems.map(s=>(
-        <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
-          <Thumb size={44}>👤</Thumb>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:600,fontSize:".9rem"}}>{s.empleado}</div>
-            <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
-            {s.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{s.obs}</div>}
-          </div>
-          <div style={{fontWeight:700,fontSize:".78rem",color:"#2D6A4F",whiteSpace:"nowrap"}}>✓ Registrado</div>
-        </div>
-      ))}
-    </Card>
-  </>);
-}
+// La pantalla de registro de pago de sueldo se movió a LiquidacionSueldos (2026-08-20): antes era una
+// pestaña propia "Sueldos", ahora vive arriba de todo en "Liquidación de sueldos" (sin clave), porque los
+// empleados que van a Pagos y tocan "👤 Pagar sueldo" terminan ahí — así entran directo al formulario en
+// vez de a un módulo administrativo aparte.
 
 
 function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital}){
@@ -7313,18 +7170,23 @@ function ManualLiquidacionModal({onClose}){
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#7B7063"}}>✕</button>
         </div>
 
-        <Sec title="Qué hace esta sección">
-          Acá armás el sueldo de cada empleado, mes a mes: cargás lo que suma (Haberes) y lo que resta (Descuentos), el sistema calcula el Neto a cobrar, y al confirmar generás un recibo para imprimir o guardar en PDF. Esto NO registra un pago ni descuenta ninguna caja — el pago real se carga aparte, desde Caja Disponible, Caja Digital o la pestaña Sueldos (con concepto "Sueldo" y la forma que corresponda: Efectivo, Transferencia o Retiro).
+        <Sec title="Dos partes en una sola pantalla">
+          Desde 2026-08-20, "Liquidación de sueldos" reemplaza a la vieja pestaña "Sueldos" y tiene dos partes bien separadas. Arriba de todo, <b>Registrar pago de sueldo</b> — sin contraseña, la puede usar cualquiera (por ejemplo desde Pagos, tocando "👤 Pagar sueldo", se entra directo acá). Más abajo, <b>Nómina y Liquidaciones</b> — armar el sueldo de cada empleado mes a mes, ver la Nómina, Penalidades, Adelantos y HS Extras — pide la clave de administrador para verse, aunque no hayas entrado al modo Admin general de la app.
+        </Sec>
+
+        <Sec title="Qué hace la Nómina">
+          Acá armás el sueldo de cada empleado, mes a mes: cargás lo que suma (Haberes) y lo que resta (Descuentos), el sistema calcula el Neto a cobrar, y al confirmar generás un recibo para imprimir o guardar en PDF. Esto NO registra un pago ni descuenta ninguna caja — el pago real se carga arriba de todo (Registrar pago de sueldo), o desde Caja Disponible o Caja Digital, con concepto "Sueldo" y la forma que corresponda: Efectivo, Transferencia o Retiro.
         </Sec>
 
         <Sec title="Paso a paso">
-          1. Elegí el Período (mes) arriba de la Nómina.<br/>
-          2. En la fila del empleado, tocá "Liquidar" (o "Editar" si ya existe una liquidación de ese período).<br/>
-          3. Completá los campos de Haberes y Descuentos que correspondan.<br/>
-          4. Revisá el Neto a cobrar al final de la pantalla.<br/>
-          5. "Guardar borrador" guarda sin cerrar — se puede seguir editando después.<br/>
-          6. "Confirmar y generar recibo" cierra la liquidación de ese mes y abre el recibo listo para imprimir.<br/>
-          7. Con la liquidación confirmada, registrá el pago desde Caja Disponible, Caja Digital o Sueldos — elegí empleado, concepto "Sueldo" y la forma que corresponda. La app detecta sola que existe una liquidación confirmada de ese período y lo enlaza, así la columna Estado de acá pasa a mostrar "Pago parcial" o "💵 Pagada" sin que tengas que hacer nada más.
+          1. Tocá "Desbloquear con clave de administrador" para entrar a Nómina y Liquidaciones.<br/>
+          2. Elegí el Período (mes) arriba de la Nómina.<br/>
+          3. En la fila del empleado, tocá "Liquidar" (o "Editar" si ya existe una liquidación de ese período).<br/>
+          4. Completá los campos de Haberes y Descuentos que correspondan.<br/>
+          5. Revisá el Neto a cobrar al final de la pantalla.<br/>
+          6. "Guardar borrador" guarda sin cerrar — se puede seguir editando después.<br/>
+          7. "Confirmar y generar recibo" cierra la liquidación de ese mes y abre el recibo listo para imprimir.<br/>
+          8. Con la liquidación confirmada, registrá el pago desde "Registrar pago de sueldo" (arriba de todo, en esta misma pantalla) o desde Caja Disponible/Caja Digital — elegí empleado, concepto "Sueldo" y la forma que corresponda. La app detecta sola que existe una liquidación confirmada de ese período y lo enlaza, así la columna Estado de la Nómina pasa a mostrar "Pago parcial" o "💵 Pagada" sin que tengas que hacer nada más.
         </Sec>
 
         <Sec title="Haberes (lo que suma)">
@@ -7339,7 +7201,7 @@ function ManualLiquidacionModal({onClose}){
           <b>Ausencias:</b> cargás la cantidad de días que faltó — se multiplican por el valor día (básico ÷ 208 × 8).<br/>
           <b>Penalidades X:</b> cargás un número. 0 → el bono se liquida x2. De 1 a 4 → el bono se liquida sin cambios. 5 o más → se descuenta $5.000 por cada punto, con tope: nunca más que el propio bono base (nunca queda negativo).<br/>
           <b>Desperdicios:</b> descuenta solo lo que haya quedado disponible del bono después de aplicar Penalidades X. Si el bono ya quedó en $0, Desperdicios no puede descontar nada más.<br/>
-          <b>Adelantos:</b> se autocompleta solo con lo que ese empleado tenga cargado como "Adelanto" en la pestaña Sueldos, en el mismo período que estás liquidando. Se puede corregir a mano.<br/>
+          <b>Adelantos:</b> se autocompleta solo con lo que ese empleado tenga cargado como "Adelanto" en Registrar pago de sueldo, en el mismo período que estás liquidando. Se puede corregir a mano.<br/>
           <b>Consumos:</b> monto manual.
         </Sec>
 
@@ -7349,7 +7211,7 @@ function ManualLiquidacionModal({onClose}){
         </Sec>
 
         <Sec title="💵 Adelantos">
-          Este botón muestra, para el período elegido, todos los adelantos cargados en la pestaña Sueldos (concepto "Adelanto") agrupados por empleado, con el total de cada uno. Si aparece un cartel de "adelantos sin relacionar", es porque el nombre cargado en Sueldos no coincide con ningún empleado activo — conviene revisar y corregir el nombre ahí.
+          Este botón muestra, para el período elegido, todos los adelantos cargados en Registrar pago de sueldo (concepto "Adelanto") agrupados por empleado, con el total de cada uno. Si aparece un cartel de "adelantos sin relacionar", es porque el nombre cargado ahí no coincide con ningún empleado activo — conviene revisar y corregir el nombre.
         </Sec>
 
         <Sec title="⏱️ HS Extras">
@@ -7370,11 +7232,11 @@ function ManualLiquidacionModal({onClose}){
         </Sec>
 
         <Sec title="Registrar el pago">
-          Con la liquidación confirmada, aparece el botón 💵 Pago. Se puede pagar con Caja retiro (plata ya retirada de Caja Disponible para sueldos, desde Pagos o desde la propia Caja Disponible), Efectivo, Digital, o combinar más de una fuente (mixto). También se puede pagar de a partes (pago parcial): el sistema suma todo lo pagado hasta llegar al neto. No deja cargar más Caja retiro del que realmente está disponible.
+          Ya no hay un botón de pago propio dentro de la liquidación. Con la liquidación confirmada, el pago se registra desde "Registrar pago de sueldo" (arriba de todo, en esta misma pantalla, sin clave) o desde Caja Disponible/Caja Digital: elegí el empleado, concepto "Sueldo", y la forma que corresponda — Efectivo, Transferencia, o Retiro (si ya se había sacado la plata antes de la caja retiro para sueldos). La app detecta sola la liquidación confirmada de ese período y enlaza el pago. También se puede pagar de a partes (pago parcial): el sistema suma todo lo pagado hasta llegar al neto.
         </Sec>
 
         <Sec title="Para tener en cuenta">
-          Si cargás un pago "Sueldo" manual en la pestaña Sueldos para alguien que ya tiene esa liquidación pagada del todo, el sistema avisa antes de guardar, para evitar pagar dos veces por error.
+          Si cargás un pago "Sueldo" para alguien que ya tiene esa liquidación pagada del todo, el sistema avisa antes de guardar, para evitar pagar dos veces por error.
         </Sec>
       </div>
     </div>
@@ -7397,12 +7259,97 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verHsExtrasAdmin,setVerHsExtrasAdmin]=useState(false);
   const[verManual,setVerManual]=useState(false);
 
+  // Desbloqueo de Nómina/Liquidaciones con la clave de administrador (independiente del "Admin" general
+  // de la app): el registro de pago de sueldo de acá abajo es público (sin clave), pero todo lo demás
+  // (liquidar sueldos, ver nómina, penalidades, adelantos, hs extras) sigue pidiendo la clave.
+  const[nominaUnlocked,setNominaUnlocked]=useState(false);
+  const[pinModal,setPinModal]=useState(false);
+  const[pinInput,setPinInput]=useState("");
+  const[pinErr,setPinErr]=useState(false);
+  const confirmarPin=()=>{
+    if(pinInput===ADMIN_PASS){setNominaUnlocked(true);setPinModal(false);setPinInput("");setPinErr(false);}
+    else{setPinErr(true);setPinInput("");}
+  };
+
+  // --- Registrar pago de sueldo (público, sin clave) — antes era la pestaña propia "Sueldos" ---
+  const EMPS_PAGO=empleadosActivos.map(e=>e.nombre);
+  // Chequeo anti-duplicado: si el empleado ya tiene la liquidación de ese período pagada del todo,
+  // avisar antes de cargar otro "Sueldo" manual (podría ser un pago repetido sin querer).
+  const nombreCoincideSueldo=(sNombre,empNombre)=>{
+    const a=(sNombre||"").trim().toLowerCase();
+    const b=(empNombre||"").trim().toLowerCase();
+    if(!a||!b)return false;
+    if(a===b)return true;
+    return b.startsWith(a)||a.startsWith(b);
+  };
+  // Liquidación confirmada de ese empleado+período (si existe) — se usa tanto para el aviso de "ya está
+  // pagada" como para enlazar automáticamente el pago (liquidacionId) cuando el concepto es "Sueldo".
+  const liquidacionConfirmadaDe=(nombreEmp,per)=>{
+    const empMatch=(empleados||[]).find(e=>nombreCoincideSueldo(nombreEmp,e.nombre));
+    if(!empMatch)return null;
+    return(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada")||null;
+  };
+  const liquidacionYaPagadaCheck=(nombreEmp,per)=>{
+    const liq=liquidacionConfirmadaDe(nombreEmp,per);
+    if(!liq)return null;
+    const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
+    return pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)?{liq,pagado}:null;
+  };
+  // Saldo de la caja retiro para sueldos (plata ya sacada de Caja Disponible en Pagos o Caja Disponible,
+  // categoría "Retiro para sueldos") — no debería dejarse cargar más "Retiro" que lo que efectivamente
+  // se sacó y todavía no se usó. También la puede usar el gasto categoría "DIGITAL" (retiros de ganancia).
+  const totalRetirado=(gastos||[]).filter(g=>g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).reduce((s,g)=>s+Number(g.monto||0),0);
+  const totalUsadoDeRetiro=(sueldos||[]).filter(s=>s.forma==="Retiro").reduce((s2,s)=>s2+Number(s.monto||0),0)
+    +(gastos||[]).filter(g=>g.forma==="Retiro"&&(g.categoria||"").trim().toLowerCase()===RETIRO_GANANCIA_CAT.toLowerCase()).reduce((s2,g)=>s2+Number(g.monto||0),0);
+  const saldoRetiro=totalRetirado-totalUsadoDeRetiro;
+  const[empPago,setEmpPago]=useState("");const[montoPago,setMontoPago]=useState("");
+  const[formaPago,setFormaPago]=useState("Efectivo");const[obsPago,setObsPago]=useState("");
+  const[busyPago,setBusyPago]=useState(false);
+  const[fechaPago,setFechaPago]=useState(hoyLocal());
+  const[conceptoPago,setConceptoPago]=useState("Sueldo");
+  const[hsExtrasPago,setHsExtrasPago]=useState("");
+  const[crearModalPago,setCrearModalPago]=useState(false);const[nuevoEmpPago,setNuevoEmpPago]=useState("");
+  const[listaEmpsPago,setListaEmpsPago]=useState(EMPS_PAGO);
+  useEffect(()=>{
+    setListaEmpsPago(l=>{
+      const extra=l.filter(n=>!EMPS_PAGO.includes(n));
+      return[...EMPS_PAGO,...extra];
+    });
+  },[JSON.stringify(EMPS_PAGO)]);
+  const guardarPagoSueldo=async()=>{
+    if(!empPago||!montoPago){toast("Elegí un empleado e ingresá el monto");return;}
+    if(formaPago==="Efectivo"&&Number(montoPago)>saldo){
+      if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(saldo-Number(montoPago))}. ¿Confirmás igual?`))return;
+    }
+    if(formaPago==="Retiro"&&Number(montoPago)>saldoRetiro){toast("⚠️ Supera el saldo de caja retiro para sueldos ("+fmt(saldoRetiro)+")");return;}
+    let liquidacionId=null;
+    if(conceptoPago==="Sueldo"){
+      const per=(fechaPago||hoyLocal()).slice(0,7);
+      const chk=liquidacionYaPagadaCheck(empPago,per);
+      if(chk&&!confirm("⚠️ "+empPago+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(chk.pagado)+"). ¿Registrar este pago de todas formas?"))return;
+      const liq=liquidacionConfirmadaDe(empPago,per);
+      if(liq)liquidacionId=liq.id;
+    }
+    setBusyPago(true);
+    await saveSueldos([...sueldos,{id:uid(),tipo:"sueldo",empleado:empPago,concepto:conceptoPago,hsExtras:conceptoPago==="HS Extras"?Number(hsExtrasPago)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaLocalISO(fechaPago),...(liquidacionId?{liquidacionId}:{})}]);
+    setBusyPago(false);setEmpPago("");setMontoPago("");setObsPago("");setFechaPago(hoyLocal());setConceptoPago("Sueldo");setHsExtrasPago("");toast(liquidacionId?"Sueldo registrado ✓ — vinculado a la liquidación del período":"Sueldo registrado ✓");
+  };
+  const crearEmpPago=()=>{
+    if(!nuevoEmpPago.trim()){toast("Ingresá un nombre");return;}
+    setListaEmpsPago(l=>[...l,nuevoEmpPago.trim()]);
+    setEmpPago(nuevoEmpPago.trim());setNuevoEmpPago("");setCrearModalPago(false);
+    toast("Empleado creado ✓");
+  };
+  const hoyPago=new Date().toDateString();
+  const hoyItemsPago=(sueldos||[]).filter(s=>new Date(s.fecha).toDateString()===hoyPago).slice().reverse();
+  const totalMesPago=(sueldos||[]).filter(s=>{const d=new Date(s.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,s)=>a+Number(s.monto||0),0);
+
   const mesLabel=p=>{const[y,m]=p.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"});};
   const liqDe=(empId,per)=>(liquidaciones||[]).find(l=>l.empleadoId===empId&&l.periodo===per);
   const num=v=>Number(v)||0;
 
-  // Adelantos: se cargan en la pestaña Sueldos (concepto "Adelanto") con el nombre del empleado como texto
-  // libre. Alias conocidos de nombres viejos que no coinciden tal cual con el nombre real del empleado.
+  // Adelantos: se cargan en "Registrar pago de sueldo" acá arriba (concepto "Adelanto") con el nombre del
+  // empleado como texto libre. Alias conocidos de nombres viejos que no coinciden tal cual con el real.
   const ALIAS_ADELANTOS={mike:"michael"};
   const nombreCoincide=(sNombre,empNombre)=>{
     const a=(sNombre||"").trim().toLowerCase();
@@ -7416,8 +7363,8 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const adelantosSinEmparejar=per=>(sueldos||[]).filter(s=>s.concepto==="Adelanto"&&(s.fecha||"").slice(0,7)===per&&!empleadosActivos.some(e=>nombreCoincide(s.empleado,e.nombre)));
 
   // El pago real de una liquidación confirmada ya NO se registra desde acá (se sacó el botón 💰 Pago):
-  // Adrian paga directo desde Caja Disponible, Caja Digital o la pestaña Sueldos (Efectivo/Transferencia/
-  // Retiro), que son las mismas "3 cajas" que ya usa para todo lo demás. Esos tres lugares, al registrar
+  // Adrian paga directo desde Caja Disponible, Caja Digital o "Registrar pago de sueldo" acá arriba mismo
+  // (Efectivo/Transferencia/Retiro), que son las mismas "3 cajas" que ya usa para todo lo demás. Esos tres lugares, al registrar
   // un pago concepto "Sueldo", buscan solos si hay una liquidación confirmada de ese empleado+período y le
   // ponen el liquidacionId correspondiente — así pagadoDe() de acá abajo sigue sumando bien sin que haga
   // falta un flujo de pago aparte dentro de este módulo. Admite pagos parciales igual que antes: si un
@@ -7652,8 +7599,98 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
   if(!verNomina){
     return(<>
-      <ST>Liquidación de sueldos</ST>
-      <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
+      <ST help={"Registrá acá el pago de un sueldo, adelanto u horas extras — esta parte no pide clave, la puede usar cualquiera (ej. desde Pagos → '👤 Pagar sueldo' se entra directo acá).\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual.\n• Si el concepto es 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período, el pago se enlaza solo — así la Nómina de acá abajo muestra 'Pagada' sin hacer nada más.\n• 'Retiro' es para cuando ya se sacó la plata antes de la caja (categoría 'Retiro para sueldos') — no vuelve a descontar.\n\nMás abajo, 'Nómina y Liquidaciones' (liquidar sueldos, ver recibos, penalidades, adelantos, HS extras) pide la clave de administrador."}>Liquidación de sueldos</ST>
+      <SS>Registrá el pago de un sueldo, o gestioná las liquidaciones del equipo.</SS>
+
+      {crearModalPago&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nuevo empleado</p>
+            <input value={nuevoEmpPago} onChange={e=>setNuevoEmpPago(e.target.value)} placeholder="Nombre del empleado" autoFocus
+              onKeyDown={e=>e.key==="Enter"&&crearEmpPago()} style={{...iS,marginBottom:16}}/>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setCrearModalPago(false);setNuevoEmpPago("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={crearEmpPago} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{background:"#2C1A0E",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+        <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Caja disponible</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 0"}}>{fmt(saldo)}</div>
+        <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginTop:4}}>Pagado este mes: <strong style={{color:"#f5b7b1"}}>{fmt(totalMesPago)}</strong>{saldoRetiro>0?<> · Caja retiro disponible: <strong style={{color:"#F5D98B"}}>{fmt(saldoRetiro)}</strong></>:null}</div>
+      </div>
+      <Card title="Registrar pago de sueldo">
+        <Field label="Empleado">
+          <div style={{display:"flex",gap:8}}>
+            <select value={empPago} onChange={e=>setEmpPago(e.target.value)} style={{...sS,flex:1}}>
+              <option value="">— Elegí un empleado —</option>
+              {listaEmpsPago.map(e=><option key={e} value={e}>{e}</option>)}
+            </select>
+            <button onClick={()=>setCrearModalPago(true)} title="Agregar empleado" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+          </div>
+        </Field>
+        <Field label="Concepto">
+          <select value={conceptoPago} onChange={e=>{setConceptoPago(e.target.value);setHsExtrasPago("");}} style={sS}>
+            {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
+          </select>
+        </Field>
+        {conceptoPago==="HS Extras"&&(
+          <Field label="Cantidad de horas extras">
+            <Inp type="number" value={hsExtrasPago} onChange={setHsExtrasPago} placeholder="Ej: 4"/>
+          </Field>
+        )}
+        <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
+        <Field label="Forma de pago">
+          <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
+            <option value="Efectivo">Efectivo (descuenta de caja)</option>
+            <option value="Transferencia">Transferencia (solo registro)</option>
+            <option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>
+          </select>
+        </Field>
+        {formaPago==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
+        {formaPago==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta la caja disponible — se paga con efectivo que ya retiraste antes. Disponible en caja retiro: <strong>{fmt(saldoRetiro)}</strong></div>}
+        <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: quincena, adelanto..."/></Field>
+        <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
+        <Btn bg="#2D6A4F" onClick={guardarPagoSueldo} disabled={busyPago}>{busyPago?"Guardando…":"Registrar sueldo"}</Btn>
+      </Card>
+      <Card title={`Pagos de hoy (${hoyItemsPago.length})`}>
+        {!hoyItemsPago.length?<Empty icon="👥">Sin pagos registrados hoy</Empty>:hoyItemsPago.map(s=>(
+          <div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 0",borderBottom:"1px solid #F9F6F1"}}>
+            <Thumb size={44}>👤</Thumb>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:".9rem"}}>{s.empleado}</div>
+              <div style={{fontSize:".73rem",color:"#7B7063",marginTop:2}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""} · {s.forma} · {fmtH(s.fecha)}</div>
+              {s.obs&&<div style={{fontSize:".73rem",color:"#7B7063"}}>{s.obs}</div>}
+            </div>
+            <div style={{fontWeight:700,fontSize:".78rem",color:"#2D6A4F",whiteSpace:"nowrap"}}>✓ Registrado</div>
+          </div>
+        ))}
+      </Card>
+
+      {pinModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>🔒 Nómina y Liquidaciones</p>
+            <input type="password" placeholder="Clave de administrador" value={pinInput} autoFocus
+              onChange={e=>{setPinInput(e.target.value);setPinErr(false);}}
+              onKeyDown={e=>e.key==="Enter"&&confirmarPin()}
+              style={{...iS,border:`1.5px solid ${pinErr?"#E74C3C":"#E8DCC8"}`,marginBottom:8}}/>
+            {pinErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:8}}>Clave incorrecta</p>}
+            <div style={{display:"flex",gap:10,marginTop:8}}>
+              <button onClick={()=>{setPinModal(false);setPinInput("");setPinErr(false);}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={confirmarPin} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!nominaUnlocked?(
+        <Card title="🔒 Nómina y Liquidaciones">
+          <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:14}}>Liquidar sueldos, ver recibos, penalidades, adelantos y horas extras del equipo — esta parte pide la clave de administrador.</p>
+          <Btn bg="#2C1A0E" onClick={()=>setPinModal(true)}>Desbloquear con clave de administrador</Btn>
+        </Card>
+      ):(<>
       {verManual&&<ManualLiquidacionModal onClose={()=>setVerManual(false)}/>}
       <Btn bg="#7B7063" onClick={()=>setVerManual(true)}>📖 Manual de uso</Btn>
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
@@ -7675,7 +7712,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         const conAdelanto=empleadosActivos.filter(e=>adelantosDe(e,periodo).length>0);
         return(
           <Card title={"Adelantos · "+mesLabel(periodo)}>
-            <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Adelantos cargados en la pestaña Sueldos para {mesLabel(periodo)}. El total de cada empleado se usa como punto de partida en "Adelantos" al liquidar el sueldo (se puede corregir a mano ahí).</p>
+            <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Adelantos cargados en "Registrar pago de sueldo" para {mesLabel(periodo)}. El total de cada empleado se usa como punto de partida en "Adelantos" al liquidar el sueldo (se puede corregir a mano ahí).</p>
             {conAdelanto.length===0&&sinEmparejar.length===0&&<Empty icon="✅">Sin adelantos cargados en {mesLabel(periodo)}.</Empty>}
             {conAdelanto.map(e=>{
               const log=adelantosDe(e,periodo).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
@@ -7695,7 +7732,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
             })}
             {sinEmparejar.length>0&&(
               <div style={{marginTop:10,fontSize:".72rem",color:"#C0392B",background:"#FBEAEA",border:"1px solid #F3C7C2",borderRadius:8,padding:"8px 10px"}}>
-                ⚠️ {sinEmparejar.length===1?"Hay 1 adelanto":"Hay "+sinEmparejar.length+" adelantos"} de {mesLabel(periodo)} que no pude relacionar con ningún empleado activo: {sinEmparejar.map(s=>"\""+s.empleado+"\" ("+fmt(s.monto)+")").join(", ")}. Revisalo en la pestaña Sueldos.
+                ⚠️ {sinEmparejar.length===1?"Hay 1 adelanto":"Hay "+sinEmparejar.length+" adelantos"} de {mesLabel(periodo)} que no pude relacionar con ningún empleado activo: {sinEmparejar.map(s=>"\""+s.empleado+"\" ("+fmt(s.monto)+")").join(", ")}. Revisalo en "Registrar pago de sueldo".
               </div>
             )}
           </Card>
@@ -7777,6 +7814,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
           </div>
         );
       })()}
+      </>)}
     </>);
   }
 
