@@ -7509,6 +7509,10 @@ function ManualLiquidacionModal({onClose}){
         <Sec title="Para tener en cuenta">
           Si cargás un pago "Sueldo" para alguien que ya tiene esa liquidación pagada del todo, el sistema avisa antes de guardar, para evitar pagar dos veces por error.
         </Sec>
+
+        <Sec title="📒 Libro Diario · Pagos de sueldos">
+          Debajo de los botones (arriba de todo, sin clave) hay una tabla con todos los pagos registrados en "Registrar pago de sueldo" — cualquier concepto: Sueldo, Adelanto, Aguinaldo, Plus, Feriado o HS Extras. Se puede filtrar por fecha (Hoy/Este mes/Todos/Personalizado), por empleado y por forma de pago, y muestra el total del período filtrado. Es solo para visualizar rápido lo que se pagó — para editar o borrar un pago puntual, hacelo desde Admin → Editar sueldos.
+        </Sec>
       </div>
     </div>
   );
@@ -7529,6 +7533,17 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verAdelantosAdmin,setVerAdelantosAdmin]=useState(false);
   const[verHsExtrasAdmin,setVerHsExtrasAdmin]=useState(false);
   const[verManual,setVerManual]=useState(false);
+
+  // --- Libro diario de pagos de sueldos (visualización con filtros, debajo de los botones) ---
+  const hoyLD2=new Date();
+  const isoLD2=d=>d.toISOString().slice(0,10);
+  const inicioMesLD2=new Date(hoyLD2.getFullYear(),hoyLD2.getMonth(),1);
+  const[ldFiltroFecha,setLdFiltroFecha]=useState("mes");
+  const[ldDesde,setLdDesde]=useState(isoLD2(inicioMesLD2));
+  const[ldHasta,setLdHasta]=useState(isoLD2(hoyLD2));
+  const[ldEmpleado,setLdEmpleado]=useState("todos");
+  const[ldForma,setLdForma]=useState("todos");
+  const[ldConcepto,setLdConcepto]=useState("todos");
 
   // Desbloqueo de Nómina/Liquidaciones: el registro de pago de sueldo de acá abajo es público (sin clave),
   // pero todo lo demás (liquidar sueldos, ver nómina, penalidades, adelantos, hs extras) queda oculto hasta
@@ -7881,6 +7896,18 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     </>);
   }
 
+  // Filtrado del libro diario de pagos de sueldos (todos los conceptos: Sueldo, Adelanto, Aguinaldo, Plus, Feriado, HS Extras).
+  const ldDesdeF=ldFiltroFecha==="mes"?isoLD2(inicioMesLD2):ldFiltroFecha==="hoy"?isoLD2(hoyLD2):ldFiltroFecha==="todos"?null:ldDesde;
+  const ldHastaF=ldFiltroFecha==="mes"?isoLD2(hoyLD2):ldFiltroFecha==="hoy"?isoLD2(hoyLD2):ldFiltroFecha==="todos"?null:ldHasta;
+  const ldFilas=(sueldos||[])
+    .filter(s=>{const f=(s.fecha||"").slice(0,10);return(!ldDesdeF||f>=ldDesdeF)&&(!ldHastaF||f<=ldHastaF);})
+    .filter(s=>ldEmpleado==="todos"||s.empleado===ldEmpleado)
+    .filter(s=>ldForma==="todos"||s.forma===ldForma)
+    .filter(s=>ldConcepto==="todos"||(s.concepto||"Sueldo")===ldConcepto)
+    .slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const ldTotal=ldFilas.reduce((s,x)=>s+Number(x.monto||0),0);
+  const ldEmpleadosOpts=Array.from(new Set((sueldos||[]).map(s=>s.empleado).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+
   if(!verNomina){
     return(<>
       <ST help={"Registrá acá el pago de un sueldo, adelanto u horas extras — esta parte no pide clave, la puede usar cualquiera (ej. desde Pagos → '👤 Pagar sueldo' se entra directo acá).\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual.\n• Si el concepto es 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período, el pago se enlaza solo — así la Nómina de acá abajo muestra 'Pagada' sin hacer nada más.\n• 'Retiro' es para cuando ya se sacó la plata antes de la caja (categoría 'Retiro para sueldos') — no vuelve a descontar.\n\nMás abajo, 'Nómina y Liquidaciones' (liquidar sueldos, ver recibos, penalidades, adelantos, HS extras) pide la clave de administrador."}>Liquidación de sueldos</ST>
@@ -7987,6 +8014,71 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
       <Btn bg="#B7860B" onClick={()=>setVerAdelantosAdmin(v=>!v)}>{verAdelantosAdmin?"Ocultar Adelantos":"💵 Adelantos"}</Btn>
       <Btn bg="#2D6A4F" onClick={()=>setVerHsExtrasAdmin(v=>!v)}>{verHsExtrasAdmin?"Ocultar HS Extras":"⏱️ HS Extras"}</Btn>
+
+      {/* LIBRO DIARIO · PAGOS DE SUELDOS */}
+      <Card title="📒 Libro Diario · Pagos de sueldos">
+        <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+          {[["hoy","Hoy"],["mes","Este mes"],["todos","Todos"],["custom","Personalizado"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setLdFiltroFecha(v)} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:ldFiltroFecha===v?"#2C1A0E":"#E8DCC8",color:ldFiltroFecha===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+          ))}
+        </div>
+        {ldFiltroFecha==="custom"&&(
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <div style={{flex:1}}>
+              <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
+              <input type="date" value={ldDesde} onChange={e=>setLdDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+            </div>
+            <div style={{flex:1}}>
+              <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label>
+              <input type="date" value={ldHasta} onChange={e=>setLdHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+            </div>
+          </div>
+        )}
+        <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+          <select value={ldEmpleado} onChange={e=>setLdEmpleado(e.target.value)} style={{...sS,flex:1,minWidth:140}}>
+            <option value="todos">Todos los empleados</option>
+            {ldEmpleadosOpts.map(n=><option key={n} value={n}>{n}</option>)}
+          </select>
+          <select value={ldForma} onChange={e=>setLdForma(e.target.value)} style={{...sS,flex:1,minWidth:120}}>
+            <option value="todos">Toda forma de pago</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Retiro">Retiro</option>
+          </select>
+          <select value={ldConcepto} onChange={e=>setLdConcepto(e.target.value)} style={{...sS,flex:1,minWidth:120}}>
+            <option value="todos">Todo concepto</option>
+            {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+
+        <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:10}}>{ldFilas.length} registro{ldFilas.length!==1?"s":""} · Total: <strong style={{color:"#2D6A4F"}}>{fmt(ldTotal)}</strong></div>
+
+        {!ldFilas.length?<Empty icon="📒">Sin pagos en el período filtrado</Empty>:(
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:560}}>
+              <thead>
+                <tr style={{background:"#F9F6F1"}}>
+                  {["Fecha","Empleado","Concepto","Forma","Monto",""].map(h=>(
+                    <th key={h||"obs"} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Empleado"?"left":h===""?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ldFilas.map((s,i)=>(
+                  <tr key={s.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                    <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063"}}>{fmtF(s.fecha)}</td>
+                    <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{s.empleado}</td>
+                    <td style={{padding:"6px 8px",whiteSpace:"nowrap"}}>{s.concepto||"Sueldo"}{s.hsExtras?" · "+s.hsExtras+" hs":""}</td>
+                    <td style={{padding:"6px 8px",whiteSpace:"nowrap"}}>{s.forma}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#2D6A4F",whiteSpace:"nowrap"}}>{fmt(s.monto)}</td>
+                    <td style={{padding:"6px 8px",color:"#7B7063",fontSize:".7rem",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.obs||""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       {verPenalidadesAdmin&&(
         <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
