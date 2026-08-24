@@ -7914,6 +7914,61 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const ldTotal=ldFilas.reduce((s,x)=>s+Number(x.monto||0),0);
   const ldEmpleadosOpts=Array.from(new Set((sueldos||[]).map(s=>s.empleado).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
 
+  const volverStyle={display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0};
+
+  if(verPenalidadesAdmin){
+    return(<>
+      <button onClick={()=>setVerPenalidadesAdmin(false)} style={volverStyle}>← Volver</button>
+      <ST>⚡ Penalidades</ST>
+      <SS>Registrá una X rápida y mirá el historial de {mesLabel(periodo)}.</SS>
+      <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
+    </>);
+  }
+
+  if(verHsExtrasAdmin){
+    return(<>
+      <button onClick={()=>setVerHsExtrasAdmin(false)} style={volverStyle}>← Volver</button>
+      <ST>⏱️ HS Extras</ST>
+      <SS>Cargá horas extra y mirá el historial de {mesLabel(periodo)}.</SS>
+      <HsExtrasPanel empleados={empleados} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
+    </>);
+  }
+
+  if(verAdelantosAdmin){
+    const sinEmparejar=adelantosSinEmparejar(periodo);
+    const conAdelanto=empleadosActivos.filter(e=>adelantosDe(e,periodo).length>0);
+    return(<>
+      <button onClick={()=>setVerAdelantosAdmin(false)} style={volverStyle}>← Volver</button>
+      <ST>💵 Adelantos</ST>
+      <SS>Adelantos cargados en "Registrar pago de sueldo" para {mesLabel(periodo)}.</SS>
+      <Card title={"Adelantos · "+mesLabel(periodo)}>
+        <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>El total de cada empleado se usa como punto de partida en "Adelantos" al liquidar el sueldo (se puede corregir a mano ahí).</p>
+        {conAdelanto.length===0&&sinEmparejar.length===0&&<Empty icon="✅">Sin adelantos cargados en {mesLabel(periodo)}.</Empty>}
+        {conAdelanto.map(e=>{
+          const log=adelantosDe(e,periodo).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+          const total=log.reduce((s,x)=>s+Number(x.monto||0),0);
+          return(
+            <div key={e.id} style={{marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontWeight:600,fontSize:".82rem",color:"#2C1A0E",marginBottom:4}}>
+                <span>{e.nombre}</span><span>{fmt(total)}</span>
+              </div>
+              {log.map(s=>(
+                <div key={s.id} style={{display:"flex",justifyContent:"space-between",fontSize:".76rem",color:"#7B7063",padding:"4px 0",borderBottom:"1px solid #F2EAE0"}}>
+                  <span>{fmtF(s.fecha)} · {s.forma}{s.obs?(" · "+s.obs):""}</span><span>{fmt(s.monto)}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+        {sinEmparejar.length>0&&(
+          <div style={{marginTop:10,fontSize:".72rem",color:"#C0392B",background:"#FBEAEA",border:"1px solid #F3C7C2",borderRadius:8,padding:"8px 10px"}}>
+            ⚠️ {sinEmparejar.length===1?"Hay 1 adelanto":"Hay "+sinEmparejar.length+" adelantos"} de {mesLabel(periodo)} que no pude relacionar con ningún empleado activo: {sinEmparejar.map(s=>"\""+s.empleado+"\" ("+fmt(s.monto)+")").join(", ")}. Revisalo en "Registrar pago de sueldo".
+          </div>
+        )}
+      </Card>
+    </>);
+  }
+
   if(!verNomina){
     return(<>
       <ST help={"Registrá acá el pago de un sueldo, adelanto u horas extras — esta parte no pide clave, la puede usar cualquiera (ej. desde Pagos → '👤 Pagar sueldo' se entra directo acá).\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual.\n• Si el concepto es 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período, el pago se enlaza solo — así la Nómina de acá abajo muestra 'Pagada' sin hacer nada más.\n• 'Retiro' es para cuando ya se sacó la plata antes de la caja (categoría 'Retiro para sueldos') — no vuelve a descontar.\n\nMás abajo, 'Nómina y Liquidaciones' (liquidar sueldos, ver recibos, penalidades, adelantos, HS extras) pide la clave de administrador."} onQuestionClick={()=>setVerManual(true)} questionColor="#B7860B">Liquidación de sueldos</ST>
@@ -8016,9 +8071,11 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       {verManual&&<ManualLiquidacionModal onClose={()=>setVerManual(false)}/>}
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
       <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
-      <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
-      <Btn bg="#B7860B" onClick={()=>setVerAdelantosAdmin(v=>!v)}>{verAdelantosAdmin?"Ocultar Adelantos":"💵 Adelantos"}</Btn>
-      <Btn bg="#2D6A4F" onClick={()=>setVerHsExtrasAdmin(v=>!v)}>{verHsExtrasAdmin?"Ocultar HS Extras":"⏱️ HS Extras"}</Btn>
+      <div style={{display:"flex",gap:8,marginTop:18}}>
+        <button onClick={()=>setVerPenalidadesAdmin(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#C0392B",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>⚡ Penalidades</button>
+        <button onClick={()=>setVerAdelantosAdmin(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>💵 Adelantos</button>
+        <button onClick={()=>setVerHsExtrasAdmin(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>⏱️ HS Extras</button>
+      </div>
 
       {/* LIBRO DIARIO · PAGOS DE SUELDOS */}
       <Card title="📒 Libro Diario · Pagos de sueldos">
@@ -8084,46 +8141,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
           </div>
         )}
       </Card>
-
-      {verPenalidadesAdmin&&(
-        <PenalidadesPanel empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
-      )}
-
-      {verHsExtrasAdmin&&(
-        <HsExtrasPanel empleados={empleados} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} mostrarHistorial={true} periodo={periodo} liquidaciones={liquidaciones}/>
-      )}
-
-      {verAdelantosAdmin&&(()=>{
-        const sinEmparejar=adelantosSinEmparejar(periodo);
-        const conAdelanto=empleadosActivos.filter(e=>adelantosDe(e,periodo).length>0);
-        return(
-          <Card title={"Adelantos · "+mesLabel(periodo)}>
-            <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Adelantos cargados en "Registrar pago de sueldo" para {mesLabel(periodo)}. El total de cada empleado se usa como punto de partida en "Adelantos" al liquidar el sueldo (se puede corregir a mano ahí).</p>
-            {conAdelanto.length===0&&sinEmparejar.length===0&&<Empty icon="✅">Sin adelantos cargados en {mesLabel(periodo)}.</Empty>}
-            {conAdelanto.map(e=>{
-              const log=adelantosDe(e,periodo).slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-              const total=log.reduce((s,x)=>s+Number(x.monto||0),0);
-              return(
-                <div key={e.id} style={{marginBottom:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",fontWeight:600,fontSize:".82rem",color:"#2C1A0E",marginBottom:4}}>
-                    <span>{e.nombre}</span><span>{fmt(total)}</span>
-                  </div>
-                  {log.map(s=>(
-                    <div key={s.id} style={{display:"flex",justifyContent:"space-between",fontSize:".76rem",color:"#7B7063",padding:"4px 0",borderBottom:"1px solid #F2EAE0"}}>
-                      <span>{fmtF(s.fecha)} · {s.forma}{s.obs?(" · "+s.obs):""}</span><span>{fmt(s.monto)}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-            {sinEmparejar.length>0&&(
-              <div style={{marginTop:10,fontSize:".72rem",color:"#C0392B",background:"#FBEAEA",border:"1px solid #F3C7C2",borderRadius:8,padding:"8px 10px"}}>
-                ⚠️ {sinEmparejar.length===1?"Hay 1 adelanto":"Hay "+sinEmparejar.length+" adelantos"} de {mesLabel(periodo)} que no pude relacionar con ningún empleado activo: {sinEmparejar.map(s=>"\""+s.empleado+"\" ("+fmt(s.monto)+")").join(", ")}. Revisalo en "Registrar pago de sueldo".
-              </div>
-            )}
-          </Card>
-        );
-      })()}
 
       {verBasicos&&(
         <Card title="Sueldos básicos agendados (ayuda memoria)">
