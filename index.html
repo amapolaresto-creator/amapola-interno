@@ -5671,10 +5671,10 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
     <ST help={"Vista de gerencia: el resumen del negocio y el libro diario completo, todo en un solo lugar.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia. Para actualizarlo, ingresá el valor real y el motivo (obligatorio) acá o desde Caja Digital — es el mismo ajuste, mismo historial.\n• Deuda total a proveedores: suma de lo pendiente con todos los proveedores (mismo dato que en Dashboard).\n• Amex en cuotas este mes: lo que corresponde pagar este mes sumando todas las compras, préstamos y débitos recurrentes de Amex vigentes (detalle completo en la pestaña Amex).\n\n📒 Libro Diario — más abajo, todos los movimientos del negocio (boletas, cierres, pagos, sueldos, gastos y ajustes) en formato debe/haber:\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento.\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital, incluida la parte digital de cada cierre de caja.\n• Las boletas y los pagos con Amex aparecen como referencia (sin Debe/Haber) porque todavía no mueven caja ni banco.\n• Los ajustes de caja no suman a Debe/Haber (no son venta ni pago) pero sí se reflejan en el Saldo Ef. corrido.\n• Podés filtrar por tipo, fecha y Debe/Haber, exportar a CSV, y eliminar registros con error (requiere confirmar, no se puede deshacer)."}>Gerencia</ST><SS>Resumen del negocio y libro diario completo — la vista de dueño.</SS>
 
     {/* TOTAL CONSOLIDADO */}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total disponible consolidado</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2.6rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(totalDisponible)}</div>
-      <div style={{fontSize:".74rem",color:"#E8DCC8",opacity:.6}}>Caja Disponible + Caja digital</div>
+    <div style={{background:"#2C1A0E",borderRadius:14,padding:"16px 18px",marginBottom:16}}>
+      <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total disponible consolidado</div>
+      <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#E8DCC8",margin:"3px 0 1px"}}>{fmt(totalDisponible)}</div>
+      <div style={{fontSize:".68rem",color:"#E8DCC8",opacity:.6}}>Caja Disponible + Caja digital</div>
     </div>
 
     {/* KPIS DE GESTIÓN */}
@@ -5692,29 +5692,29 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
     </div>
 
     {/* CAJA FUERTE */}
-    <div style={{background:"#2D6A4F",borderRadius:14,padding:"20px",marginBottom:12}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>💵 Caja Disponible · Efectivo</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#fff",margin:"4px 0 8px"}}>{fmt(saldo)}</div>
-      <div style={{display:"flex",gap:8}}>
+    <div style={{background:"#2D6A4F",borderRadius:14,padding:"16px 18px",marginBottom:12}}>
+      <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#fff",opacity:.8}}>💵 Caja Disponible · Efectivo</div>
+      <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#fff",margin:"3px 0 6px"}}>{fmt(saldo)}</div>
+      <div style={{display:"flex",gap:6}}>
         {[["Inicial",fmt(ini)],["Cierres",fmt(tot)],["Pagado",fmt(eg)]].map(([l,v])=>(
-          <div key={l} style={{flex:1,background:"rgba(255,255,255,.12)",borderRadius:10,padding:"8px 10px"}}>
-            <div style={{fontSize:".58rem",color:"#fff",opacity:.6,textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
-            <div style={{fontSize:".85rem",fontWeight:700,color:"#fff",marginTop:2}}>{v}</div>
+          <div key={l} style={{flex:1,background:"rgba(255,255,255,.12)",borderRadius:8,padding:"6px 8px"}}>
+            <div style={{fontSize:".56rem",color:"#fff",opacity:.6,textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
+            <div style={{fontSize:".74rem",fontWeight:700,color:"#fff",marginTop:1}}>{v}</div>
           </div>
         ))}
       </div>
     </div>
 
     {/* CAJA DIGITAL */}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"20px",marginBottom:16,border:"2px solid #B7860B"}}>
-      <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Caja digital · Banco</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"2rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(saldoReal)}</div>
-      <div style={{fontSize:".72rem",color:"#E8DCC8",opacity:.6,marginBottom:12}}>Saldo real del banco actualizado manualmente</div>
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
+    <div style={{background:"#2C1A0E",borderRadius:14,padding:"16px 18px",marginBottom:16,border:"2px solid #B7860B"}}>
+      <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Caja digital · Banco</div>
+      <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#E8DCC8",margin:"3px 0 1px"}}>{fmt(saldoReal)}</div>
+      <div style={{fontSize:".68rem",color:"#E8DCC8",opacity:.6,marginBottom:10}}>Saldo real del banco actualizado manualmente</div>
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
         {[["Inicial",fmt(ini||0),"#E8DCC8"],["Ingresos dig.",fmt(ingresos),"#a9dfbf"],["Egresos transf.",fmt(egTransf),"#f5b7b1"]].map(([l,v,c])=>(
-          <div key={l} style={{flex:1,background:"rgba(255,255,255,.07)",borderRadius:10,padding:"8px 10px"}}>
-            <div style={{fontSize:".58rem",color:"#E8DCC8",opacity:.6,textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
-            <div style={{fontSize:".85rem",fontWeight:700,color:c,marginTop:2}}>{v}</div>
+          <div key={l} style={{flex:1,background:"rgba(255,255,255,.07)",borderRadius:8,padding:"6px 8px"}}>
+            <div style={{fontSize:".56rem",color:"#E8DCC8",opacity:.6,textTransform:"uppercase",letterSpacing:".04em"}}>{l}</div>
+            <div style={{fontSize:".74rem",fontWeight:700,color:c,marginTop:1}}>{v}</div>
           </div>
         ))}
       </div>
