@@ -650,7 +650,6 @@ function App({role="full",cerrarSesion}){
   ];
   const TABS_ADMIN=[
     {id:"gastos",     label:"🏠 Pagos Varios"},
-    {id:"historial",  label:"📒 Libro Diario"},
     {id:"dashboard",  label:"🏠 Dashboard"},
     {id:"sueldos",    label:"🧾 Liquidación de sueldos"},
     {id:"amex",       label:"💳 Amex"},
@@ -734,14 +733,13 @@ function App({role="full",cerrarSesion}){
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores} pagos={pagos} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} calcDigital={calcDigital}/>}
-        {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} actualizarSaldoBanco={actualizarSaldoBanco}/>}
+        {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} actualizarSaldoBanco={actualizarSaldoBanco} proveedores={proveedores} calcDeuda={calcDeuda} amexCuotas={amexCuotas} boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} actualizarSaldoBanco={actualizarSaldoBanco} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock} calcDeuda={calcDeuda}/>}
         {tab==="caja"&&<TabCaja cierres={cierres} saveCierres={saveCierres} ini={ini} tot={tot} eg={eg} saldo={saldo} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo}/>}
         {tab==="pagos"&&<TabPagos pagos={pagos} savePagos={savePagos} proveedores={proveedores} saldo={saldo} cierres={cierres} cajaInicial={cajaInicial} cierresCaja={cierresCaja} sueldos={sueldos} gastos={gastos} saveGastos={saveGastos} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} catalogo={catalogoStock} saveStock={saveStock} stock={stock} ajustesCajaEfectivo={ajustesCajaEfectivo} setTab={setTab}/>}
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} savePagos={savePagos} boletas={boletas} saveBoletas={saveBoletas} gastos={gastos} saveGastos={saveGastos} catalogoStock={catalogoStock} saveCatalogoStock={saveCatalogoStock} stock={stock} saveStock={saveStock} askPass={askPass}/>}
-        {tab==="historial"&&adminUnlocked&&<TabHistorial boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock} saldo={saldo} calcDigital={calcDigital}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} stock={stock} saveStock={saveStock}/> }
         {tab==="sueldos"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} adminUnlocked={adminUnlocked}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
@@ -5523,7 +5521,11 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
 }
 
 
-function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSaldoBanco}){
+function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSaldoBanco,
+  proveedores,calcDeuda,amexCuotas,
+  boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,
+  saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,
+  ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock}){
   const[saldoBanco,setSaldoBanco]=useState("");
   const[notaBanco,setNotaBanco]=useState("");
   const[savingBanco,setSavingBanco]=useState(false);
@@ -5541,14 +5543,152 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
 
   const totalDisponible=saldo+saldoReal;
 
+  // KPIs de gestión — mismos cálculos que usan Dashboard y Amex, traídos acá para no tener que ir a buscarlos.
+  const deudaTotal=(proveedores||[]).reduce((s,p)=>{const d=calcDeuda(p.nombre);return s+Math.max(0,d?d.pendiente:0);},0);
+  const mesesEntreG=(desde,hasta)=>{
+    const[y1,m1]=String(desde).slice(0,7).split("-").map(Number);
+    const[y2,m2]=String(hasta).slice(0,7).split("-").map(Number);
+    return(y2-y1)*12+(m2-m1);
+  };
+  const amexActivaEsteMes=c=>{
+    const n=mesesEntreG(c.fechaCuota1||c.fechaCompra,hoyLocal())+1;
+    return c.recurrente?n>=1:(n>=1&&n<=Number(c.cantidadCuotas));
+  };
+  const amexMontoCuota=c=>c.recurrente?Number(c.montoTotal||0):Number(c.montoTotal||0)/Number(c.cantidadCuotas||1);
+  const amexCuotasMes=(amexCuotas||[]).filter(amexActivaEsteMes).reduce((s,c)=>s+amexMontoCuota(c),0);
+
+  const[filtro,setFiltro]=useState("todo");
+  const[filtroDH,setFiltroDH]=useState("todos");
+  const hoy=new Date();
+  const iso=d=>d.toISOString().slice(0,10);
+  const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const[filtroFecha,setFiltroFecha]=useState("mes");
+  const[desde,setDesde]=useState(iso(inicioMes));
+  const[hasta,setHasta]=useState(iso(hoy));
+
+  // Movimientos normalizados en dos columnas de flujo: _efDelta (efectivo) y _digDelta (digital/transferencia).
+  // _cuenta=true => el movimiento mueve algún saldo real (efectivo o digital); boletas y pagos con Amex
+  // (tarjeta de crédito) no mueven nada todavía (quedan como referencia) hasta que se paguen / se pague el resumen.
+  const boletasM=(boletas||[]).map(b=>({...b,tipo:"boleta",_cat:"boleta",_efDelta:0,_digDelta:0,_cuenta:false}));
+  const cierresM=(cierres||[]).map(c=>({...c,tipo:"cierre",_cat:"cierre",_efDelta:Number(c.monto||0),_digDelta:0,_cuenta:true,proveedor:"Cierre "+c.turno}));
+  // Cada cierre de caja trae SIEMPRE dos ingresos simultáneos: lo contado en efectivo y lo vendido por canales
+  // digitales (MP/FUDO/PostNet/Digital/Uber). Antes solo se contabilizaba el efectivo — la parte digital
+  // no aparecía en ningún lado del Historial.
+  const cierresCajaM=(cierresCaja||[]).map(c=>({...c,tipo:"cierre_caja",_cat:"cierre",_efDelta:Number(c.efectivo||0),_digDelta:Number(c.totalDigital||0),_cuenta:true,proveedor:"Cierre "+c.turno,empleado:c.persona,monto:Number(c.total)||(Number(c.efectivo||0)+Number(c.totalDigital||0))}));
+  const pagosM=(pagos||[]).map(p=>({...p,tipo:"pago",_cat:"pago",
+    _efDelta:p.forma==="Efectivo"?-Number(p.monto||0):0,
+    _digDelta:p.forma==="Transferencia"?-Number(p.monto||0):0,
+    _cuenta:p.forma==="Efectivo"||p.forma==="Transferencia"}));
+  const sueldosM=(sueldos||[]).map(s=>({...s,tipo:"sueldo",_cat:"sueldo",
+    _efDelta:s.forma==="Efectivo"?-Number(s.monto||0):0,
+    _digDelta:s.forma==="Transferencia"?-Number(s.monto||0):0,
+    _cuenta:s.forma==="Efectivo"||s.forma==="Transferencia"}));
+  const gastosM=(gastos||[]).map(g=>({...g,tipo:"gasto",_cat:"gasto",
+    _efDelta:g.forma==="Efectivo"?-Number(g.monto||0):0,
+    _digDelta:g.forma==="Transferencia"?-Number(g.monto||0):0,
+    _cuenta:g.forma==="Efectivo"||g.forma==="Transferencia",proveedor:g.categoria}));
+  // Ajustes manuales de caja (Admin > Ajuste de caja disponible). Se incluyen para que el saldo de este
+  // libro diario coincida con el número de "Caja Disponible" (calcSaldo() ya los suma).
+  const ajustesM=(ajustesCajaEfectivo||[]).map(a=>({...a,tipo:"ajuste",_cat:"ajuste",_efDelta:Number(a.monto||0),_digDelta:0,_cuenta:true,proveedor:"Ajuste de caja",obs:a.motivo,monto:Math.abs(Number(a.monto||0))}));
+  const allMovs=[...boletasM,...cierresM,...cierresCajaM,...pagosM,...sueldosM,...gastosM,...ajustesM].filter(m=>m.fecha);
+
+  const desdeF=filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
+  const hastaF=filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):hasta;
+
+  // Saldo de arrastre: cajaInicial + todo el flujo de EFECTIVO anterior al rango mostrado (sin importar el filtro de tipo).
+  // El saldo corrido de esta pantalla es siempre el de Caja Disponible (efectivo) — el saldo de banco/digital
+  // no se arrastra acá porque en la app se corrige a mano contra el resumen bancario real (ver Caja Digital).
+  let saldoBase=Number(cajaInicial)||0;
+  allMovs.filter(m=>m.fecha.slice(0,10)<desdeF).forEach(m=>{saldoBase+=m._efDelta;});
+
+  // Saldo corrido dentro del rango, usando TODOS los tipos (para que el numero sea correcto sin importar el filtro de tipo activo).
+  const enRangoAsc=allMovs.filter(m=>{const f=m.fecha.slice(0,10);return(!desdeF||f>=desdeF)&&(!hastaF||f<=hastaF);}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  let saldoAcum=saldoBase;
+  const conSaldo=enRangoAsc.map(m=>{
+    saldoAcum+=m._efDelta;
+    return{...m,_saldo:saldoAcum};
+  });
+
+  // Filtro de tipo + Debe/Haber para mostrar (no altera el calculo de saldo, ya hecho arriba).
+  let filas=conSaldo.filter(m=>filtro==="todo"?true:filtro==="cierre"?(m.tipo==="cierre"||m.tipo==="cierre_caja"):m.tipo===filtro);
+  if(filtroDH==="debe")filas=filas.filter(m=>(m._efDelta<0||m._digDelta<0)&&m._cat!=="ajuste");
+  if(filtroDH==="haber")filas=filas.filter(m=>(m._efDelta>0||m._digDelta>0)&&m._cat!=="ajuste");
+  filas=[...filas].reverse();
+
+  // Los ajustes de caja no son ingresos ni egresos reales (no hubo una venta ni un pago) — son una
+  // corrección del saldo contado. No suman a Debe/Haber Ef. (el Saldo Ef. sí los sigue incluyendo,
+  // se calcula aparte más arriba con _efDelta sobre TODOS los movimientos).
+  const totalDebeEf=conSaldo.filter(m=>m._efDelta<0&&m._cat!=="ajuste").reduce((s,m)=>s+Math.abs(m._efDelta),0);
+  const totalHaberEf=conSaldo.filter(m=>m._efDelta>0&&m._cat!=="ajuste").reduce((s,m)=>s+m._efDelta,0);
+  const totalDebeDig=conSaldo.filter(m=>m._digDelta<0).reduce((s,m)=>s+Math.abs(m._digDelta),0);
+  const totalHaberDig=conSaldo.filter(m=>m._digDelta>0).reduce((s,m)=>s+m._digDelta,0);
+  const saldoFinal=conSaldo.length?conSaldo[conSaldo.length-1]._saldo:saldoBase;
+
+  const[confirmarElim,setConfirmarElim]=useState(null);
+  const pedirEliminar=item=>setConfirmarElim(item);
+  const confirmarEliminar=async()=>{
+    const item=confirmarElim;
+    setConfirmarElim(null);
+    if(item.tipo==="boleta"){
+      if(item.productos&&item.productos.length>0&&stock&&saveStock){
+        const stockActual=stock.map(s=>{
+          const linea=item.productos.find(p=>p.catalogoId===s.catalogoId);
+          if(!linea)return s;
+          return{...s,cantidad:Math.max(0,Number(s.cantidad||0)-Number(linea.cantidad||0)),movimientos:(s.movimientos||[]).filter(m=>m.boletaId!==item.id)};
+        });
+        await saveStock(stockActual);
+      }
+      await saveBoletas(boletas.filter(b=>b.id!==item.id));
+    }
+    if(item.tipo==="cierre")     await saveCierres(cierres.filter(c=>c.id!==item.id));
+    if(item.tipo==="cierre_caja")await saveCierresCaja((cierresCaja||[]).filter(c=>c.id!==item.id));
+    if(item.tipo==="pago")       await savePagos(pagos.filter(p=>p.id!==item.id));
+    if(item.tipo==="sueldo")     await saveSueldos(sueldos.filter(s=>s.id!==item.id));
+    if(item.tipo==="gasto")      await saveGastos(gastos.filter(g=>g.id!==item.id));
+    if(item.tipo==="ajuste"&&saveAjustesCajaEfectivo) await saveAjustesCajaEfectivo((ajustesCajaEfectivo||[]).filter(a=>a.id!==item.id));
+    toast("Registro eliminado ✓");
+  };
+
+  const exportCSV=()=>{
+    const rows=[["Tipo","Fecha","Hora","Proveedor/Turno","Empleado","Monto","Forma","Detalle"]];
+    boletas.forEach(b=>rows.push(["Boleta",fmtF(b.fecha),fmtH(b.fecha),b.proveedor,b.empleado,b.monto,"",b.obs]));
+    cierres.forEach(c=>rows.push(["Cierre",fmtF(c.fecha),fmtH(c.fecha),"Turno "+c.turno,c.empleado,c.monto,"",c.obs]));
+    (cierresCaja||[]).forEach(c=>rows.push(["Cierre de Caja",fmtF(c.fecha),fmtH(c.fecha),"Turno "+c.turno,c.persona,c.efectivo,"",c.obs]));
+    pagos.forEach(p=>rows.push(["Pago",fmtF(p.fecha),fmtH(p.fecha),p.proveedor,p.empleado,p.monto,p.forma,p.obs]));
+    sueldos.forEach(s=>rows.push(["Sueldo",fmtF(s.fecha),fmtH(s.fecha),s.proveedor||s.empleado,s.empleado,s.monto,s.forma,s.obs]));
+    gastos.forEach(g=>rows.push(["Gasto",fmtF(g.fecha),fmtH(g.fecha),g.categoria,g.empleado,g.monto,g.forma,g.obs]));
+    (ajustesCajaEfectivo||[]).forEach(a=>rows.push(["Ajuste",fmtF(a.fecha),fmtH(a.fecha),"Ajuste de caja","",a.monto,"",a.motivo]));
+    const csv=rows.map(r=>r.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"}));
+    a.download=`amapola_libro_diario_${hoyLocal()}.csv`;a.click();
+  };
+
+  const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
+
+
   return(<>
-    <ST help={"Vista consolidada para gerencia.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia.\n\nPara actualizar el saldo banco de Caja Digital, ingresá el valor real y el motivo (obligatorio) desde acá o desde la sección Caja Digital — es el mismo ajuste, queda en el mismo historial."}>Gerencia</ST><SS>Resumen de efectivo y caja digital disponible.</SS>
+    <ST help={"Vista de gerencia: el resumen del negocio y el libro diario completo, todo en un solo lugar.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia. Para actualizarlo, ingresá el valor real y el motivo (obligatorio) acá o desde Caja Digital — es el mismo ajuste, mismo historial.\n• Deuda total a proveedores: suma de lo pendiente con todos los proveedores (mismo dato que en Dashboard).\n• Amex en cuotas este mes: lo que corresponde pagar este mes sumando todas las compras, préstamos y débitos recurrentes de Amex vigentes (detalle completo en la pestaña Amex).\n\n📒 Libro Diario — más abajo, todos los movimientos del negocio (boletas, cierres, pagos, sueldos, gastos y ajustes) en formato debe/haber:\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento.\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital, incluida la parte digital de cada cierre de caja.\n• Las boletas y los pagos con Amex aparecen como referencia (sin Debe/Haber) porque todavía no mueven caja ni banco.\n• Los ajustes de caja no suman a Debe/Haber (no son venta ni pago) pero sí se reflejan en el Saldo Ef. corrido.\n• Podés filtrar por tipo, fecha y Debe/Haber, exportar a CSV, y eliminar registros con error (requiere confirmar, no se puede deshacer)."}>Gerencia</ST><SS>Resumen del negocio y libro diario completo — la vista de dueño.</SS>
 
     {/* TOTAL CONSOLIDADO */}
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"22px 20px",marginBottom:16}}>
       <div style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total disponible consolidado</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"2.6rem",color:"#E8DCC8",margin:"4px 0 2px"}}>{fmt(totalDisponible)}</div>
       <div style={{fontSize:".74rem",color:"#E8DCC8",opacity:.6}}>Caja Disponible + Caja digital</div>
+    </div>
+
+    {/* KPIS DE GESTIÓN */}
+    <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+      <div style={{flex:1,minWidth:180,background:"#fff",borderRadius:14,padding:"16px 18px",boxShadow:"0 2px 12px rgba(44,26,14,.08)",borderLeft:"4px solid #C0392B"}}>
+        <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#7B7063"}}>🏪 Deuda a proveedores</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#C0392B",margin:"3px 0 1px"}}>{fmt(deudaTotal)}</div>
+        <div style={{fontSize:".68rem",color:"#7B7063"}}>Pendiente con todos los proveedores</div>
+      </div>
+      <div style={{flex:1,minWidth:180,background:"#fff",borderRadius:14,padding:"16px 18px",boxShadow:"0 2px 12px rgba(44,26,14,.08)",borderLeft:"4px solid #B7860B"}}>
+        <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#7B7063"}}>💳 Amex en cuotas este mes</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#B7860B",margin:"3px 0 1px"}}>{fmt(amexCuotasMes)}</div>
+        <div style={{fontSize:".68rem",color:"#7B7063"}}>Compras, préstamos y recurrentes activos</div>
+      </div>
     </div>
 
     {/* CAJA FUERTE */}
@@ -5591,6 +5731,137 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
         placeholder="Motivo del ajuste (obligatorio)"
         style={{width:"100%",background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".82rem",outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
     </div>
+
+    {/* LIBRO DIARIO */}
+    <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",color:"#2C1A0E",margin:"6px 0 2px"}}>📒 Libro Diario</div>
+    <SS>Todos los movimientos del negocio — boletas, cierres, pagos, sueldos, gastos y ajustes, en formato debe/haber.</SS>
+
+    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
+      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."],["ajuste","Ajustes"]].map(([f,l])=>(
+          <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#2C1A0E":"#E8DCC8",color:filtro===f?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+        ))}
+      </div>
+
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {[["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
+          <button key={v} onClick={()=>{setFiltroFecha(v);if(v==="mes"){setDesde(iso(inicioMes));setHasta(iso(hoy));}if(v==="hoy"){setDesde(iso(hoy));setHasta(iso(hoy));}}} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#2C1A0E":"#E8DCC8",color:filtroFecha===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
+        ))}
+      </div>
+      {filtroFecha==="custom"&&(
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <div style={{flex:1}}>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
+            <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+          </div>
+          <div style={{flex:1}}>
+            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label>
+            <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
+          </div>
+        </div>
+      )}
+
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        {[["todos","Todos"],["debe","💸 Solo Debe"],["haber","💵 Solo Haber"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFiltroDH(v)} style={{flex:1,padding:"5px 8px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,
+            background:filtroDH===v?(v==="debe"?"#C0392B":v==="haber"?"#2D6A4F":"#2C1A0E"):"#E8DCC8",
+            color:filtroDH===v?"#fff":"#2C1A0E"}}>{l}</button>
+        ))}
+      </div>
+
+      <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:4}}>{filas.length} registro{filas.length!==1?"s":""} · Saldo Caja Disponible: <strong style={{color:saldoFinal>=0?"#2D6A4F":"#C0392B"}}>{fmt(saldoFinal)}</strong></div>
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        {[["💵 Efectivo",totalHaberEf,totalDebeEf],["💳 Digital",totalHaberDig,totalDebeDig]].map(([l,h,d])=>(
+          <div key={l} style={{flex:1,minWidth:150,background:"#F9F6F1",borderRadius:10,padding:"8px 10px"}}>
+            <div style={{fontSize:".6rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:2}}>{l} del período</div>
+            <div style={{fontSize:".76rem",color:"#2D6A4F",fontWeight:700}}>Haber {fmt(h)}</div>
+            <div style={{fontSize:".76rem",color:"#C0392B",fontWeight:700}}>Debe {fmt(d)}</div>
+          </div>
+        ))}
+      </div>
+
+      {!filas.length?<Empty icon="📒">Sin registros en el periodo</Empty>:(
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:620}}>
+            <thead>
+              <tr style={{background:"#F9F6F1"}}>
+                {["Fecha","Concepto","Debe Ef.","Haber Ef.","Debe Dig.","Haber Dig.","Saldo Ef.",""].map(h=>(
+                  <th key={h||"acc"} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Concepto"?"left":h===""?"center":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map((f,i)=>(
+                <tr key={f.tipo+f.id+i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                  <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>
+                    {fmtF(f.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(f.fecha)}</span>
+                  </td>
+                  <td style={{padding:"6px 8px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <span style={{flexShrink:0}}>{iconoCat(f._cat)}</span>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
+                        <div style={{fontSize:".63rem",color:f._cat==="ajuste"?(f._efDelta>0?"#2D6A4F":"#C0392B"):"#7B7063",fontWeight:f._cat==="ajuste"?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>
+                          {f.empleado?f.empleado+" · ":""}
+                          {f._cat==="ajuste"?(f._efDelta>0?"+":"-")+fmt(Math.abs(f._efDelta))+" · corrección de saldo":(!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Amex"?" (Amex, no descuenta hasta pagar el resumen)":f.forma==="Retiro"?" (pagado con efectivo ya retirado antes)":""):"")}
+                          {f.obs?" · "+f.obs:""}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._cat!=="ajuste"&&f._efDelta<0?fmt(Math.abs(f._efDelta)):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._cat!=="ajuste"&&f._efDelta>0?fmt(f._efDelta):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._digDelta<0?fmt(Math.abs(f._digDelta)):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",color:"#1a6b8f",fontWeight:700,whiteSpace:"nowrap"}}>
+                    {f._digDelta>0?fmt(f._digDelta):"—"}
+                  </td>
+                  <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:f._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(f._saldo)}</td>
+                  <td style={{padding:"6px 8px",textAlign:"center"}}>
+                    <button onClick={()=>pedirEliminar(f)} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:6,color:"#E74C3C",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
+                  </td>
+                </tr>
+              ))}
+              <tr style={{background:"#2C1A0E"}}>
+                <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebeEf)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaberEf)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#f5d98b",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebeDig)}</td>
+                <td style={{padding:"8px",textAlign:"right",color:"#a9d3e8",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaberDig)}</td>
+                <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:saldoFinal>=0?"#a9dfbf":"#f5b7b1"}}>{fmt(saldoFinal)}</td>
+                <td/>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+
+    {filas.length>0&&<button onClick={exportCSV} style={{display:"block",width:"100%",marginBottom:12,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",color:"#C0392B",fontSize:".82rem",fontWeight:600,cursor:"pointer"}}>⬇ Exportar CSV</button>}
+
+    {confirmarElim&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8,color:"#2C1A0E"}}>⚠️ Eliminar registro</p>
+          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:6}}>
+            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.tipo==="cierre_caja"?"Cierre de Caja":confirmarElim.tipo==="ajuste"?"Ajuste de caja":confirmarElim.forma||confirmarElim.tipo}</strong>
+            {" · "}{fmt(confirmarElim.monto)}
+          </p>
+          <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
+          {confirmarElim.tipo==="boleta"&&confirmarElim.productos&&confirmarElim.productos.length>0&&<p style={{fontSize:".78rem",color:"#B7860B",marginBottom:20}}>📦 Se van a revertir {confirmarElim.productos.length} producto{confirmarElim.productos.length!==1?"s":""} del stock.</p>}
+          <p style={{fontSize:".78rem",color:"#C0392B",marginBottom:20,fontWeight:600}}>Esta accion no se puede deshacer.</p>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setConfirmarElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Cancelar</button>
+            <button onClick={confirmarEliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Eliminar</button>
+          </div>
+        </div>
+      </div>
+    )}
   </>);
 }
 
@@ -8063,265 +8334,6 @@ function AdminBoletas({boletas,saveBoletas,proveedores,empleados,stock,saveStock
       )}
     </Card>
   );
-}
-
-function TabHistorial({boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock,saldo,calcDigital}){
-  const{saldoReal}=calcDigital?calcDigital():{saldoReal:0};
-  const[filtro,setFiltro]=useState("todo");
-  const[filtroDH,setFiltroDH]=useState("todos");
-  const hoy=new Date();
-  const iso=d=>d.toISOString().slice(0,10);
-  const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
-  const[filtroFecha,setFiltroFecha]=useState("mes");
-  const[desde,setDesde]=useState(iso(inicioMes));
-  const[hasta,setHasta]=useState(iso(hoy));
-
-  // Movimientos normalizados en dos columnas de flujo: _efDelta (efectivo) y _digDelta (digital/transferencia).
-  // _cuenta=true => el movimiento mueve algún saldo real (efectivo o digital); boletas y pagos con Amex
-  // (tarjeta de crédito) no mueven nada todavía (quedan como referencia) hasta que se paguen / se pague el resumen.
-  const boletasM=(boletas||[]).map(b=>({...b,tipo:"boleta",_cat:"boleta",_efDelta:0,_digDelta:0,_cuenta:false}));
-  const cierresM=(cierres||[]).map(c=>({...c,tipo:"cierre",_cat:"cierre",_efDelta:Number(c.monto||0),_digDelta:0,_cuenta:true,proveedor:"Cierre "+c.turno}));
-  // Cada cierre de caja trae SIEMPRE dos ingresos simultáneos: lo contado en efectivo y lo vendido por canales
-  // digitales (MP/FUDO/PostNet/Digital/Uber). Antes solo se contabilizaba el efectivo — la parte digital
-  // no aparecía en ningún lado del Historial.
-  const cierresCajaM=(cierresCaja||[]).map(c=>({...c,tipo:"cierre_caja",_cat:"cierre",_efDelta:Number(c.efectivo||0),_digDelta:Number(c.totalDigital||0),_cuenta:true,proveedor:"Cierre "+c.turno,empleado:c.persona,monto:Number(c.total)||(Number(c.efectivo||0)+Number(c.totalDigital||0))}));
-  const pagosM=(pagos||[]).map(p=>({...p,tipo:"pago",_cat:"pago",
-    _efDelta:p.forma==="Efectivo"?-Number(p.monto||0):0,
-    _digDelta:p.forma==="Transferencia"?-Number(p.monto||0):0,
-    _cuenta:p.forma==="Efectivo"||p.forma==="Transferencia"}));
-  const sueldosM=(sueldos||[]).map(s=>({...s,tipo:"sueldo",_cat:"sueldo",
-    _efDelta:s.forma==="Efectivo"?-Number(s.monto||0):0,
-    _digDelta:s.forma==="Transferencia"?-Number(s.monto||0):0,
-    _cuenta:s.forma==="Efectivo"||s.forma==="Transferencia"}));
-  const gastosM=(gastos||[]).map(g=>({...g,tipo:"gasto",_cat:"gasto",
-    _efDelta:g.forma==="Efectivo"?-Number(g.monto||0):0,
-    _digDelta:g.forma==="Transferencia"?-Number(g.monto||0):0,
-    _cuenta:g.forma==="Efectivo"||g.forma==="Transferencia",proveedor:g.categoria}));
-  // Ajustes manuales de caja (Admin > Ajuste de caja disponible). Se incluyen para que el saldo de este
-  // libro diario coincida con el número de "Caja Disponible" (calcSaldo() ya los suma).
-  const ajustesM=(ajustesCajaEfectivo||[]).map(a=>({...a,tipo:"ajuste",_cat:"ajuste",_efDelta:Number(a.monto||0),_digDelta:0,_cuenta:true,proveedor:"Ajuste de caja",obs:a.motivo,monto:Math.abs(Number(a.monto||0))}));
-  const allMovs=[...boletasM,...cierresM,...cierresCajaM,...pagosM,...sueldosM,...gastosM,...ajustesM].filter(m=>m.fecha);
-
-  const desdeF=filtroFecha==="mes"?iso(inicioMes):filtroFecha==="hoy"?iso(hoy):desde;
-  const hastaF=filtroFecha==="mes"?iso(hoy):filtroFecha==="hoy"?iso(hoy):hasta;
-
-  // Saldo de arrastre: cajaInicial + todo el flujo de EFECTIVO anterior al rango mostrado (sin importar el filtro de tipo).
-  // El saldo corrido de esta pantalla es siempre el de Caja Disponible (efectivo) — el saldo de banco/digital
-  // no se arrastra acá porque en la app se corrige a mano contra el resumen bancario real (ver Caja Digital).
-  let saldoBase=Number(cajaInicial)||0;
-  allMovs.filter(m=>m.fecha.slice(0,10)<desdeF).forEach(m=>{saldoBase+=m._efDelta;});
-
-  // Saldo corrido dentro del rango, usando TODOS los tipos (para que el numero sea correcto sin importar el filtro de tipo activo).
-  const enRangoAsc=allMovs.filter(m=>{const f=m.fecha.slice(0,10);return(!desdeF||f>=desdeF)&&(!hastaF||f<=hastaF);}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  let saldoAcum=saldoBase;
-  const conSaldo=enRangoAsc.map(m=>{
-    saldoAcum+=m._efDelta;
-    return{...m,_saldo:saldoAcum};
-  });
-
-  // Filtro de tipo + Debe/Haber para mostrar (no altera el calculo de saldo, ya hecho arriba).
-  let filas=conSaldo.filter(m=>filtro==="todo"?true:filtro==="cierre"?(m.tipo==="cierre"||m.tipo==="cierre_caja"):m.tipo===filtro);
-  if(filtroDH==="debe")filas=filas.filter(m=>(m._efDelta<0||m._digDelta<0)&&m._cat!=="ajuste");
-  if(filtroDH==="haber")filas=filas.filter(m=>(m._efDelta>0||m._digDelta>0)&&m._cat!=="ajuste");
-  filas=[...filas].reverse();
-
-  // Los ajustes de caja no son ingresos ni egresos reales (no hubo una venta ni un pago) — son una
-  // corrección del saldo contado. No suman a Debe/Haber Ef. (el Saldo Ef. sí los sigue incluyendo,
-  // se calcula aparte más arriba con _efDelta sobre TODOS los movimientos).
-  const totalDebeEf=conSaldo.filter(m=>m._efDelta<0&&m._cat!=="ajuste").reduce((s,m)=>s+Math.abs(m._efDelta),0);
-  const totalHaberEf=conSaldo.filter(m=>m._efDelta>0&&m._cat!=="ajuste").reduce((s,m)=>s+m._efDelta,0);
-  const totalDebeDig=conSaldo.filter(m=>m._digDelta<0).reduce((s,m)=>s+Math.abs(m._digDelta),0);
-  const totalHaberDig=conSaldo.filter(m=>m._digDelta>0).reduce((s,m)=>s+m._digDelta,0);
-  const saldoFinal=conSaldo.length?conSaldo[conSaldo.length-1]._saldo:saldoBase;
-
-  const[confirmarElim,setConfirmarElim]=useState(null);
-  const pedirEliminar=item=>setConfirmarElim(item);
-  const confirmarEliminar=async()=>{
-    const item=confirmarElim;
-    setConfirmarElim(null);
-    if(item.tipo==="boleta"){
-      if(item.productos&&item.productos.length>0&&stock&&saveStock){
-        const stockActual=stock.map(s=>{
-          const linea=item.productos.find(p=>p.catalogoId===s.catalogoId);
-          if(!linea)return s;
-          return{...s,cantidad:Math.max(0,Number(s.cantidad||0)-Number(linea.cantidad||0)),movimientos:(s.movimientos||[]).filter(m=>m.boletaId!==item.id)};
-        });
-        await saveStock(stockActual);
-      }
-      await saveBoletas(boletas.filter(b=>b.id!==item.id));
-    }
-    if(item.tipo==="cierre")     await saveCierres(cierres.filter(c=>c.id!==item.id));
-    if(item.tipo==="cierre_caja")await saveCierresCaja((cierresCaja||[]).filter(c=>c.id!==item.id));
-    if(item.tipo==="pago")       await savePagos(pagos.filter(p=>p.id!==item.id));
-    if(item.tipo==="sueldo")     await saveSueldos(sueldos.filter(s=>s.id!==item.id));
-    if(item.tipo==="gasto")      await saveGastos(gastos.filter(g=>g.id!==item.id));
-    if(item.tipo==="ajuste"&&saveAjustesCajaEfectivo) await saveAjustesCajaEfectivo((ajustesCajaEfectivo||[]).filter(a=>a.id!==item.id));
-    toast("Registro eliminado ✓");
-  };
-
-  const exportCSV=()=>{
-    const rows=[["Tipo","Fecha","Hora","Proveedor/Turno","Empleado","Monto","Forma","Detalle"]];
-    boletas.forEach(b=>rows.push(["Boleta",fmtF(b.fecha),fmtH(b.fecha),b.proveedor,b.empleado,b.monto,"",b.obs]));
-    cierres.forEach(c=>rows.push(["Cierre",fmtF(c.fecha),fmtH(c.fecha),"Turno "+c.turno,c.empleado,c.monto,"",c.obs]));
-    (cierresCaja||[]).forEach(c=>rows.push(["Cierre de Caja",fmtF(c.fecha),fmtH(c.fecha),"Turno "+c.turno,c.persona,c.efectivo,"",c.obs]));
-    pagos.forEach(p=>rows.push(["Pago",fmtF(p.fecha),fmtH(p.fecha),p.proveedor,p.empleado,p.monto,p.forma,p.obs]));
-    sueldos.forEach(s=>rows.push(["Sueldo",fmtF(s.fecha),fmtH(s.fecha),s.proveedor||s.empleado,s.empleado,s.monto,s.forma,s.obs]));
-    gastos.forEach(g=>rows.push(["Gasto",fmtF(g.fecha),fmtH(g.fecha),g.categoria,g.empleado,g.monto,g.forma,g.obs]));
-    (ajustesCajaEfectivo||[]).forEach(a=>rows.push(["Ajuste",fmtF(a.fecha),fmtH(a.fecha),"Ajuste de caja","",a.monto,"",a.motivo]));
-    const csv=rows.map(r=>r.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"}));
-    a.download=`amapola_historial_${hoyLocal()}.csv`;a.click();
-  };
-
-  const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
-
-  return(<>
-    <ST help={"Historial completo de todos los movimientos del negocio, en formato de libro diario.\n\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento (coincide con el número de Caja Disponible).\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital: pagos/sueldos/gastos por transferencia, y la parte digital (MP, FUDO, PostNet, Uber) de cada cierre de caja.\n• No hay una columna de saldo corrido para lo digital: el saldo real de banco se maneja aparte en Caja Digital porque ahí se corrige a mano contra el resumen bancario (por las comisiones y demoras de acreditación).\n• Las boletas y los pagos con Amex (tarjeta de crédito) aparecen como referencia (sin Debe/Haber) porque todavía no mueven ni la caja ni el banco — recién se descuentan cuando pagás el resumen de la tarjeta (eso se carga como Gasto, categoría Amex).\n• Los ajustes de caja tampoco aparecen en Debe/Haber ni suman a esos totales — no son una venta ni un pago, son una corrección del saldo contado. Igual se ven reflejados en el Saldo Ef. corrido.\n• Podes filtrar por tipo, por fecha y por Debe/Haber.\n• Desde aca podes eliminar registros si cometiste un error (requiere confirmar, no se puede deshacer)."}>Libro Diario</ST>
-    <SS>Todos los movimientos del negocio — boletas, cierres, pagos, sueldos, gastos y ajustes, en formato debe/haber.</SS>
-
-    <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-      <div style={{flex:1,minWidth:140,background:"#2D6A4F",borderRadius:10,padding:"12px 14px"}}>
-        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#EAF5F0",opacity:.85}}>💵 Caja disponible</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#fff",lineHeight:1.15}}>{fmt(saldo)}</div>
-      </div>
-      <div style={{flex:1,minWidth:140,background:"#2C1A0E",borderRadius:10,padding:"12px 14px"}}>
-        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Disponible digital</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#E8DCC8",lineHeight:1.15}}>{fmt(saldoReal)}</div>
-      </div>
-      <div style={{flex:1,minWidth:140,background:"#B7860B",borderRadius:10,padding:"12px 14px"}}>
-        <div style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",color:"#FEF9E7",opacity:.9}}>⚖️ Consolidado</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:"#fff",lineHeight:1.15}}>{fmt(Number(saldo||0)+Number(saldoReal||0))}</div>
-      </div>
-    </div>
-
-    <div style={{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:16}}>
-      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-        {[["todo","Todo"],["boleta","Boletas"],["cierre","Cierres"],["pago","Pagos"],["sueldo","Sueldos"],["gasto","Pagos dig."],["ajuste","Ajustes"]].map(([f,l])=>(
-          <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtro===f?"#2C1A0E":"#E8DCC8",color:filtro===f?"#E8DCC8":"#2C1A0E"}}>{l}</button>
-        ))}
-      </div>
-
-      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["hoy","Hoy"],["mes","Este mes"],["custom","Personalizado"]].map(([v,l])=>(
-          <button key={v} onClick={()=>{setFiltroFecha(v);if(v==="mes"){setDesde(iso(inicioMes));setHasta(iso(hoy));}if(v==="hoy"){setDesde(iso(hoy));setHasta(iso(hoy));}}} style={{padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,background:filtroFecha===v?"#2C1A0E":"#E8DCC8",color:filtroFecha===v?"#E8DCC8":"#2C1A0E"}}>{l}</button>
-        ))}
-      </div>
-      {filtroFecha==="custom"&&(
-        <div style={{display:"flex",gap:8,marginBottom:10}}>
-          <div style={{flex:1}}>
-            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Desde</label>
-            <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
-          </div>
-          <div style={{flex:1}}>
-            <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Hasta</label>
-            <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px"}}/>
-          </div>
-        </div>
-      )}
-
-      <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[["todos","Todos"],["debe","💸 Solo Debe"],["haber","💵 Solo Haber"]].map(([v,l])=>(
-          <button key={v} onClick={()=>setFiltroDH(v)} style={{flex:1,padding:"5px 8px",borderRadius:20,border:"none",cursor:"pointer",fontSize:".72rem",fontWeight:600,
-            background:filtroDH===v?(v==="debe"?"#C0392B":v==="haber"?"#2D6A4F":"#2C1A0E"):"#E8DCC8",
-            color:filtroDH===v?"#fff":"#2C1A0E"}}>{l}</button>
-        ))}
-      </div>
-
-      <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:4}}>{filas.length} registro{filas.length!==1?"s":""} · Saldo Caja Disponible: <strong style={{color:saldoFinal>=0?"#2D6A4F":"#C0392B"}}>{fmt(saldoFinal)}</strong></div>
-      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-        {[["💵 Efectivo",totalHaberEf,totalDebeEf],["💳 Digital",totalHaberDig,totalDebeDig]].map(([l,h,d])=>(
-          <div key={l} style={{flex:1,minWidth:150,background:"#F9F6F1",borderRadius:10,padding:"8px 10px"}}>
-            <div style={{fontSize:".6rem",color:"#7B7063",textTransform:"uppercase",letterSpacing:".04em",marginBottom:2}}>{l} del período</div>
-            <div style={{fontSize:".76rem",color:"#2D6A4F",fontWeight:700}}>Haber {fmt(h)}</div>
-            <div style={{fontSize:".76rem",color:"#C0392B",fontWeight:700}}>Debe {fmt(d)}</div>
-          </div>
-        ))}
-      </div>
-
-      {!filas.length?<Empty icon="📒">Sin registros en el periodo</Empty>:(
-        <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:620}}>
-            <thead>
-              <tr style={{background:"#F9F6F1"}}>
-                {["Fecha","Concepto","Debe Ef.","Haber Ef.","Debe Dig.","Haber Dig.","Saldo Ef.",""].map(h=>(
-                  <th key={h||"acc"} style={{padding:"7px 8px",textAlign:h==="Fecha"||h==="Concepto"?"left":h===""?"center":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filas.map((f,i)=>(
-                <tr key={f.tipo+f.id+i} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                  <td style={{padding:"6px 8px",whiteSpace:"nowrap",color:"#7B7063",fontSize:".72rem"}}>
-                    {fmtF(f.fecha)}<br/><span style={{fontSize:".62rem"}}>{fmtH(f.fecha)}</span>
-                  </td>
-                  <td style={{padding:"6px 8px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:5}}>
-                      <span style={{flexShrink:0}}>{iconoCat(f._cat)}</span>
-                      <div style={{minWidth:0}}>
-                        <div style={{fontWeight:600,fontSize:".76rem",lineHeight:1.3}}>{f.proveedor||"—"}</div>
-                        <div style={{fontSize:".63rem",color:f._cat==="ajuste"?(f._efDelta>0?"#2D6A4F":"#C0392B"):"#7B7063",fontWeight:f._cat==="ajuste"?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>
-                          {f.empleado?f.empleado+" · ":""}
-                          {f._cat==="ajuste"?(f._efDelta>0?"+":"-")+fmt(Math.abs(f._efDelta))+" · corrección de saldo":(!f._cuenta?fmt(f.monto)+(f.tipo==="boleta"?" (boleta, no afecta caja)":f.forma==="Amex"?" (Amex, no descuenta hasta pagar el resumen)":f.forma==="Retiro"?" (pagado con efectivo ya retirado antes)":""):"")}
-                          {f.obs?" · "+f.obs:""}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",color:"#C0392B",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._cat!=="ajuste"&&f._efDelta<0?fmt(Math.abs(f._efDelta)):"—"}
-                  </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",color:"#2D6A4F",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._cat!=="ajuste"&&f._efDelta>0?fmt(f._efDelta):"—"}
-                  </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",color:"#B7860B",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._digDelta<0?fmt(Math.abs(f._digDelta)):"—"}
-                  </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",color:"#1a6b8f",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {f._digDelta>0?fmt(f._digDelta):"—"}
-                  </td>
-                  <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:f._saldo>=0?"#2C1A0E":"#C0392B"}}>{fmt(f._saldo)}</td>
-                  <td style={{padding:"6px 8px",textAlign:"center"}}>
-                    <button onClick={()=>pedirEliminar(f)} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:6,color:"#E74C3C",fontSize:".68rem",fontWeight:600,cursor:"pointer",padding:"3px 7px"}}>✕</button>
-                  </td>
-                </tr>
-              ))}
-              <tr style={{background:"#2C1A0E"}}>
-                <td colSpan={2} style={{padding:"8px 10px",color:"#E8DCC8",fontWeight:700,fontSize:".76rem"}}>TOTALES</td>
-                <td style={{padding:"8px",textAlign:"right",color:"#f5b7b1",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebeEf)}</td>
-                <td style={{padding:"8px",textAlign:"right",color:"#a9dfbf",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaberEf)}</td>
-                <td style={{padding:"8px",textAlign:"right",color:"#f5d98b",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalDebeDig)}</td>
-                <td style={{padding:"8px",textAlign:"right",color:"#a9d3e8",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totalHaberDig)}</td>
-                <td style={{padding:"8px",textAlign:"right",fontWeight:700,whiteSpace:"nowrap",color:saldoFinal>=0?"#a9dfbf":"#f5b7b1"}}>{fmt(saldoFinal)}</td>
-                <td/>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-
-    {filas.length>0&&<button onClick={exportCSV} style={{display:"block",width:"100%",marginBottom:12,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",color:"#C0392B",fontSize:".82rem",fontWeight:600,cursor:"pointer"}}>⬇ Exportar CSV</button>}
-
-    {confirmarElim&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
-          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:8,color:"#2C1A0E"}}>⚠️ Eliminar registro</p>
-          <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:6}}>
-            <strong>{confirmarElim.tipo==="boleta"?"Boleta":confirmarElim.tipo==="cierre"?"Cierre":confirmarElim.tipo==="cierre_caja"?"Cierre de Caja":confirmarElim.tipo==="ajuste"?"Ajuste de caja":confirmarElim.forma||confirmarElim.tipo}</strong>
-            {" · "}{fmt(confirmarElim.monto)}
-          </p>
-          <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:20}}>{fmtF(confirmarElim.fecha)}{confirmarElim.proveedor?" · "+confirmarElim.proveedor:""}{confirmarElim.obs?" · "+confirmarElim.obs:""}</p>
-          {confirmarElim.tipo==="boleta"&&confirmarElim.productos&&confirmarElim.productos.length>0&&<p style={{fontSize:".78rem",color:"#B7860B",marginBottom:20}}>📦 Se van a revertir {confirmarElim.productos.length} producto{confirmarElim.productos.length!==1?"s":""} del stock.</p>}
-          <p style={{fontSize:".78rem",color:"#C0392B",marginBottom:20,fontWeight:600}}>Esta accion no se puede deshacer.</p>
-          <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setConfirmarElim(null)} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Cancelar</button>
-            <button onClick={confirmarEliminar} style={{flex:1,padding:13,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:".95rem"}}>Eliminar</button>
-          </div>
-        </div>
-      </div>
-    )}
-  </>);
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
