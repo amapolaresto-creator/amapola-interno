@@ -216,13 +216,14 @@ function HelpModal({texto,onClose}){
     </div>
   );
 }
-function ST({children,help}){
+function ST({children,help,onQuestionClick,questionColor}){
   const[open,setOpen]=useState(false);
+  const handleQuestionClick=onQuestionClick||(()=>setOpen(true));
   return(<>
     {open&&<HelpModal texto={help} onClose={()=>setOpen(false)}/>}
     <p style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
       {children}
-      {help&&<button onClick={()=>setOpen(true)} style={{background:"none",border:"1px solid #E8DCC8",borderRadius:"50%",width:20,height:20,fontSize:".65rem",cursor:"pointer",color:"#7B7063",padding:0,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>?</button>}
+      {(help||onQuestionClick)&&<button onClick={handleQuestionClick} title={onQuestionClick?"Manual de uso":"Ayuda"} style={{background:questionColor||"none",border:questionColor?"none":"1px solid #E8DCC8",borderRadius:"50%",width:20,height:20,fontSize:".65rem",fontWeight:questionColor?700:400,cursor:"pointer",color:questionColor?"#fff":"#7B7063",padding:0,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>?</button>}
     </p>
   </>);
 }
@@ -7915,7 +7916,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
   if(!verNomina){
     return(<>
-      <ST help={"Registrá acá el pago de un sueldo, adelanto u horas extras — esta parte no pide clave, la puede usar cualquiera (ej. desde Pagos → '👤 Pagar sueldo' se entra directo acá).\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual.\n• Si el concepto es 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período, el pago se enlaza solo — así la Nómina de acá abajo muestra 'Pagada' sin hacer nada más.\n• 'Retiro' es para cuando ya se sacó la plata antes de la caja (categoría 'Retiro para sueldos') — no vuelve a descontar.\n\nMás abajo, 'Nómina y Liquidaciones' (liquidar sueldos, ver recibos, penalidades, adelantos, HS extras) pide la clave de administrador."}>Liquidación de sueldos</ST>
+      <ST help={"Registrá acá el pago de un sueldo, adelanto u horas extras — esta parte no pide clave, la puede usar cualquiera (ej. desde Pagos → '👤 Pagar sueldo' se entra directo acá).\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual.\n• Si el concepto es 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período, el pago se enlaza solo — así la Nómina de acá abajo muestra 'Pagada' sin hacer nada más.\n• 'Retiro' es para cuando ya se sacó la plata antes de la caja (categoría 'Retiro para sueldos') — no vuelve a descontar.\n\nMás abajo, 'Nómina y Liquidaciones' (liquidar sueldos, ver recibos, penalidades, adelantos, HS extras) pide la clave de administrador."} onQuestionClick={()=>setVerManual(true)} questionColor="#B7860B">Liquidación de sueldos</ST>
       <SS>Registrá el pago de un sueldo, o gestioná las liquidaciones del equipo.</SS>
 
       {crearModalPago&&(
@@ -8013,7 +8014,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         </Card>
       ):(<>
       {verManual&&<ManualLiquidacionModal onClose={()=>setVerManual(false)}/>}
-      <Btn bg="#7B7063" onClick={()=>setVerManual(true)}>📖 Manual de uso</Btn>
       <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
       <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
       <Btn bg="#C0392B" onClick={()=>setVerPenalidadesAdmin(v=>!v)}>{verPenalidadesAdmin?"Ocultar Penalidades":"⚡ Penalidades"}</Btn>
@@ -8206,10 +8206,9 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
 
   return(<>
     <button onClick={()=>setVerNomina(false)} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7B7063",fontSize:".8rem",fontWeight:600,cursor:"pointer",marginBottom:14,padding:0}}>← Volver</button>
-    <ST>Liquidación de sueldos</ST>
+    <ST onQuestionClick={()=>setVerManual(true)} questionColor="#B7860B">Liquidación de sueldos</ST>
     <SS>Cargá los haberes y descuentos de cada empleado y generá su recibo.</SS>
     {verManual&&<ManualLiquidacionModal onClose={()=>setVerManual(false)}/>}
-    <Btn bg="#7B7063" onClick={()=>setVerManual(true)}>📖 Manual de uso</Btn>
 
     <Field label="Período">
       <input type="month" value={periodo} onChange={e=>setPeriodo(e.target.value)} style={iS}/>
