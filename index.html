@@ -2006,6 +2006,11 @@ function TabFichajes(){
   );
 }
 
+// Tolerancia para considerar una liquidación de sueldo como "Pagada": el neto se calcula con decimales
+// (las fórmulas dividen por 208) pero en la práctica siempre se paga en pesos redondos, así que casi nunca
+// va a coincidir el centavo exacto. Si falta menos de $500, se considera pagada igual (decisión de Adrian,
+// 2026-08-24). Si en algún momento hay que ajustar el monto, tocar SOLO esta constante.
+const TOLERANCIA_PAGO_SUELDO=500;
 const RETIRO_SUELDOS_CAT="Retiro para sueldos";
 // Categoría de gasto que Adrian usa para registrar retiros de ganancia del dueño (normalmente por
 // Transferencia). Desde 2026-08-19 también se puede pagar con la caja retiro para sueldos (forma "Retiro"),
@@ -4400,7 +4405,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
         if(liq){
           liquidacionId=liq.id;
           const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
-          if(pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)){
+          if(pagado>0&&(Number(liq.neto||0)-pagado)<TOLERANCIA_PAGO_SUELDO){
             if(!confirm("⚠️ "+empSueldo+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(pagado)+"). ¿Registrar este pago de todas formas?"))return false;
           }
         }
@@ -5057,7 +5062,7 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
         if(liq){
           liquidacionId=liq.id;
           const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
-          if(pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)){
+          if(pagado>0&&(Number(liq.neto||0)-pagado)<TOLERANCIA_PAGO_SUELDO){
             if(!confirm("⚠️ "+empSueldo+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(pagado)+"). ¿Registrar este pago de todas formas?"))return false;
           }
         }
@@ -7581,7 +7586,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     const liq=liquidacionConfirmadaDe(nombreEmp,per);
     if(!liq)return null;
     const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
-    return pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100)?{liq,pagado}:null;
+    return pagado>0&&(Number(liq.neto||0)-pagado)<TOLERANCIA_PAGO_SUELDO?{liq,pagado}:null;
   };
   // Saldo de la caja retiro para sueldos (plata ya sacada de Caja Disponible en Pagos o Caja Disponible,
   // categoría "Retiro para sueldos") — no debería dejarse cargar más "Retiro" que lo que efectivamente
@@ -8226,7 +8231,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
               {empleadosActivos.map((e,i)=>{
                 const liq=liqDe(e.id,periodo);
                 const pagado=liq?pagadoDe(liq.id):0;
-                const totalmentePagada=liq&&pagado>0&&Math.round(pagado*100)>=Math.round(Number(liq.neto||0)*100);
+                const totalmentePagada=liq&&pagado>0&&(Number(liq.neto||0)-pagado)<TOLERANCIA_PAGO_SUELDO;
                 const parcialmentePagada=liq&&pagado>0&&!totalmentePagada;
                 const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
                 const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
