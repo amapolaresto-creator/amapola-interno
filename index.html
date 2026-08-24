@@ -7969,6 +7969,87 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     </>);
   }
 
+  if(verBasicos){
+    return(<>
+      <button onClick={()=>setVerBasicos(false)} style={volverStyle}>← Volver</button>
+      <ST>📋 Nómina de Empleados</ST>
+      <SS>Sueldos básicos agendados (ayuda memoria).</SS>
+      <Card title="Sueldos básicos agendados (ayuda memoria)">
+        <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Básico y Bono, todo editable acá. HS extra, feriado y ausencia se calculan solos a partir del básico. Tocá 🗂️ para ver o editar el legajo (DNI, CUIT, fecha de nacimiento, domicilio y teléfonos) de cada empleado.</p>
+        {empleadosActivos.length>0?(
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:640}}>
+              <thead>
+                <tr style={{background:"#F9F6F1"}}>
+                  {["Empleado","Básico","Bono","HS extra","Feriado","Ausencia",""].map(h=>(
+                    <th key={h} style={{padding:"7px 8px",textAlign:h==="Empleado"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {empleadosActivos.map((e,i)=>{
+                  const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
+                  const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
+                  const basicoNum=Number(basicoVal)||0;
+                  const valorHsExtra=basicoNum/208*2;
+                  const valorFeriado=basicoNum/208*8;
+                  const valorAusencia=basicoNum/208*8;
+                  const inpCell={width:86,border:"1px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".72rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
+                  return(
+                    <tr key={e.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
+                      <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{e.nombre} {e.apellido||""}</td>
+                      <td style={{padding:"6px 4px",textAlign:"right"}}>
+                        <input type="number" value={basicoVal} onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={inpCell}/>
+                      </td>
+                      <td style={{padding:"6px 4px",textAlign:"right"}}>
+                        <input type="number" value={bonoVal} onChange={ev=>setBonosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={inpCell}/>
+                      </td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorHsExtra)}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorFeriado)}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorAusencia)}</td>
+                      <td style={{padding:"6px 4px",textAlign:"right",whiteSpace:"nowrap"}}>
+                        <SmBtn onClick={()=>setLegajoAbierto(e.id)} title="Legajo">🗂️</SmBtn>{" "}
+                        <SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ):(
+          <Empty icon="👷">No hay empleados activos.</Empty>
+        )}
+      </Card>
+      {legajoAbierto&&(()=>{
+        const e=empleados.find(x=>x.id===legajoAbierto);
+        if(!e)return null;
+        const legajoVal=campo=>(legajoDraft[e.id]&&legajoDraft[e.id][campo]!==undefined)?legajoDraft[e.id][campo]:(e[campo]||"");
+        const inpTexto={width:"100%",border:"1px solid #E8DCC8",borderRadius:6,padding:"7px 8px",fontSize:".8rem",textAlign:"left",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
+        return(
+          <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={()=>setLegajoAbierto(null)}>
+            <div style={{background:"#fff",borderRadius:12,padding:20,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}} onClick={ev=>ev.stopPropagation()}>
+              <h3 style={{margin:"0 0 4px",fontSize:"1rem",color:"#2C1A0E"}}>🗂️ Legajo</h3>
+              <p style={{margin:"0 0 14px",fontSize:".8rem",color:"#7B7063"}}>{e.nombre} {e.apellido||""}</p>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <Field label="DNI"><input type="text" value={legajoVal("dni")} onChange={ev=>setLegajoCampo(e.id,"dni",ev.target.value)} placeholder="DNI" style={inpTexto}/></Field>
+                <Field label="CUIT"><input type="text" value={legajoVal("cuit")} onChange={ev=>setLegajoCampo(e.id,"cuit",ev.target.value)} placeholder="CUIT" style={inpTexto}/></Field>
+                <Field label="Fecha de nacimiento"><input type="date" value={legajoVal("fechaNac")} onChange={ev=>setLegajoCampo(e.id,"fechaNac",ev.target.value)} style={inpTexto}/></Field>
+                <Field label="Domicilio"><input type="text" value={legajoVal("domicilio")} onChange={ev=>setLegajoCampo(e.id,"domicilio",ev.target.value)} placeholder="Domicilio" style={inpTexto}/></Field>
+                <Field label="Tel. propio"><input type="text" value={legajoVal("telPropio")} onChange={ev=>setLegajoCampo(e.id,"telPropio",ev.target.value)} placeholder="Tel. propio" style={inpTexto}/></Field>
+                <Field label="Tel. de contacto"><input type="text" value={legajoVal("telContacto")} onChange={ev=>setLegajoCampo(e.id,"telContacto",ev.target.value)} placeholder="Tel. de contacto" style={inpTexto}/></Field>
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:18,justifyContent:"flex-end"}}>
+                <SmBtn onClick={()=>setLegajoAbierto(null)}>Cerrar</SmBtn>
+                <Btn bg="#2C1A0E" onClick={async()=>{await guardarValores(e);setLegajoAbierto(null);}}>Guardar legajo</Btn>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </>);
+  }
+
   if(!verNomina){
     return(<>
       <ST help={"Registrá acá el pago de un sueldo, adelanto u horas extras — esta parte no pide clave, la puede usar cualquiera (ej. desde Pagos → '👤 Pagar sueldo' se entra directo acá).\n\n• Elegí el empleado del desplegable (usá + si no existe).\n• Los conceptos disponibles son: Sueldo, Adelanto, Aguinaldo, Plus, Feriado y HS Extras.\n• Cada pago descuenta de la caja disponible si se paga en efectivo — si el monto supera lo disponible, te avisa y te deja confirmar igual.\n• Si el concepto es 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período, el pago se enlaza solo — así la Nómina de acá abajo muestra 'Pagada' sin hacer nada más.\n• 'Retiro' es para cuando ya se sacó la plata antes de la caja (categoría 'Retiro para sueldos') — no vuelve a descontar.\n\nMás abajo, 'Nómina y Liquidaciones' (liquidar sueldos, ver recibos, penalidades, adelantos, HS extras) pide la clave de administrador."} onQuestionClick={()=>setVerManual(true)} questionColor="#B7860B">Liquidación de sueldos</ST>
@@ -7987,8 +8068,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
           </div>
         </div>
       )}
-      <Btn bg="#2D6A4F" onClick={()=>setPagoModal(true)}>👤 Pagar sueldo</Btn>
-
       {pagoModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
@@ -8062,15 +8141,19 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         </div>
       )}
 
-      {!nominaVisible?(
+      {!nominaVisible?(<>
+        <Btn bg="#2D6A4F" onClick={()=>setPagoModal(true)}>👤 Pagar sueldo</Btn>
         <Card title="🔒 Nómina y Liquidaciones">
           <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:14}}>Liquidar sueldos, ver recibos, penalidades, adelantos y horas extras del equipo — esta parte pide la clave de administrador.</p>
           <Btn bg="#2C1A0E" onClick={()=>setPinModal(true)}>Desbloquear con clave de administrador</Btn>
         </Card>
-      ):(<>
+      </>):(<>
       {verManual&&<ManualLiquidacionModal onClose={()=>setVerManual(false)}/>}
-      <Btn bg="#B7860B" onClick={()=>setVerNomina(true)}>💰 Liquidar Sueldos</Btn>
-      <Btn bg="#2C1A0E" onClick={()=>setVerBasicos(v=>!v)}>{verBasicos?"Ocultar Nómina de Empleados Sueldos Básicos y Valores":"📋 Nómina de Empleados Sueldos Básicos y Valores"}</Btn>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>setPagoModal(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>👤 Pagar sueldo</button>
+        <button onClick={()=>setVerNomina(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>💰 Liquidar Sueldos</button>
+        <button onClick={()=>setVerBasicos(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#2C1A0E",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>📋 Nómina Básicos</button>
+      </div>
       <div style={{display:"flex",gap:8,marginTop:18}}>
         <button onClick={()=>setVerPenalidadesAdmin(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#C0392B",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>⚡ Penalidades</button>
         <button onClick={()=>setVerAdelantosAdmin(true)} style={{flex:1,minWidth:0,padding:"13px 4px",border:"none",borderRadius:10,background:"#B7860B",color:"#fff",fontFamily:"inherit",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>💵 Adelantos</button>
@@ -8142,81 +8225,6 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         )}
       </Card>
 
-      {verBasicos&&(
-        <Card title="Sueldos básicos agendados (ayuda memoria)">
-          <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:12}}>Básico y Bono, todo editable acá. HS extra, feriado y ausencia se calculan solos a partir del básico. Tocá 🗂️ para ver o editar el legajo (DNI, CUIT, fecha de nacimiento, domicilio y teléfonos) de cada empleado.</p>
-          {empleadosActivos.length>0?(
-            <div style={{overflowX:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:".75rem",minWidth:640}}>
-                <thead>
-                  <tr style={{background:"#F9F6F1"}}>
-                    {["Empleado","Básico","Bono","HS extra","Feriado","Ausencia",""].map(h=>(
-                      <th key={h} style={{padding:"7px 8px",textAlign:h==="Empleado"?"left":"right",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",whiteSpace:"nowrap"}}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {empleadosActivos.map((e,i)=>{
-                    const basicoVal=basicosDraft[e.id]!==undefined?basicosDraft[e.id]:(e.sueldoBasicoRef||"");
-                    const bonoVal=bonosDraft[e.id]!==undefined?bonosDraft[e.id]:(e.bonoRef||"");
-                    const basicoNum=Number(basicoVal)||0;
-                    const valorHsExtra=basicoNum/208*2;
-                    const valorFeriado=basicoNum/208*8;
-                    const valorAusencia=basicoNum/208*8;
-                    const inpCell={width:86,border:"1px solid #E8DCC8",borderRadius:6,padding:"5px 6px",fontSize:".72rem",textAlign:"right",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
-                    return(
-                      <tr key={e.id} style={{background:i%2===0?"#fff":"#F9F6F1"}}>
-                        <td style={{padding:"6px 8px",fontWeight:600,whiteSpace:"nowrap"}}>{e.nombre} {e.apellido||""}</td>
-                        <td style={{padding:"6px 4px",textAlign:"right"}}>
-                          <input type="number" value={basicoVal} onChange={ev=>setBasicosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={inpCell}/>
-                        </td>
-                        <td style={{padding:"6px 4px",textAlign:"right"}}>
-                          <input type="number" value={bonoVal} onChange={ev=>setBonosDraft(d=>({...d,[e.id]:ev.target.value}))} placeholder="0" style={inpCell}/>
-                        </td>
-                        <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorHsExtra)}</td>
-                        <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorFeriado)}</td>
-                        <td style={{padding:"6px 8px",textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{fmt(valorAusencia)}</td>
-                        <td style={{padding:"6px 4px",textAlign:"right",whiteSpace:"nowrap"}}>
-                          <SmBtn onClick={()=>setLegajoAbierto(e.id)} title="Legajo">🗂️</SmBtn>{" "}
-                          <SmBtn onClick={()=>guardarValores(e)}>Guardar</SmBtn>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ):(
-            <Empty icon="👷">No hay empleados activos.</Empty>
-          )}
-        </Card>
-      )}
-      {legajoAbierto&&(()=>{
-        const e=empleados.find(x=>x.id===legajoAbierto);
-        if(!e)return null;
-        const legajoVal=campo=>(legajoDraft[e.id]&&legajoDraft[e.id][campo]!==undefined)?legajoDraft[e.id][campo]:(e[campo]||"");
-        const inpTexto={width:"100%",border:"1px solid #E8DCC8",borderRadius:6,padding:"7px 8px",fontSize:".8rem",textAlign:"left",fontFamily:"inherit",color:"#2C1A0E",background:"#fff",outline:"none",boxSizing:"border-box"};
-        return(
-          <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={()=>setLegajoAbierto(null)}>
-            <div style={{background:"#fff",borderRadius:12,padding:20,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}} onClick={ev=>ev.stopPropagation()}>
-              <h3 style={{margin:"0 0 4px",fontSize:"1rem",color:"#2C1A0E"}}>🗂️ Legajo</h3>
-              <p style={{margin:"0 0 14px",fontSize:".8rem",color:"#7B7063"}}>{e.nombre} {e.apellido||""}</p>
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <Field label="DNI"><input type="text" value={legajoVal("dni")} onChange={ev=>setLegajoCampo(e.id,"dni",ev.target.value)} placeholder="DNI" style={inpTexto}/></Field>
-                <Field label="CUIT"><input type="text" value={legajoVal("cuit")} onChange={ev=>setLegajoCampo(e.id,"cuit",ev.target.value)} placeholder="CUIT" style={inpTexto}/></Field>
-                <Field label="Fecha de nacimiento"><input type="date" value={legajoVal("fechaNac")} onChange={ev=>setLegajoCampo(e.id,"fechaNac",ev.target.value)} style={inpTexto}/></Field>
-                <Field label="Domicilio"><input type="text" value={legajoVal("domicilio")} onChange={ev=>setLegajoCampo(e.id,"domicilio",ev.target.value)} placeholder="Domicilio" style={inpTexto}/></Field>
-                <Field label="Tel. propio"><input type="text" value={legajoVal("telPropio")} onChange={ev=>setLegajoCampo(e.id,"telPropio",ev.target.value)} placeholder="Tel. propio" style={inpTexto}/></Field>
-                <Field label="Tel. de contacto"><input type="text" value={legajoVal("telContacto")} onChange={ev=>setLegajoCampo(e.id,"telContacto",ev.target.value)} placeholder="Tel. de contacto" style={inpTexto}/></Field>
-              </div>
-              <div style={{display:"flex",gap:8,marginTop:18,justifyContent:"flex-end"}}>
-                <SmBtn onClick={()=>setLegajoAbierto(null)}>Cerrar</SmBtn>
-                <Btn bg="#2C1A0E" onClick={async()=>{await guardarValores(e);setLegajoAbierto(null);}}>Guardar legajo</Btn>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
       </>)}
     </>);
   }
