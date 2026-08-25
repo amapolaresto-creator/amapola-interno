@@ -3271,7 +3271,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
                 <div style={{fontSize:".68rem",color:"#B7A98F",marginBottom:8}}>
                   Teórico: {s.sinCargar?"—":`${s.cantidad} ${s.unidad}`}{fechaTeo&&` · ${diasDesde(fechaTeo)}`}
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,maxWidth:320}}>
                   <input type="number" inputMode="decimal" min="0" value={val} onFocus={e=>e.target.select()} onChange={e=>{const v=e.target.value;if(v!==""&&Number(v)<0)return;setValores({...valores,[s.id]:v});}} placeholder="0" style={{flex:1,minWidth:0,border:"1.5px solid "+(tocado?"#2D6A4F":"#E8DCC8"),borderRadius:8,padding:"11px 10px",fontSize:"1rem",fontWeight:600,textAlign:"center",background:"#fff"}}/>
                   <select value={s.unidad||"unidades"} onChange={e=>cambiarUnidad(s,e.target.value)} style={{fontSize:".72rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:8,padding:"10px 6px",background:"#fff",flexShrink:0,maxWidth:96}}>
                     {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
