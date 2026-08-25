@@ -3289,12 +3289,6 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     {gruposCnt.length>0&&(
       <Btn bg="#2C1A0E" onClick={guardarConteo} disabled={busy||!tocados.length}>{busy?"Guardando…":`Guardar conteo (${tocados.length} producto${tocados.length!==1?"s":""})`}</Btn>
     )}
-
-    {tocados.length>0&&(
-      <button onClick={guardarConteo} disabled={busy} style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:60,padding:"13px 22px",borderRadius:30,border:"none",background:"#2C1A0E",color:"#E8DCC8",fontWeight:700,fontSize:".84rem",cursor:"pointer",boxShadow:"0 4px 18px rgba(44,26,14,.35)",whiteSpace:"nowrap"}}>
-        {busy?"Guardando…":`✓ Guardar (${tocados.length})`}
-      </button>
-    )}
   </>);
 }
 function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
