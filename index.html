@@ -5541,20 +5541,7 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
   saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,
   ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock,
   pagarConExcedente,empleados,saveEmpleados,liquidaciones}){
-  const[saldoBanco,setSaldoBanco]=useState("");
-  const[notaBanco,setNotaBanco]=useState("");
-  const[savingBanco,setSavingBanco]=useState(false);
   const{ingresos,egTransf,saldoReal,deducciones}=calcDigital();
-
-  const actualizarBanco=async()=>{
-    if(!saldoBanco){toast("Ingresá el saldo real");return;}
-    setSavingBanco(true);
-    const ok=await actualizarSaldoBanco(Number(saldoBanco),notaBanco);
-    setSavingBanco(false);
-    if(ok===false)return;
-    setSaldoBanco("");setNotaBanco("");
-    toast("Saldo banco actualizado ✓");
-  };
 
   const totalDisponible=saldo+saldoReal;
 
@@ -5949,19 +5936,7 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
     <div style={{background:"#2C1A0E",borderRadius:14,padding:"16px 18px",marginBottom:16,border:"2px solid #B7860B"}}>
       <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>💳 Caja digital · Banco</div>
       <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#E8DCC8",margin:"3px 0 1px"}}>{fmt(saldoReal)}</div>
-      <div style={{fontSize:".68rem",color:"#E8DCC8",opacity:.6,marginBottom:12}}>Saldo real del banco actualizado manualmente</div>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input type="number" value={saldoBanco} onChange={e=>setSaldoBanco(e.target.value)}
-          placeholder="Ingresar saldo real banco"
-          style={{flex:1,background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".85rem",outline:"none",fontFamily:"inherit"}}/>
-        <button onClick={actualizarBanco} disabled={savingBanco}
-          style={{padding:"9px 16px",border:"none",borderRadius:8,background:"#B7860B",color:"#fff",fontWeight:600,fontSize:".82rem",cursor:"pointer",flexShrink:0}}>
-          {savingBanco?"…":"Actualizar"}
-        </button>
-      </div>
-      <input value={notaBanco} onChange={e=>setNotaBanco(e.target.value)}
-        placeholder="Motivo del ajuste (obligatorio)"
-        style={{width:"100%",background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:".82rem",outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+      <div style={{fontSize:".68rem",color:"#E8DCC8",opacity:.6}}>Para actualizar el saldo real del banco, hacelo desde la pestaña Caja Digital.</div>
     </div>
 
     {/* LIBRO DIARIO */}
