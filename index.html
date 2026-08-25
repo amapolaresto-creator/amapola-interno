@@ -734,7 +734,7 @@ function App({role="full",cerrarSesion}){
           cajaDigitalSaldo={cajaDigitalSaldo} stock={stock} setTab={setTab}/>}
         {tab==="penalidades"&&<TabPenalidades empleados={empleados} penalidades={penalidades} savePenalidades={savePenalidades} liquidaciones={liquidaciones}/>}
         {tab==="amex"&&adminUnlocked&&<TabAmex amexCuotas={amexCuotas} saveAmexCuotas={saveAmexCuotas} proveedores={proveedores} pagos={pagos} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} calcDigital={calcDigital}/>}
-        {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} actualizarSaldoBanco={actualizarSaldoBanco} proveedores={proveedores} calcDeuda={calcDeuda} amexCuotas={amexCuotas} boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock}/>}
+        {tab==="gerencia"&&adminUnlocked&&<TabGerencia calcDigital={calcDigital} saldo={saldo} ini={ini} tot={tot} eg={eg} cajaDigitalSaldo={cajaDigitalSaldo} actualizarSaldoBanco={actualizarSaldoBanco} proveedores={proveedores} calcDeuda={calcDeuda} amexCuotas={amexCuotas} boletas={boletas} cierres={cierres} cierresCaja={cierresCaja} pagos={pagos} sueldos={sueldos} gastos={gastos} cajaInicial={cajaInicial} setLightbox={setLightbox} saveBoletas={saveBoletas} saveCierres={saveCierres} saveCierresCaja={saveCierresCaja} savePagos={savePagos} saveSueldos={saveSueldos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} stock={stock} saveStock={saveStock} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="cajaefectivo"&&adminUnlocked&&<TabCajaEfectivo cierres={cierres} cierresCaja={cierresCaja} cajaInicial={cajaInicial} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="cajadigital"&&adminUnlocked&&<TabCajaDigital calcDigital={calcDigital} cajaDigitalSaldo={cajaDigitalSaldo} saveCajaDigitalSaldo={saveCajaDigitalSaldo} cajaDigitalAjustes={cajaDigitalAjustes} saveCajaDigitalAjustes={saveCajaDigitalAjustes} actualizarSaldoBanco={actualizarSaldoBanco} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} gastos={gastos} saveGastos={saveGastos} cierresCaja={cierresCaja} proveedores={proveedores} pagarConExcedente={pagarConExcedente} empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones}/>}
         {tab==="boletas"&&<TabBoletas boletas={boletas} saveBoletas={saveBoletas} proveedores={proveedores} saveProveedores={saveProveedores} pagos={pagos} savePagos={savePagos} saldo={saldo} empleados={empleados} saveEmpleados={saveEmpleados} pagarConExcedente={pagarConExcedente} catalogo={catalogoStock} saveStock={saveStock} stock={stock} calcDeuda={calcDeuda}/>}
@@ -5531,7 +5531,8 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
   proveedores,calcDeuda,amexCuotas,
   boletas,cierres,cierresCaja,pagos,sueldos,gastos,cajaInicial,setLightbox,
   saveBoletas,saveCierres,saveCierresCaja,savePagos,saveSueldos,saveGastos,
-  ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock}){
+  ajustesCajaEfectivo,saveAjustesCajaEfectivo,stock,saveStock,
+  pagarConExcedente,empleados,saveEmpleados,liquidaciones}){
   const[saldoBanco,setSaldoBanco]=useState("");
   const[notaBanco,setNotaBanco]=useState("");
   const[savingBanco,setSavingBanco]=useState(false);
@@ -5672,6 +5673,121 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
 
   const iconoCat=c=>c==="cierre"?"💵":c==="sueldo"?"👤":c==="gasto"?"🏠":c==="pago"?"💸":c==="ajuste"?"⚖️":"🧾";
 
+  // Registrar pago (mismo mecanismo que en Caja Disponible/Caja Digital): agrupa proveedor, sueldo o
+  // gasto, todo lo que se pueda pagar, con forma de pago Efectivo por defecto.
+  const[nuevoPagoModal,setNuevoPagoModal]=useState(false);
+  const[tipoPago,setTipoPago]=useState("proveedor"); // "proveedor" | "sueldo" | "gasto"
+  const[prov,setProv]=useState("");const[emp,setEmp]=useState("");
+  const[montoPago,setMontoPago]=useState("");const[formaPago,setFormaPago]=useState("Efectivo");
+  const[obsPago,setObsPago]=useState("");const[fechaPago,setFechaPago]=useState(hoyLocal());
+  const[busyPago,setBusyPago]=useState(false);
+  const[nuevoRegModal,setNuevoRegModal]=useState(false);
+  const[nuevoRegNombre,setNuevoRegNombre]=useState("");
+  const registradores=(empleados||[]).filter(e=>e.estado==="Activo");
+  const[empSueldo,setEmpSueldo]=useState("");
+  const[conceptoSueldo,setConceptoSueldo]=useState("Sueldo");
+  const[hsExtrasSueldo,setHsExtrasSueldo]=useState("");
+  const EMPS=(empleados||[]).filter(e=>e.estado!=="Inactivo"&&!e.excluirLiquidacion).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const CATS_BASE_DIG=['Alquiler','Contadora','Abogada','Conciliaciones','Amex','Impuestos','Carta Documento','Disney','FUDO','Fumigador','Mantenimiento','Movistar','Rapiboy','Retiro para sueldos'];
+  const[catsGasto,setCatsGasto]=useState(()=>{
+    try{
+      const s=localStorage.getItem("amapola_cats_gastos");
+      const guardadas=s?JSON.parse(s):[];
+      return Array.from(new Set([...CATS_BASE_DIG,...guardadas]));
+    }catch{return CATS_BASE_DIG;}
+  });
+  const[catGasto,setCatGasto]=useState("");
+  const[nuevaCatModal,setNuevaCatModal]=useState(false);
+  const[nuevaCat,setNuevaCat]=useState("");
+  const proveedoresActivos=(proveedores||[]).filter(p=>p.estado!=="Inactivo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+  // Saldo de caja retiro para sueldos, para habilitar la forma "Retiro" igual que en Caja Disponible.
+  const totalRetiradoG=(gastos||[]).filter(g=>g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase()).reduce((s,g)=>s+Number(g.monto||0),0);
+  const totalUsadoDeRetiroG=(sueldos||[]).filter(s=>s.forma==="Retiro").reduce((s2,s)=>s2+Number(s.monto||0),0)
+    +(gastos||[]).filter(g=>g.forma==="Retiro"&&(g.categoria||"").trim().toLowerCase()===RETIRO_GANANCIA_CAT.toLowerCase()).reduce((s2,g)=>s2+Number(g.monto||0),0);
+  const saldoRetiro=totalRetiradoG-totalUsadoDeRetiroG;
+
+  const agregarRegistrador=async()=>{
+    const nombre=nuevoRegNombre.trim();
+    if(!nombre){toast("Ingresá un nombre");return;}
+    if(registradores.some(r=>norm(r.nombre)===norm(nombre))){toast("Ya existe");setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);return;}
+    const nuevo={id:uid(),nombre,apellido:"",dni:"",domicilio:"",telPropio:"",telContacto:"",estado:"Activo"};
+    await saveEmpleados([...(empleados||[]),nuevo]);
+    setEmp(nombre);setNuevoRegNombre("");setNuevoRegModal(false);
+    toast("Agregado ✓");
+  };
+
+  const agregarCategoriaGasto=()=>{
+    if(!nuevaCat.trim()){toast("Ingresá el nombre de la categoría");return;}
+    if(catsGasto.includes(nuevaCat.trim())){toast("Ya existe esa categoría");return;}
+    const nuevas=[...catsGasto,nuevaCat.trim()];
+    setCatsGasto(nuevas);
+    localStorage.setItem("amapola_cats_gastos",JSON.stringify(nuevas));
+    setCatGasto(nuevaCat.trim());
+    setNuevaCat("");setNuevaCatModal(false);
+    toast("Categoría creada ✓");
+  };
+
+  const limpiarFormPago=()=>{
+    setProv("");setEmp("");setEmpSueldo("");setConceptoSueldo("Sueldo");setHsExtrasSueldo("");
+    setCatGasto("");
+    setMontoPago("");setObsPago("");setFechaPago(hoyLocal());
+  };
+
+  const guardarPago=async()=>{
+    if(formaPago==="Efectivo"&&Number(montoPago)>Number(saldo||0)){
+      if(!confirm(`⚠️ Esto supera la caja disponible (${fmt(saldo)}) — va a quedar en ${fmt(Number(saldo||0)-Number(montoPago))}. ¿Confirmás igual?`))return false;
+    }
+
+    if(tipoPago==="proveedor"){
+      if(!prov.trim()||!emp.trim()||!montoPago){toast("Completá todos los campos");return false;}
+      setBusyPago(true);
+      const fechaISO=fechaLocalISO(fechaPago);
+      const pagoBase={tipo:"pago",proveedor:prov.trim(),empleado:emp.trim(),monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
+      await pagarConExcedente(pagoBase,pagos,savePagos);
+      setBusyPago(false);limpiarFormPago();
+      toast("Pago registrado ✓");
+      return true;
+    }
+
+    if(tipoPago==="sueldo"){
+      if(!empSueldo||!montoPago){toast("Elegí un empleado e ingresá el monto");return false;}
+      let liquidacionId=null;
+      if(conceptoSueldo==="Sueldo"){
+        const per=(fechaPago||hoyLocal()).slice(0,7);
+        const empMatch=(empleados||[]).find(e=>norm(e.nombre)===norm(empSueldo)||norm(e.nombre).startsWith(norm(empSueldo))||norm(empSueldo).startsWith(norm(e.nombre)));
+        const liq=empMatch?(liquidaciones||[]).find(l=>l.empleadoId===empMatch.id&&l.periodo===per&&l.estado==="confirmada"):null;
+        if(liq){
+          liquidacionId=liq.id;
+          const pagado=(sueldos||[]).filter(s=>s.liquidacionId===liq.id).reduce((s2,s)=>s2+Number(s.monto||0),0);
+          if(pagado>0&&(Number(liq.neto||0)-pagado)<TOLERANCIA_PAGO_SUELDO){
+            if(!confirm("⚠️ "+empSueldo+" ya tiene la liquidación de "+per+" pagada por completo ("+fmt(pagado)+"). ¿Registrar este pago de todas formas?"))return false;
+          }
+        }
+      }
+      setBusyPago(true);
+      const fechaISO=fechaLocalISO(fechaPago);
+      await saveSueldos([...(sueldos||[]),{id:uid(),tipo:"sueldo",empleado:empSueldo,concepto:conceptoSueldo,hsExtras:conceptoSueldo==="HS Extras"?Number(hsExtrasSueldo)||0:null,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO,...(liquidacionId?{liquidacionId}:{})}]);
+      setBusyPago(false);limpiarFormPago();
+      toast(liquidacionId?"Sueldo registrado ✓ — vinculado a la liquidación del período":"Sueldo registrado ✓");
+      return true;
+    }
+
+    // gasto (pago digital u otro)
+    if(!catGasto||!montoPago){toast("Elegí una categoría e ingresá el monto");return false;}
+    if(formaPago==="Retiro"){
+      if(norm(catGasto)!==norm(RETIRO_GANANCIA_CAT)){toast("La forma \"Retiro\" solo está disponible para la categoría "+RETIRO_GANANCIA_CAT);return false;}
+      if(Number(montoPago)>saldoRetiro){toast("⚠️ Supera el saldo de caja retiro para sueldos ("+fmt(saldoRetiro)+")");return false;}
+    }
+    setBusyPago(true);
+    const fechaISO=fechaLocalISO(fechaPago);
+    const registro={id:uid(),tipo:"gasto",categoria:catGasto,monto:Number(montoPago),forma:formaPago,obs:obsPago.trim(),fecha:fechaISO};
+    await saveGastos([...(gastos||[]),registro]);
+    setBusyPago(false);limpiarFormPago();
+    toast(formaPago==="Retiro"?"Gasto registrado ✓ — pagado con la caja retiro para sueldos":"Pago registrado ✓");
+    return true;
+  };
+
 
   return(<>
     <ST help={"Vista de gerencia: el resumen del negocio y el libro diario completo, todo en un solo lugar.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia. Para actualizarlo, ingresá el valor real y el motivo (obligatorio) acá o desde Caja Digital — es el mismo ajuste, mismo historial.\n• Deuda total a proveedores: suma de lo pendiente con todos los proveedores (mismo dato que en Dashboard).\n• Amex en cuotas este mes: lo que corresponde pagar este mes sumando todas las compras, préstamos y débitos recurrentes de Amex vigentes (detalle completo en la pestaña Amex).\n\n📒 Libro Diario — más abajo, todos los movimientos del negocio (boletas, cierres, pagos, sueldos, gastos y ajustes) en formato debe/haber:\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento.\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital, incluida la parte digital de cada cierre de caja.\n• Las boletas y los pagos con Amex aparecen como referencia (sin Debe/Haber) porque todavía no mueven caja ni banco.\n• Los ajustes de caja no suman a Debe/Haber (no son venta ni pago) pero sí se reflejan en el Saldo Ef. corrido.\n• Podés filtrar por tipo, fecha y Debe/Haber, exportar a CSV, y eliminar registros con error (requiere confirmar, no se puede deshacer)."}>Gerencia</ST><SS>Resumen del negocio y libro diario completo — la vista de dueño.</SS>
@@ -5682,6 +5798,123 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
       <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#E8DCC8",margin:"3px 0 1px"}}>{fmt(totalDisponible)}</div>
       <div style={{fontSize:".68rem",color:"#E8DCC8",opacity:.6}}>Caja Disponible + Caja digital</div>
     </div>
+
+    <button onClick={()=>setNuevoPagoModal(true)} style={{display:"block",width:"100%",padding:"10px 16px",border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontSize:".82rem",fontWeight:600,cursor:"pointer",marginBottom:16}}>+ Registrar pago</button>
+
+    
+    {nuevoPagoModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Nuevo pago</p>
+            <button onClick={()=>setNuevoPagoModal(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+          </div>
+
+          {nuevaCatModal&&(
+            <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+              <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+                <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva categoría</p>
+                <input value={nuevaCat} onChange={e=>setNuevaCat(e.target.value)} placeholder="Ej: Seguro, Contador, ..."
+                  autoFocus onKeyDown={e=>e.key==="Enter"&&agregarCategoriaGasto()}
+                  style={{...iS,marginBottom:16}}/>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setNuevaCatModal(false);setNuevaCat("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+                  <button onClick={agregarCategoriaGasto} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2D6A4F",color:"#fff",fontWeight:600,cursor:"pointer"}}>Crear</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TIPO DE PAGO */}
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            {[["proveedor","Proveedor"],["sueldo","Sueldo"],["gasto","Gasto"]].map(([v,l])=>(
+              <button key={v} onClick={()=>{setTipoPago(v);limpiarFormPago();}} style={{flex:1,padding:"8px 6px",borderRadius:10,border:"1px solid "+(tipoPago===v?"#2C1A0E":"#E8DCC8"),background:tipoPago===v?"#2C1A0E":"#fff",color:tipoPago===v?"#fff":"#7B7063",fontSize:".76rem",fontWeight:600,cursor:"pointer"}}>{l}</button>
+            ))}
+          </div>
+
+          {tipoPago==="proveedor"&&(<>
+            <Field label="Proveedor">
+              <select value={prov} onChange={e=>setProv(e.target.value)} style={sS}>
+                <option value="">— Elegí un proveedor —</option>
+                {proveedoresActivos.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Registrado por">
+              <div style={{display:"flex",gap:8}}>
+                <select value={emp} onChange={e=>setEmp(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí —</option>
+                  {registradores.map(r=><option key={r.id} value={r.nombre}>{r.nombre}</option>)}
+                </select>
+                <button onClick={()=>setNuevoRegModal(true)} title="Agregar persona" style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+          </>)}
+
+          {tipoPago==="sueldo"&&(<>
+            <Field label="Empleado">
+              <select value={empSueldo} onChange={e=>setEmpSueldo(e.target.value)} style={sS}>
+                <option value="">— Elegí un empleado —</option>
+                {EMPS.map(e=><option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+              </select>
+            </Field>
+            <Field label="Concepto">
+              <select value={conceptoSueldo} onChange={e=>{setConceptoSueldo(e.target.value);setHsExtrasSueldo("");}} style={sS}>
+                {["Sueldo","Adelanto","Aguinaldo","Plus","Feriado","HS Extras"].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </Field>
+            {conceptoSueldo==="HS Extras"&&(
+              <Field label="Cantidad de horas extras">
+                <Inp type="number" value={hsExtrasSueldo} onChange={setHsExtrasSueldo} placeholder="Ej: 4"/>
+              </Field>
+            )}
+          </>)}
+
+          {tipoPago==="gasto"&&(
+            <Field label="Categoría">
+              <div style={{display:"flex",gap:8}}>
+                <select value={catGasto} onChange={e=>setCatGasto(e.target.value)} style={{...sS,flex:1}}>
+                  <option value="">— Elegí una categoría —</option>
+                  {catsGasto.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+                <button onClick={()=>setNuevaCatModal(true)} title="Nueva categoría"
+                  style={{padding:"10px 14px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:"1.1rem",cursor:"pointer",flexShrink:0}}>+</button>
+              </div>
+            </Field>
+          )}
+
+          <Field label="Monto ($)"><Inp type="number" value={montoPago} onChange={setMontoPago} placeholder="0"/></Field>
+          <Field label="Forma de pago">
+            <select value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={sS}>
+              <option value="Efectivo">Efectivo (descuenta de caja)</option>
+              <option value="Transferencia">Transferencia (descuenta disponible digital)</option>
+              {(tipoPago==="proveedor"||tipoPago==="gasto")&&<option value="Amex">Amex</option>}
+              {(tipoPago==="sueldo"||(tipoPago==="gasto"&&norm(catGasto)===norm(RETIRO_GANANCIA_CAT)))&&<option value="Retiro">Retiro (ya lo tenía en mano, no descuenta caja)</option>}
+            </select>
+          </Field>
+          {formaPago==="Efectivo"&&<div style={{fontSize:".78rem",color:"#2D6A4F",background:"#EAF5F0",borderRadius:8,padding:"8px 10px",marginTop:8}}>💵 Este pago descontará de la caja disponible.</div>}
+          {formaPago==="Transferencia"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>🏦 Este pago descontará del disponible digital, no de esta caja.</div>}
+          {formaPago==="Amex"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💳 No descuenta caja ni banco — queda cargado al resumen de la tarjeta.</div>}
+          {formaPago==="Retiro"&&<div style={{fontSize:".78rem",color:"#B7860B",background:"#FEF9E7",borderRadius:8,padding:"8px 10px",marginTop:8}}>💰 No descuenta caja ni banco — se paga con efectivo ya retirado antes (cargado como Gasto "Retiro para sueldos"). Disponible en caja retiro: <strong>{fmt(saldoRetiro)}</strong></div>}
+          <Field label="Observaciones"><TA value={obsPago} onChange={setObsPago} placeholder="Ej: pago parcial, boleta #..."/></Field>
+          <Field label="Fecha del registro"><Inp type="date" value={fechaPago} onChange={setFechaPago}/></Field>
+
+          <Btn bg="#2D6A4F" onClick={async()=>{if(await guardarPago())setNuevoPagoModal(false);}} disabled={busyPago}>{busyPago?"Guardando…":"Registrar pago"}</Btn>
+        </div>
+      </div>
+    )}
+
+    {nuevoRegModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 44px",width:"100%",maxWidth:460}}>
+          <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",marginBottom:16}}>Nueva persona</p>
+          <input value={nuevoRegNombre} onChange={e=>setNuevoRegNombre(e.target.value)} placeholder="Nombre" autoFocus onKeyDown={e=>e.key==="Enter"&&agregarRegistrador()} style={{...iS,marginBottom:16}}/>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{setNuevoRegModal(false);setNuevoRegNombre("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={agregarRegistrador} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer"}}>Agregar</button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* KPIS DE GESTIÓN */}
     <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
