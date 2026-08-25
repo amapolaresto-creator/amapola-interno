@@ -2842,6 +2842,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const[hastaHist,setHastaHist]=useState("");
   const[verPorSemana,setVerPorSemana]=useState(false);
   const[notaAbierta,setNotaAbierta]=useState(null);
+  const[cargarModal,setCargarModal]=useState(null);
   const sectoresCat=[...new Set([...stock.map(s=>s.sector),...catalogo.map(c=>c.sector)].filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
   const tdS={padding:"7px 8px"};
@@ -3256,40 +3257,80 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
           </span>
         </div>
         {!cerrado&&(
-        <div>
-          {g.items.map((s,i)=>{
-            const d=diffDe(s);
-            const val=valorDe(s);
-            const grande=esDiferenciaGrande(s,d);
-            const fechaTeo=fechaTeoricoDe(s);
-            const tocado=valores[s.id]!==undefined&&valores[s.id]!==""&&!isNaN(Number(valores[s.id]));
-            return(
-              <div key={s.id} style={{padding:"12px 14px",borderTop:i>0?"1px solid #F2EAE0":"none",background:grande?(d>0?"#EAF5F0":"#FDEDEC"):(tocado?"#FBF7EE":(i%2===0?"#fff":"#FBF9F5"))}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:6}}>
-                  <div style={{fontSize:".85rem",fontWeight:600,color:"#2C1A0E"}}>
-                    {s.nombre}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN CARGAR</span>}
-                  </div>
-                  <div style={{flexShrink:0,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,fontSize:".85rem",color:d>0?"#2D6A4F":d<0?"#C0392B":"#B7A98F"}}>
-                    {grande&&"⚠️ "}{d===null?"—":(d>0?"+":"")+d}
-                  </div>
-                </div>
-                <div style={{fontSize:".68rem",color:"#B7A98F",marginBottom:8}}>
-                  Teórico: {s.sinCargar?"—":`${s.cantidad} ${s.unidad}`}{fechaTeo&&` · ${diasDesde(fechaTeo)}`}
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8,maxWidth:320}}>
-                  <input type="number" inputMode="decimal" min="0" value={val} onFocus={e=>e.target.select()} onChange={e=>{const v=e.target.value;if(v!==""&&Number(v)<0)return;setValores({...valores,[s.id]:v});}} placeholder="0" style={{flex:1,minWidth:0,border:"1.5px solid "+(tocado?"#2D6A4F":"#E8DCC8"),borderRadius:8,padding:"11px 10px",fontSize:"1rem",fontWeight:600,textAlign:"center",background:"#fff"}}/>
-                  <select value={s.unidad||"unidades"} onChange={e=>cambiarUnidad(s,e.target.value)} style={{fontSize:".72rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:8,padding:"10px 6px",background:"#fff",flexShrink:0,maxWidth:96}}>
-                    {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
-                  </select>
-                </div>
-              </div>
-            );
-          })}
+        <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem",minWidth:480}}>
+          <thead>
+            <tr style={{background:"#F9F6F1"}}>
+              <th style={thS}>Producto</th>
+              <th style={{...thS,textAlign:"right"}}>Teórico</th>
+              <th style={{...thS,textAlign:"right"}}>Contado</th>
+              <th style={{...thS,textAlign:"right"}}>Diferencia</th>
+              <th style={{...thS,textAlign:"right"}}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {g.items.map((s,i)=>{
+              const d=diffDe(s);
+              const val=valorDe(s);
+              const grande=esDiferenciaGrande(s,d);
+              const fechaTeo=fechaTeoricoDe(s);
+              const tocado=valores[s.id]!==undefined&&valores[s.id]!==""&&!isNaN(Number(valores[s.id]));
+              return(
+                <tr key={s.id} style={{background:grande?(d>0?"#EAF5F0":"#FDEDEC"):(tocado?"#FBF7EE":(i%2===0?"#fff":"#F9F6F1"))}}>
+                  <td style={tdS}>
+                    <div>{s.nombre}{s.sinCargar&&<span style={{background:"#E8DCC8",color:"#7B7063",fontSize:".58rem",fontWeight:700,padding:"1px 6px",borderRadius:10,marginLeft:6}}>SIN CARGAR</span>}</div>
+                    <div style={{fontSize:".65rem",color:"#B7A98F"}}>{fechaTeo?diasDesde(fechaTeo):"—"}</div>
+                  </td>
+                  <td style={{...tdS,textAlign:"right",color:"#7B7063",whiteSpace:"nowrap"}}>{s.sinCargar?"—":(<>{s.cantidad} <span style={{fontSize:".68rem"}}>{s.unidad}</span></>)}</td>
+                  <td style={{...tdS,textAlign:"right",fontWeight:700,color:tocado?"#2C1A0E":"#D8CFC0",whiteSpace:"nowrap"}}>{tocado?`${val} ${s.unidad}`:"—"}</td>
+                  <td style={{...tdS,textAlign:"right",fontFamily:"Georgia,serif",fontWeight:700,color:d>0?"#2D6A4F":d<0?"#C0392B":"#B7A98F",whiteSpace:"nowrap"}}>
+                    {grande&&<span title="Diferencia grande, revisar">⚠️ </span>}{d===null?"—":(d>0?"+":"")+d}
+                  </td>
+                  <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
+                    <button onClick={()=>setCargarModal(s)} style={{background:tocado?"#EAF5F0":"#2C1A0E",color:tocado?"#2D6A4F":"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>{tocado?"✏️ Editar":"Cargar"}</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
         </div>
         )}
       </div>
       );
     })}
+
+    {cargarModal&&(()=>{
+      const s=cargarModal;
+      const val=valorDe(s);
+      const d=diffDe(s);
+      const fechaTeo=fechaTeoricoDe(s);
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:600,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setCargarModal(null)}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>{s.nombre}</p>
+              <button onClick={()=>setCargarModal(null)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
+            </div>
+            <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:18}}>
+              Teórico: {s.sinCargar?"—":`${s.cantidad} ${s.unidad}`}{fechaTeo&&` · ${diasDesde(fechaTeo)}`}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <input type="number" inputMode="decimal" min="0" autoFocus value={val} onFocus={e=>e.target.select()} onChange={e=>{const v=e.target.value;if(v!==""&&Number(v)<0)return;setValores({...valores,[s.id]:v});}} placeholder="0" style={{flex:1,minWidth:0,border:"1.5px solid #E8DCC8",borderRadius:8,padding:"13px 12px",fontSize:"1.1rem",fontWeight:600,textAlign:"center"}}/>
+              <select value={s.unidad||"unidades"} onChange={e=>cambiarUnidad(s,e.target.value)} style={{fontSize:".76rem",color:"#7B7063",border:"1px solid #E8DCC8",borderRadius:8,padding:"12px 8px",background:"#fff",flexShrink:0}}>
+                {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            {val!==""&&!isNaN(Number(val))&&(
+              <div style={{fontSize:".8rem",fontWeight:600,marginBottom:16,color:d>0?"#2D6A4F":d<0?"#C0392B":"#7B7063"}}>
+                Diferencia: {d===null?"—":(d>0?"+":"")+d} {s.unidad}
+              </div>
+            )}
+            <Btn bg="#2C1A0E" onClick={()=>setCargarModal(null)}>Listo</Btn>
+          </div>
+        </div>
+      );
+    })()}
 
     {gruposCnt.length>0&&(
       <Btn bg="#2C1A0E" onClick={guardarConteo} disabled={busy||!tocados.length}>{busy?"Guardando…":`Guardar conteo (${tocados.length} producto${tocados.length!==1?"s":""})`}</Btn>
