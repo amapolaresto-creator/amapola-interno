@@ -5800,14 +5800,15 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
   return(<>
     <ST help={"Vista de gerencia: el resumen del negocio y el libro diario completo, todo en un solo lugar.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia. Para actualizarlo, ingresá el valor real y el motivo (obligatorio) acá o desde Caja Digital — es el mismo ajuste, mismo historial.\n• Deuda total a proveedores: suma de lo pendiente con todos los proveedores (mismo dato que en Dashboard).\n• Amex en cuotas este mes: lo que corresponde pagar este mes sumando todas las compras, préstamos y débitos recurrentes de Amex vigentes (detalle completo en la pestaña Amex).\n\n📒 Libro Diario — más abajo, todos los movimientos del negocio (boletas, cierres, pagos, sueldos, gastos y ajustes) en formato debe/haber:\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento.\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital, incluida la parte digital de cada cierre de caja.\n• Las boletas y los pagos con Amex aparecen como referencia (sin Debe/Haber) porque todavía no mueven caja ni banco.\n• Los ajustes de caja no suman a Debe/Haber (no son venta ni pago) pero sí se reflejan en el Saldo Ef. corrido.\n• Podés filtrar por tipo, fecha y Debe/Haber, exportar a CSV, y eliminar registros con error (requiere confirmar, no se puede deshacer)."}>Gerencia</ST><SS>Resumen del negocio y libro diario completo — la vista de dueño.</SS>
 
-    {/* TOTAL CONSOLIDADO */}
-    <div style={{background:"#2C1A0E",borderRadius:14,padding:"16px 18px",marginBottom:16}}>
-      <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total disponible consolidado</div>
-      <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#E8DCC8",margin:"3px 0 1px"}}>{fmt(totalDisponible)}</div>
-      <div style={{fontSize:".68rem",color:"#E8DCC8",opacity:.6}}>Caja Disponible + Caja digital</div>
+    {/* TOTAL CONSOLIDADO + REGISTRAR PAGO */}
+    <div style={{display:"flex",gap:10,alignItems:"stretch",marginBottom:16}}>
+      <div style={{flex:4,background:"#2C1A0E",borderRadius:14,padding:"16px 18px"}}>
+        <div style={{fontSize:".62rem",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#E8DCC8",opacity:.7}}>Total disponible consolidado</div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:"1.5rem",color:"#E8DCC8",margin:"3px 0 1px"}}>{fmt(totalDisponible)}</div>
+        <div style={{fontSize:".68rem",color:"#E8DCC8",opacity:.6}}>Caja Disponible + Caja digital</div>
+      </div>
+      <button onClick={()=>setNuevoPagoModal(true)} style={{flex:1,border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontSize:".7rem",fontWeight:600,cursor:"pointer",padding:"6px 4px",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",lineHeight:1.2}}>+ Registrar pago</button>
     </div>
-
-    <button onClick={()=>setNuevoPagoModal(true)} style={{display:"block",width:"100%",padding:"10px 16px",border:"none",borderRadius:10,background:"#2D6A4F",color:"#fff",fontSize:".82rem",fontWeight:600,cursor:"pointer",marginBottom:16}}>+ Registrar pago</button>
 
     
     {nuevoPagoModal&&(
