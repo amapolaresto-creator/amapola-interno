@@ -2280,7 +2280,7 @@ function ManualStockModal({onClose}){
         </div>
 
         <Sec title="Qué es este módulo">
-          Acá se lleva el control de todos los insumos y productos del local: cuánto hay de cada uno, a qué proveedor se le compra, qué se produjo en cocina, qué se tiró, y los pedidos que se le hacen a cada proveedor. Tiene seis secciones (los botones de arriba): 📋 Control de stock, 🧮 Conteo, 🍳 Producción, 🗑️ Desperdicios, 🗂️ Catálogo y 🧾 Pedidos.
+          Acá se lleva el control de todos los insumos y productos del local: cuánto hay de cada uno, a qué proveedor se le compra, qué se produjo en cocina, qué se tiró, y los pedidos que se le hacen a cada proveedor. Tiene seis secciones (los botones de arriba): 📋 Control de stock, 🧮 Conteo, 🍳 Producción, 🗑️ Desperdicios, 🗂️ Catálogo y 🧾 Pedidos. En las seis hay un botón <b>🖨️ Imprimir</b> que arma una vista imprimible (tipo planilla, con lo mismo que está filtrado en pantalla en ese momento) que se puede imprimir o guardar como PDF desde el navegador — mismo mecanismo que ya usan la Nota de conteo y la Nota de pedido.
         </Sec>
 
         <Sec title="Importante: stock 'teórico' vs. stock real">
@@ -2394,6 +2394,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
   const[nombreProducto,setNombreProducto]=useState("");
   const[mostrarInactivos,setMostrarInactivos]=useState(false);
   const[vistaCompacta,setVistaCompacta]=useState(false);
+  const[imprimible,setImprimible]=useState(null);
 
   const diasNumeroDesde=fechaIso=>Math.max(0,Math.floor((Date.now()-new Date(fechaIso).getTime())/(1000*60*60*24)));
   const diasDesde=fechaIso=>{
@@ -2541,6 +2542,18 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
     if(aAl!==bAl)return aAl?-1:1;
     return a.nombre.localeCompare(b.nombre);
   }));
+
+  const abrirImprimible=()=>{
+    const columnas=[{label:"Proveedor"},{label:"Producto"},{label:"Sector"},{label:"Stock actual",align:"right"},{label:"Unidad"},{label:"Mínimo",align:"right"},{label:"Estado"}];
+    const filas=[];
+    gruposInv.forEach(g=>g.items.forEach(s=>{
+      const alerta=!s.sinCargar&&Number(s.cantidad)<=Number(s.minimo)&&Number(s.minimo)>0;
+      filas.push([g.proveedor,s.nombre,s.sector||"—",s.sinCargar?"—":s.cantidad,s.unidad,s.minimo||0,s.sinCargar?"Sin cargar":(alerta?"⚠️ Bajo":"OK")]);
+    }));
+    const subtitulo=[fProv&&`Proveedor: ${fProv}`,fSector&&`Sector: ${fSector}`,soloBajo&&"Solo stock bajo",mostrarInactivos&&"Inactivos",fQuery&&`Búsqueda: "${fQuery}"`].filter(Boolean).join(" · ")||"Todo el inventario";
+    setImprimible({titulo:"Control de stock",html:imprimibleHTML("Control de stock",subtitulo,columnas,filas)});
+  };
+
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
   const tdS={padding:"7px 8px"};
 
@@ -2715,6 +2728,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
         <button onClick={()=>setSoloBajo(!soloBajo)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:soloBajo?"#C0392B":"#FFF0EF",color:soloBajo?"#fff":"#C0392B",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>⚠️ Solo stock bajo ({conAlerta.length})</button>
         <button onClick={()=>setMostrarInactivos(!mostrarInactivos)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:mostrarInactivos?"#7B7063":"#F2EAE0",color:mostrarInactivos?"#fff":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{mostrarInactivos?"← Volver a activos":`😴 Ver inactivos (${inactivosCount})`}</button>
         <button onClick={()=>setVistaCompacta(!vistaCompacta)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:vistaCompacta?"#2C1A0E":"#F2EAE0",color:vistaCompacta?"#E8DCC8":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{vistaCompacta?"📅 Ver semana completa":"📱 Vista compacta"}</button>
+        <button onClick={abrirImprimible} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🖨️ Imprimir</button>
       </div>
 
       {!gruposInv.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposInv.map(g=>{
@@ -2802,6 +2816,7 @@ function StockInventario({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,c
         </div>
       )}
     </>)}
+    {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
 }
 
@@ -2828,6 +2843,44 @@ function notaConteoHTML(c,items,titulo){
     +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar como imagen o PDF</button>"
     +"</body></html>";
 }
+// Generador genérico de vista imprimible (tipo planilla) para cualquier sección de Stock: recibe columnas
+// ([{label,align}]) y filas (arrays de valores ya formateados) reflejando lo que está filtrado en pantalla
+// en ese momento, y arma la misma vista HTML imprimible/guardable como PDF que ya usan Nota de conteo y
+// Nota de pedido — no agrega ninguna librería nueva a la app.
+function imprimibleHTML(titulo,subtitulo,columnas,filas){
+  const thead="<tr>"+columnas.map(c=>"<th style=\"text-align:"+(c.align||"left")+"\">"+c.label+"</th>").join("")+"</tr>";
+  const tbody=filas.length?filas.map(fila=>"<tr>"+fila.map((v,i)=>"<td style=\"text-align:"+((columnas[i]&&columnas[i].align)||"left")+"\">"+(v===undefined||v===null||v===""?"—":v)+"</td>").join("")+"</tr>").join(""):("<tr><td colspan=\""+columnas.length+"\" style=\"text-align:center;color:#B7A98F;padding:20px 0;\">Sin datos para este filtro</td></tr>");
+  return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><title>"+titulo+"</title>"
+    +"<style>body{font-family:Georgia,serif;color:#2C1A0E;padding:36px;max-width:960px;margin:0 auto;}"
+    +"h1{font-size:1.3rem;margin:0 0 2px;}.sub{font-size:.8rem;color:#7B7063;margin-bottom:10px;}"
+    +".badge{display:inline-block;background:#F2EAE0;padding:3px 10px;border-radius:20px;font-size:.7rem;letter-spacing:.03em;margin-bottom:18px;}"
+    +"table{width:100%;border-collapse:collapse;margin-bottom:0;}"
+    +"th{font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;color:#7B7063;border-bottom:2px solid #2C1A0E;padding:6px 8px;}"
+    +"td{padding:6px 8px;font-size:.82rem;border-bottom:1px solid #eee;vertical-align:top;}"
+    +"tbody tr:nth-child(even) td{background:#F9F6F1;}"
+    +".foot{font-size:.68rem;color:#999;margin-top:24px;border-top:1px solid #eee;padding-top:10px;}"
+    +"@media print{.noprint{display:none;}}</style></head><body>"
+    +"<h1>Amapola Resto</h1><div class=\"sub\">"+titulo+"</div>"
+    +(subtitulo?("<div class=\"badge\">"+subtitulo+"</div>"):"")
+    +"<table><thead>"+thead+"</thead><tbody>"+tbody+"</tbody></table>"
+    +"<div class=\"foot\">Emitido el "+new Date().toLocaleDateString("es-AR")+" "+new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})+" · Amapola Interno · "+filas.length+" fila"+(filas.length!==1?"s":"")+"</div>"
+    +"<button class=\"noprint\" onclick=\"window.print()\" style=\"margin-top:20px;padding:10px 20px;border:none;border-radius:8px;background:#2C1A0E;color:#fff;cursor:pointer;\">Imprimir / Guardar como imagen o PDF</button>"
+    +"</body></html>";
+}
+function ImprimibleModal({titulo,html,onClose}){
+  return(
+    <div style={{position:"fixed",inset:0,background:"#fff",zIndex:700,display:"flex",flexDirection:"column"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"#2C1A0E",flexShrink:0}}>
+        <span style={{color:"#E8DCC8",fontFamily:"Georgia,serif",fontSize:".95rem"}}>🖨️ {titulo}</span>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{const f=document.getElementById("imprimibleFrame");if(f&&f.contentWindow)f.contentWindow.print();}} style={{padding:"8px 14px",border:"none",borderRadius:8,background:"#B7860B",color:"#fff",fontWeight:600,fontSize:".76rem",cursor:"pointer"}}>🖨️ Imprimir/PDF</button>
+          <button onClick={onClose} style={{padding:"8px 14px",border:"none",borderRadius:8,background:"#E8DCC8",color:"#2C1A0E",fontWeight:600,fontSize:".76rem",cursor:"pointer"}}>✕ Cerrar</button>
+        </div>
+      </div>
+      <iframe id="imprimibleFrame" title={titulo} srcDoc={html} style={{flex:1,border:"none",width:"100%"}}/>
+    </div>
+  );
+}
 function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conteos,saveConteos,registradoPor,onDirtyChange,empleados}){
   const[fProv,setFProv]=useState("");
   const[fSector,setFSector]=useState("");
@@ -2846,6 +2899,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const[notaAbierta,setNotaAbierta]=useState(null);
   const[confirmando,setConfirmando]=useState(false);
   const[contadoPor,setContadoPor]=useState("");
+  const[imprimible,setImprimible]=useState(null);
   const EMPS=(empleados||[]).filter(e=>e.estado==="Activo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
   const sectoresCat=[...new Set([...stock.map(s=>s.sector),...catalogo.map(c=>c.sector)].filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
@@ -2903,6 +2957,16 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   });
   gruposCnt.sort((a,b)=>a.key.localeCompare(b.key));
   gruposCnt.forEach(g=>g.items.sort((a,b)=>a.nombre.localeCompare(b.nombre)));
+
+  const abrirImprimible=()=>{
+    const columnas=[{label:"Proveedor"},{label:"Sector"},{label:"Producto"},{label:"Unidad"},{label:"Cantidad",align:"right"}];
+    const filas=[];
+    gruposCnt.forEach(g=>g.items.forEach(s=>{
+      filas.push([s.proveedor||"—",s.sector||"—",s.nombre,s.unidad,valorDe(s)||"—"]);
+    }));
+    const subtitulo=[fProv&&`Proveedor: ${fProv}`,fSector&&`Sector: ${fSector}`,mostrarInactivos&&"Inactivos",fQuery&&`Búsqueda: "${fQuery}"`].filter(Boolean).join(" · ")||"Todo el inventario";
+    setImprimible({titulo:"Conteo de stock",html:imprimibleHTML("Conteo de stock",subtitulo,columnas,filas)});
+  };
 
   // Último conteo por grupo puntual (mismo criterio que claveGrupo, pero sobre los ítems ya guardados
   // en el historial) — para ver de un vistazo qué proveedor/sector está más atrasado sin expandir cada uno.
@@ -3218,6 +3282,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
         </select>
         <button onClick={()=>setVerHistorial(true)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🧮 Historial de conteo{conteosHist&&conteosHist.length>0?` (${conteosHist.length})`:""}</button>
         <button onClick={()=>setMostrarInactivos(!mostrarInactivos)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:mostrarInactivos?"#7B7063":"#F2EAE0",color:mostrarInactivos?"#fff":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{mostrarInactivos?"← Volver a activos":`😴 Ver inactivos (${inactivosCount})`}</button>
+        <button onClick={abrirImprimible} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🖨️ Imprimir</button>
       </div>
 
       <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:10}}>
@@ -3321,6 +3386,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
         </div>
       </div>
     )}
+    {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
 }
 function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
@@ -3338,6 +3404,7 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
   const[editCant,setEditCant]=useState("");
   const[editEmp,setEditEmp]=useState("");
   const[editObs,setEditObs]=useState("");
+  const[imprimible,setImprimible]=useState(null);
 
   // Solo productos activos del proveedor INTERNO
   const productosInternos=catalogo.filter(c=>norm(c.proveedor)==="interno"&&c.activo!==false)
@@ -3431,6 +3498,16 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
   const productosHoy=filas.filter(s=>produccionDia(s,hoyDate)>0).length;
   const filasFiltradas=busqueda.trim()?filas.filter(s=>norm(s.nombre).includes(norm(busqueda))):filas;
 
+  const abrirImprimible=()=>{
+    const columnas=[{label:"Producto"},{label:"Unidad"},{label:"Stock actual",align:"right"},{label:"Total semana",align:"right"}];
+    const filasImp=filasFiltradas.map(s=>{
+      const cantActual=s.sinCargar?0:Number(s.cantidad||0);
+      return[s.nombre,s.unidad||"unidades",s.sinCargar?"—":cantActual,totalSemana(s)];
+    });
+    const subtitulo=`Semana ${rangoLabel}`+(busqueda.trim()?` · Búsqueda: "${busqueda.trim()}"`:"");
+    setImprimible({titulo:"Producción",html:imprimibleHTML("Producción",subtitulo,columnas,filasImp)});
+  };
+
   return(<>
     <Card title="Registrar producción">
       <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Cargá cuánto se produjo hoy de cada producto interno. Suma automáticamente al stock.</p>
@@ -3464,8 +3541,9 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
       </div>
     )}
 
-    <div style={{marginBottom:14}}>
+    <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
       <Inp value={busqueda} onChange={setBusqueda} placeholder="🔎 Buscar producto..."/>
+      <button onClick={abrirImprimible} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🖨️ Imprimir</button>
     </div>
 
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
@@ -3571,6 +3649,7 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
         </div>
       </div>
     )}
+    {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
 }
 
@@ -3599,6 +3678,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
   const[editBusy,setEditBusy]=useState(false);
   const[mostrarForm,setMostrarForm]=useState(false);
   const[mostrarInactivos,setMostrarInactivos]=useState(false);
+  const[imprimible,setImprimible]=useState(null);
   const UNIDADES=["unidades","kg","g","litros","ml","cajas","bolsas","porciones","paquetes"];
   const sectoresCat=[...new Set(catalogo.map(c=>c.sector).filter(Boolean))].sort();
   const thS={padding:"7px 8px",fontWeight:700,color:"#7B7063",fontSize:".63rem",letterSpacing:".05em",textTransform:"uppercase",borderBottom:"2px solid #E8DCC8",textAlign:"left"};
@@ -3690,6 +3770,17 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
     g.items.push(c);
   });
 
+  const abrirImprimible=()=>{
+    const columnas=[{label:"Proveedor"},{label:"Producto"},{label:"Sector"},{label:"Unidad"},{label:"Mínimo",align:"right"},{label:"Máximo",align:"right"},{label:"Estado"}];
+    const filas=[];
+    grupos.forEach(g=>g.items.forEach(c=>{
+      const activo=c.activo!==false;
+      filas.push([g.proveedor,c.producto,c.sector||"—",c.unidad||"unidades",c.minimo||0,c.maximo||0,activo?"Activo":"Inactivo"]);
+    }));
+    const subtitulo=[fProv&&`Proveedor: ${fProv}`,fSector&&`Sector: ${fSector}`,mostrarInactivos&&"Inactivos",fQuery&&`Búsqueda: "${fQuery}"`].filter(Boolean).join(" · ")||"Todo el catálogo";
+    setImprimible({titulo:"Catálogo",html:imprimibleHTML("Catálogo",subtitulo,columnas,filas)});
+  };
+
   return(<>
     {!mostrarForm&&(
       <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
@@ -3751,6 +3842,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
         {sectoresCat.map(s=><option key={s} value={s}>{s}</option>)}
       </select>
       <button onClick={()=>setMostrarInactivos(!mostrarInactivos)} style={{padding:"9px 14px",border:"none",borderRadius:10,background:mostrarInactivos?"#7B7063":"#F2EAE0",color:mostrarInactivos?"#fff":"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{mostrarInactivos?"← Volver a activos":`😴 Ver inactivos (${inactivosCount})`}</button>
+      <button onClick={abrirImprimible} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🖨️ Imprimir</button>
     </div>
 
     {!grupos.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:grupos.map(g=>{
@@ -3848,6 +3940,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
         </div>
       </div>
     )}
+    {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
 }
 
@@ -3877,6 +3970,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
   const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
   const[editId,setEditId]=useState(null);
+  const[imprimible,setImprimible]=useState(null);
 
   const productosDelProv=provSel?catalogo.filter(c=>c.proveedor===provSel&&c.activo!==false):[];
 
@@ -3928,6 +4022,17 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
 
   const colorEstado={pendiente:"#B7860B",enviado:"#2980B9",recibido:"#2D6A4F"};
 
+  const abrirImprimible=()=>{
+    const columnas=[{label:"Fecha"},{label:"Proveedor"},{label:"Estado"},{label:"Producto"},{label:"Cantidad",align:"right"},{label:"Observaciones"},{label:"Creado por"}];
+    const filas=[];
+    pedidos.forEach(p=>{
+      (p.items||[]).forEach(it=>{
+        filas.push([fmtF(p.fecha),p.proveedor,p.estado,it.producto,it.cantidad,p.obs||"—",p.creadoPor||"—"]);
+      });
+    });
+    setImprimible({titulo:"Pedidos a proveedores",html:imprimibleHTML("Pedidos a proveedores","Todos los pedidos",columnas,filas)});
+  };
+
   return(<>
     <Card title={editId?"✏️ Editar pedido":"Nuevo pedido a proveedor"}>
       <Field label="Proveedor">
@@ -3950,6 +4055,12 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
       <Btn onClick={crearPedido} disabled={busy}>{busy?"Guardando…":editId?"Guardar cambios":"Crear pedido"}</Btn>
       {editId&&<button onClick={cancelarEdicion} style={{marginTop:8,width:"100%",padding:10,borderRadius:10,border:"none",background:"#E8DCC8",fontWeight:600,cursor:"pointer",fontSize:".82rem"}}>Cancelar edición</button>}
     </Card>
+
+    {pedidos.length>0&&(
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+        <button onClick={abrirImprimible} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🖨️ Imprimir</button>
+      </div>
+    )}
 
     {!pedidos.length?<Empty icon="🧾">Todavía no creaste pedidos</Empty>:pedidos.map(p=>(
       <div key={p.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)"}}>
@@ -3974,6 +4085,7 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
         </div>
       </div>
     ))}
+    {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
 }
 
@@ -3987,6 +4099,7 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
   const[obs,setObs]=useState("");
   const[busy,setBusy]=useState(false);
   const[fecha,setFecha]=useState(hoyLocal());
+  const[imprimible,setImprimible]=useState(null);
 
   const MOTIVOS=["Vencido","Roto/dañado","Quemado/error de cocina","Devolución de cliente","Otro"];
   // Combina TODO el catálogo (activo) con lo que ya tiene fila de stock — igual patrón que Control de stock,
@@ -4038,6 +4151,12 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
   const hoyStr=hoyLocal();
   const desperdiciosHoy=desperdicios.filter(d=>d.fecha&&d.fecha.slice(0,10)===hoyStr);
 
+  const abrirImprimible=()=>{
+    const columnas=[{label:"Fecha"},{label:"Producto"},{label:"Cantidad",align:"right"},{label:"Unidad"},{label:"Motivo"},{label:"Observaciones"},{label:"Registrado por"}];
+    const filas=desperdicios.map(d=>[fmtF(d.fecha),d.producto,d.cantidad,d.unidad,d.motivo,d.obs||"—",d.registradoPor||"—"]);
+    setImprimible({titulo:"Desperdicios",html:imprimibleHTML("Desperdicios","Todos los registros",columnas,filas)});
+  };
+
   if(!itemsOrdenados.length)return(
     <Empty icon="🗑️">Todavía no hay productos en el catálogo. Agregalos primero desde 🗂️ Catálogo.</Empty>
   );
@@ -4070,6 +4189,12 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
       </div>
     )}
 
+    {desperdicios.length>0&&(
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+        <button onClick={abrirImprimible} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#F2EAE0",color:"#7B7063",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>🖨️ Imprimir</button>
+      </div>
+    )}
+
     {!desperdicios.length?<Empty icon="🗑️">Todavía no registraste desperdicios</Empty>:desperdicios.map(d=>(
       <div key={d.id} style={{background:"#fff",borderRadius:12,padding:16,marginBottom:10,boxShadow:"0 2px 10px rgba(44,26,14,.07)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
@@ -4089,6 +4214,7 @@ function StockDesperdicios({stock,saveStock,catalogo,desperdicios,saveDesperdici
         </div>
       </div>
     ))}
+    {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
 }
 
