@@ -8845,4 +8845,13 @@ function AdminBoletas({boletas,saveBoletas,proveedores,empleados,stock,saveStock
               <button onClick={eliminar} disabled={busy} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>{busy?"Eliminando…":"Eliminar"}</button>
             </div>
           </div>
- 
+        </div>
+      )}
+    </Card>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
+</script>
+</body>
+</html>
