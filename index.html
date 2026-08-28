@@ -2293,7 +2293,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🧮 Conteo">
-          Para saber cuánto hay REALMENTE. Elegís si contás todo el inventario o filtrás por proveedor/sector (conteo parcial), y vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Arriba de todo podés elegir la <b>fecha del conteo</b> (arranca en hoy, pero se puede cambiar) — así, si contaste antes y cargás la app más tarde, el registro queda con la fecha real y no con la del momento en que lo tipeaste. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una — cada grupo muestra en su encabezado hace cuánto fue su último conteo puntual, para ver de un vistazo qué proveedor/sector está más atrasado sin tener que expandir cada uno. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️ — se marcan si son al menos el 30% del teórico, o si son 5 unidades o más Y representan al menos el 10% del teórico (para no marcar de más en productos que se mueven en cantidades grandes). Al guardar, te pide elegir de una lista quién hizo el conteo (empleados activos) — quedó pensado para el celular compartido de cocina, donde varias personas pueden cargar conteos y así queda registro de quién contó cada vez; ese nombre se guarda en el conteo y aparece en la Nota de conteo y en el Historial. Después te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". Si empezás a cargar un conteo y tocás otra sección de Stock antes de guardar, te avisa que vas a perder lo tipeado. Desde el botón "🧮 Historial de conteo" se abre una pantalla aparte con todos los conteos hechos, filtrable por proveedor y por rango de fechas (Desde/Hasta) (botón "← Volver al conteo" para regresar), donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal. El botón "📅 Ver por semana" cambia la lista por conteo por un resumen agrupado por semana calendario (lunes a domingo): suma la diferencia de todos los conteos de esa semana por producto, para ver de un vistazo cuánto se perdió/ganó cada semana en vez de tener que sumar conteo por conteo — respeta los mismos filtros de proveedor y fechas. Ojo: si un producto no se contó todas las semanas, el número de una semana puede en realidad cubrir más de 7 días de movimiento.
+          Para saber cuánto hay REALMENTE. Primero elegís el alcance: buscador, proveedor, sector y la <b>fecha del conteo</b> (arranca en hoy, pero se puede cambiar) — así, si contaste antes y cargás la app más tarde, el registro queda con la fecha real y no con la del momento en que lo tipeaste. Con eso elegido, tocás el botón <b>▶ Abrir conteo</b> (recién ahí aparecen los productos — quedó así para que la pantalla inicial no sea un montón de campos de golpe). Al abrirlo, primero elegís de una lista <b>quién está haciendo este conteo</b> (empleados activos) — quedó pensado para el celular compartido de cocina, donde varias personas pueden cargar conteos y así queda registro de quién contó cada vez; ese nombre se guarda en el conteo y aparece en la Nota de conteo y en el Historial. Después vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una — cada grupo muestra en su encabezado hace cuánto fue su último conteo puntual, para ver de un vistazo qué proveedor/sector está más atrasado sin tener que expandir cada uno. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️ — se marcan si son al menos el 30% del teórico, o si son 5 unidades o más Y representan al menos el 10% del teórico (para no marcar de más en productos que se mueven en cantidades grandes). Al tocar Guardar conteo te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". El botón "✕ Cerrar conteo" vuelve a la pantalla de filtros sin guardar (avisa si hay algo tipeado sin guardar); lo mismo si tocás otra sección de Stock con el conteo abierto y algo sin guardar. Desde el botón "🧮 Historial de conteo" se abre una pantalla aparte con todos los conteos hechos, filtrable por proveedor y por rango de fechas (Desde/Hasta) (botón "← Volver al conteo" para regresar), donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal. El botón "📅 Ver por semana" cambia la lista por conteo por un resumen agrupado por semana calendario (lunes a domingo): suma la diferencia de todos los conteos de esa semana por producto, para ver de un vistazo cuánto se perdió/ganó cada semana en vez de tener que sumar conteo por conteo — respeta los mismos filtros de proveedor y fechas. Ojo: si un producto no se contó todas las semanas, el número de una semana puede en realidad cubrir más de 7 días de movimiento.
         </Sec>
 
         <Sec title="🍳 Producción">
@@ -2897,7 +2897,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
   const[hastaHist,setHastaHist]=useState("");
   const[verPorSemana,setVerPorSemana]=useState(false);
   const[notaAbierta,setNotaAbierta]=useState(null);
-  const[confirmando,setConfirmando]=useState(false);
+  const[sesionAbierta,setSesionAbierta]=useState(false);
   const[contadoPor,setContadoPor]=useState("");
   const[imprimible,setImprimible]=useState(null);
   const EMPS=(empleados||[]).filter(e=>e.estado==="Activo").slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=>e.nombre);
@@ -3020,13 +3020,15 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     return ultimo?ultimo.fecha:(s.fecha||null);
   };
 
-  const iniciarGuardado=()=>{
-    if(!tocados.length){toast(filtrado.length?"No cargaste ningún conteo":"No hay productos para contar con este filtro");return;}
-    setContadoPor("");
-    setConfirmando(true);
+  const cerrarSesion=()=>{
+    if(Object.values(valores).some(v=>v!==undefined&&v!=="")&&!confirm("Tenés valores de conteo sin guardar. ¿Cerrar igual? Se van a perder."))return;
+    setValores({});setContadoPor("");setSesionAbierta(false);
   };
   const guardarConteo=async()=>{
-    if(!contadoPor){toast("Elegí quién hizo el conteo");return;}
+    if(!contadoPor){toast("Elegí quién está haciendo el conteo");return;}
+    if(!tocados.length){toast("No cargaste ningún conteo");return;}
+    const alcanceTxt=fProv?`proveedor ${fProv}`:fSector?`sector ${fSector}`:"todo el inventario";
+    if(!confirm(`Vas a registrar un conteo de ${tocados.length} producto${tocados.length!==1?"s":""} (${alcanceTxt}), ${conMenos+conMas} con diferencia. ¿Confirmás?`))return;
     setBusy(true);
     const fecha=fechaLocalISO(fechaConteo||hoyLocal());
     const nuevosStock=[];
@@ -3053,7 +3055,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
     const registro={id:uid(),fecha,alcance:fProv?`Proveedor: ${fProv}`:fSector?`Sector: ${fSector}`:"Todo el inventario",items:itemsConteo,registradoPor:registradoPor||null,contadoPor};
     await saveConteos([registro,...(conteos||[])]);
     toast(`✓ Conteo guardado: ${itemsConteo.length} producto${itemsConteo.length!==1?"s":""} · ${contadoPor}`);
-    setValores({});setBusy(false);setFechaConteo(hoyLocal());setConfirmando(false);setContadoPor("");
+    setValores({});setBusy(false);setFechaConteo(hoyLocal());setSesionAbierta(false);setContadoPor("");
   };
 
   // Cambiar la unidad de medida de un producto desde acá mismo (Conteo): actualiza el catálogo (fuente
@@ -3264,7 +3266,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
 
   return(<>
     <Card title="Nuevo conteo">
-      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Elegí qué contar (o dejalo en todos), corregí lo que sea distinto de lo que muestra el sistema y guardá. La diferencia queda registrada como el consumo/venta implícito de ese período.</p>
+      <p style={{fontSize:".78rem",color:"#7B7063",marginBottom:14}}>Elegí qué contar (o dejalo en todos) y tocá <b>Abrir conteo</b>. Ahí vas a poder indicar quién lo hace y cargar lo que sea distinto de lo que muestra el sistema. La diferencia queda registrada como el consumo/venta implícito de ese período.</p>
       <div style={{marginBottom:12}}>
         <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>Fecha del conteo</label>
         <input type="date" value={fechaConteo} onChange={e=>setFechaConteo(e.target.value)} style={{...iS,fontSize:".82rem",padding:"7px 10px",width:170}}/>
@@ -3315,7 +3317,23 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
       )}
     </Card>
 
-    {!gruposCnt.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposCnt.map(g=>{
+    {!sesionAbierta?(
+      !gruposCnt.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:(
+        <Btn bg="#2C1A0E" onClick={()=>setSesionAbierta(true)}>▶ Abrir conteo ({filtrado.length} producto{filtrado.length!==1?"s":""})</Btn>
+      )
+    ):(<>
+      <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",padding:16,marginBottom:14,display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
+        <div style={{flex:"1 1 220px"}}>
+          <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>¿Quién está haciendo este conteo?</label>
+          <select value={contadoPor} onChange={e=>setContadoPor(e.target.value)} style={sS}>
+            <option value="">— Elegí quién cuenta —</option>
+            {EMPS.map(n=><option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <button onClick={cerrarSesion} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#E8DCC8",color:"#2C1A0E",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Cerrar conteo</button>
+      </div>
+
+      {!gruposCnt.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposCnt.map(g=>{
       const cerrado=!!colapsados[g.key];
       const ultimoGrupo=ultimoConteoDeGrupo(g.key);
       return(
@@ -3362,30 +3380,12 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
         )}
       </div>
       );
-    })}
+      })}
 
-    {gruposCnt.length>0&&(
-      <Btn bg="#2C1A0E" onClick={iniciarGuardado} disabled={busy||!tocados.length}>{busy?"Guardando…":`Guardar conteo (${tocados.length} producto${tocados.length!==1?"s":""})`}</Btn>
-    )}
-
-    {confirmando&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>!busy&&setConfirmando(false)}>
-        <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:460,maxHeight:"92dvh",overflowY:"auto"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <p style={{fontFamily:"Georgia,serif",fontSize:"1.1rem"}}>Confirmar conteo</p>
-            <button onClick={()=>setConfirmando(false)} style={{background:"none",border:"none",fontSize:"1.3rem",color:"#7B7063",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>
-          </div>
-          <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:16}}>Vas a registrar un conteo de <strong>{tocados.length}</strong> producto{tocados.length!==1?"s":""} ({fProv?`proveedor ${fProv}`:fSector?`sector ${fSector}`:"todo el inventario"}), <strong>{conMenos+conMas}</strong> con diferencia.</p>
-          <Field label="¿Quién hizo este conteo?">
-            <select value={contadoPor} onChange={e=>setContadoPor(e.target.value)} style={sS}>
-              <option value="">— Elegí quién contó —</option>
-              {EMPS.map(n=><option key={n} value={n}>{n}</option>)}
-            </select>
-          </Field>
-          <Btn bg="#2C1A0E" onClick={guardarConteo} disabled={busy||!contadoPor}>{busy?"Guardando…":"Confirmar conteo"}</Btn>
-        </div>
-      </div>
-    )}
+      {gruposCnt.length>0&&(
+        <Btn bg="#2C1A0E" onClick={guardarConteo} disabled={busy||!tocados.length||!contadoPor}>{busy?"Guardando…":`Guardar conteo (${tocados.length} producto${tocados.length!==1?"s":""})`}</Btn>
+      )}
+    </>)}
     {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
 }
