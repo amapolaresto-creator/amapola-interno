@@ -748,7 +748,7 @@ function App({role="full",cerrarSesion}){
         {tab==="proveedores"&&<TabProveedores proveedores={proveedores} saveProveedores={saveProveedores} calcDeuda={calcDeuda} pagos={pagos} savePagos={savePagos} boletas={boletas} saveBoletas={saveBoletas} gastos={gastos} saveGastos={saveGastos} catalogoStock={catalogoStock} saveCatalogoStock={saveCatalogoStock} stock={stock} saveStock={saveStock} askPass={askPass}/>}
         {tab==="admin"&&adminUnlocked&&<TabAdmin proveedores={proveedores} saveProveedores={saveProveedores} cajaInicial={cajaInicial} saveCajaInicial={saveCajaInicial} askPass={askPass} cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} pagos={pagos} savePagos={savePagos} sueldos={sueldos} saveSueldos={saveSueldos} boletas={boletas} saveBoletas={saveBoletas} ajustesCajaEfectivo={ajustesCajaEfectivo} saveAjustesCajaEfectivo={saveAjustesCajaEfectivo} saldo={saldo} empleados={empleados} stock={stock} saveStock={saveStock}/> }
         {tab==="sueldos"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} adminUnlocked={adminUnlocked}/>}
-        {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital}/>}
+        {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital} sueldos={sueldos}/>}
         {tab==="fichajes"&&<TabFichajes/>}
         {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":frontOnly?"Front":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} empleados={empleados} saveEmpleados={saveEmpleados} soloUltimoDia={frontOnly}/>}
@@ -2023,6 +2023,23 @@ const RETIRO_SUELDOS_CAT="Retiro para sueldos";
 // Transferencia). Desde 2026-08-19 también se puede pagar con la caja retiro para sueldos (forma "Retiro"),
 // para cuando la ganancia se saca de esa plata en vez de la Caja Digital.
 const RETIRO_GANANCIA_CAT="DIGITAL";
+// Devuelve true si el gasto es un retiro de efectivo para la caja de sueldos (categoria "Retiro para
+// sueldos", forma Efectivo). Borrar uno de estos ya hace volver la plata a Caja Disponible solo (el saldo
+// se calcula sumando gastos, no hay ledger aparte que reconciliar) -- pero si ya se uso parte de esa plata
+// en sueldos/gastos con forma "Retiro", borrarlo puede dejar la caja de retiro en negativo. Estas dos
+// funciones se comparten entre los 4 lugares donde se puede borrar un gasto (Pagos Varios, Caja Disponible
+// / Historial retiro, Caja Digital, Admin > Editar pagos) para avisar antes y confirmar despues.
+const esRetiroSueldos=g=>!!g&&g.forma==="Efectivo"&&(g.categoria||"").trim().toLowerCase()===RETIRO_SUELDOS_CAT.toLowerCase();
+const confirmarBorrarRetiro=(g,gastosArr,sueldosArr)=>{
+  const totalRetirado=(gastosArr||[]).filter(esRetiroSueldos).reduce((s,x)=>s+Number(x.monto||0),0);
+  const totalUsado=(sueldosArr||[]).filter(s=>s.forma==="Retiro").reduce((s2,s)=>s2+Number(s.monto||0),0)
+    +(gastosArr||[]).filter(x=>x.forma==="Retiro"&&(x.categoria||"").trim().toLowerCase()===RETIRO_GANANCIA_CAT.toLowerCase()).reduce((s2,x)=>s2+Number(x.monto||0),0);
+  const saldoDespues=totalRetirado-Number(g.monto||0)-totalUsado;
+  if(saldoDespues<0){
+    return confirm(`⚠️ De este retiro ya se usaron ${fmt(totalUsado)} para pagar sueldos/gastos. Si lo borrás, la caja de retiro para sueldos va a quedar en ${fmt(saldoDespues)} (negativa) y vas a perder el rastro de con qué plata se pagó eso. ¿Borrar igual?`);
+  }
+  return true;
+};
 
 // La pantalla de registro de pago de sueldo se movió a LiquidacionSueldos (2026-08-20): antes era una
 // pestaña propia "Sueldos", ahora vive arriba de todo en "Liquidación de sueldos" (sin clave), porque los
@@ -2030,7 +2047,7 @@ const RETIRO_GANANCIA_CAT="DIGITAL";
 // vez de a un módulo administrativo aparte.
 
 
-function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital}){
+function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital,sueldos}){
   const{saldoReal}=calcDigital();
   const totalMes=gastos.filter(g=>{const d=new Date(g.fecha);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).reduce((a,g)=>a+Number(g.monto||0),0);
 
@@ -2039,7 +2056,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital}
 
     <div style={{fontSize:".72rem",color:"#7B7063",marginBottom:16}}>Pagado este mes: <strong style={{color:"#C0392B"}}>{fmt(totalMes)}</strong></div>
 
-    <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos} proveedores={proveedores}/>
+    <LibroDiarioGastos gastos={gastos} saveGastos={saveGastos} proveedores={proveedores} sueldos={sueldos}/>
 
     <div style={{marginTop:16,display:"flex",gap:8,flexWrap:"wrap"}}>
       <div style={{flex:1,minWidth:140,background:"#2D6A4F",borderRadius:10,padding:"12px 14px"}}>
@@ -2060,7 +2077,7 @@ function TabGastos({gastos,saveGastos,saldo,cajaInicial,proveedores,calcDigital}
 
 
 
-function LibroDiarioGastos({gastos,saveGastos,proveedores}){
+function LibroDiarioGastos({gastos,saveGastos,proveedores,sueldos}){
   const hoy=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const inicioMes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -2086,9 +2103,11 @@ function LibroDiarioGastos({gastos,saveGastos,proveedores}){
     setBusyEdit(false);setEditItem(null);toast("Actualizado ✓");
   };
   const eliminar=async()=>{
-    const g=confElim;setConfElim(null);
+    const g=confElim;
+    if(esRetiroSueldos(g)&&!confirmarBorrarRetiro(g,gastos,sueldos))return;
+    setConfElim(null);
     await saveGastos(gastos.filter(x=>x.id!==g.id));
-    toast("Eliminado ✓");
+    toast(esRetiroSueldos(g)?`Retiro eliminado ✓ · ${fmt(g.monto)} volvió a Caja Disponible`:"Eliminado ✓");
   };
 
   const allMovs=[...gastos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
@@ -2293,7 +2312,7 @@ function ManualStockModal({onClose}){
         </Sec>
 
         <Sec title="🧮 Conteo">
-          Para saber cuánto hay REALMENTE. Primero elegís el alcance: buscador, proveedor, sector y la <b>fecha del conteo</b> (arranca en hoy, pero se puede cambiar) — así, si contaste antes y cargás la app más tarde, el registro queda con la fecha real y no con la del momento en que lo tipeaste. Con eso elegido, tocás el botón <b>▶ Abrir conteo</b> (recién ahí aparecen los productos — quedó así para que la pantalla inicial no sea un montón de campos de golpe). Al abrirlo, primero elegís de una lista <b>quién está haciendo este conteo</b> (empleados activos) — quedó pensado para el celular compartido de cocina, donde varias personas pueden cargar conteos y así queda registro de quién contó cada vez; ese nombre se guarda en el conteo y aparece en la Nota de conteo y en el Historial. Después vas cargando lo que contás a mano de cada producto — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una — cada grupo muestra en su encabezado hace cuánto fue su último conteo puntual, para ver de un vistazo qué proveedor/sector está más atrasado sin tener que expandir cada uno. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️ — se marcan si son al menos el 30% del teórico, o si son 5 unidades o más Y representan al menos el 10% del teórico (para no marcar de más en productos que se mueven en cantidades grandes). Al tocar Guardar conteo te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". El botón "✕ Cerrar conteo" vuelve a la pantalla de filtros sin guardar (avisa si hay algo tipeado sin guardar); lo mismo si tocás otra sección de Stock con el conteo abierto y algo sin guardar. Desde el botón "🧮 Historial de conteo" se abre una pantalla aparte con todos los conteos hechos, filtrable por proveedor y por rango de fechas (Desde/Hasta) (botón "← Volver al conteo" para regresar), donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal. El botón "📅 Ver por semana" cambia la lista por conteo por un resumen agrupado por semana calendario (lunes a domingo): suma la diferencia de todos los conteos de esa semana por producto, para ver de un vistazo cuánto se perdió/ganó cada semana en vez de tener que sumar conteo por conteo — respeta los mismos filtros de proveedor y fechas. Ojo: si un producto no se contó todas las semanas, el número de una semana puede en realidad cubrir más de 7 días de movimiento.
+          Para saber cuánto hay REALMENTE. Primero elegís el alcance: buscador, proveedor, sector y la <b>fecha del conteo</b> (arranca en hoy, pero se puede cambiar) — así, si contaste antes y cargás la app más tarde, el registro queda con la fecha real y no con la del momento en que lo tipeaste. Con eso elegido, tocás el botón <b>▶ Abrir conteo</b> (recién ahí aparecen los productos — quedó así para que la pantalla inicial no sea un montón de campos de golpe). Al abrirlo, primero elegís de una lista <b>quién está haciendo este conteo</b> (empleados activos) y <b>qué proveedor vas a contar</b> — quedó pensado para el celular compartido de cocina, donde varias personas pueden cargar conteos: así queda registro de quién contó cada vez, y nunca aparecen de golpe los productos de todos los proveedores mezclados. Ese nombre se guarda en el conteo y aparece en la Nota de conteo y en el Historial. Recién cuando elegiste ambas cosas aparecen los productos de ese proveedor para cargar — solo se guarda lo que realmente escribiste, no lo que quedó visible sin tocar. Podés agrupar la lista por Proveedor o por Sector (más cómodo para recorrer el local físicamente), y colapsar/expandir todos los grupos de una — cada grupo muestra en su encabezado hace cuánto fue su último conteo puntual, para ver de un vistazo qué proveedor/sector está más atrasado sin tener que expandir cada uno. Debajo del Teórico de cada producto figura desde cuándo viene acumulando ese número (fecha del último conteo de ESE producto puntual, o de cuando se cargó si nunca se contó), y debajo de la Diferencia, en cuántos días se dio — así una diferencia de -12 en 3 días se lee distinto que -12 en 40. Las diferencias grandes (probable error de tipeo) quedan resaltadas con ⚠️ — se marcan si son al menos el 30% del teórico, o si son 5 unidades o más Y representan al menos el 10% del teórico (para no marcar de más en productos que se mueven en cantidades grandes). Al tocar Guardar conteo te pide confirmación mostrando la diferencia contra el teórico. Al confirmar, el stock queda ajustado al número que contaste, y esa diferencia se guarda en el historial como "ajuste por conteo". El botón "✕ Cerrar conteo" vuelve a la pantalla de filtros sin guardar (avisa si hay algo tipeado sin guardar); lo mismo si tocás otra sección de Stock con el conteo abierto y algo sin guardar. Desde el botón "🧮 Historial de conteo" se abre una pantalla aparte con todos los conteos hechos, filtrable por proveedor y por rango de fechas (Desde/Hasta) (botón "← Volver al conteo" para regresar), donde cada registro tiene una "📄 Nota de conteo" imprimible (mismo formato que la nota de pedido) y un botón Eliminar que además revierte el ajuste de stock que ese conteo generó, por si se cargó mal. El botón "📅 Ver por semana" cambia la lista por conteo por un resumen agrupado por semana calendario (lunes a domingo): suma la diferencia de todos los conteos de esa semana por producto, para ver de un vistazo cuánto se perdió/ganó cada semana en vez de tener que sumar conteo por conteo — respeta los mismos filtros de proveedor y fechas. Ojo: si un producto no se contó todas las semanas, el número de una semana puede en realidad cubrir más de 7 días de movimiento.
         </Sec>
 
         <Sec title="🍳 Producción">
@@ -3322,17 +3341,33 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
         <Btn bg="#2C1A0E" onClick={()=>setSesionAbierta(true)}>▶ Abrir conteo ({filtrado.length} producto{filtrado.length!==1?"s":""})</Btn>
       )
     ):(<>
-      <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",padding:16,marginBottom:14,display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
-        <div style={{flex:"1 1 220px"}}>
-          <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>¿Quién está haciendo este conteo?</label>
-          <select value={contadoPor} onChange={e=>setContadoPor(e.target.value)} style={sS}>
-            <option value="">— Elegí quién cuenta —</option>
-            {EMPS.map(n=><option key={n} value={n}>{n}</option>)}
-          </select>
+      <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",padding:16,marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+          <button onClick={cerrarSesion} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#E8DCC8",color:"#2C1A0E",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Cerrar conteo</button>
         </div>
-        <button onClick={cerrarSesion} style={{padding:"9px 14px",border:"none",borderRadius:10,background:"#E8DCC8",color:"#2C1A0E",fontSize:".78rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Cerrar conteo</button>
+        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 220px"}}>
+            <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>¿Quién está haciendo este conteo?</label>
+            <select value={contadoPor} onChange={e=>setContadoPor(e.target.value)} style={sS}>
+              <option value="">— Elegí quién cuenta —</option>
+              {EMPS.map(n=><option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div style={{flex:"1 1 220px"}}>
+            <label style={{display:"block",fontSize:".68rem",fontWeight:600,color:"#7B7063",marginBottom:3}}>¿Qué proveedor vas a contar?</label>
+            <select value={fProv} onChange={e=>setFProv(e.target.value)} style={sS}>
+              <option value="">— Elegí un proveedor —</option>
+              {proveedoresCat.map(p=><option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
+      {(!contadoPor||!fProv)?(
+        <div style={{background:"#F9F6F1",border:"1px solid #E8DCC8",borderRadius:12,padding:"14px 16px",marginBottom:14,fontSize:".8rem",color:"#7B7063"}}>
+          {!contadoPor?"Elegí quién está haciendo el conteo":"Elegí el proveedor que vas a contar"} para que aparezcan los productos.
+        </div>
+      ):(<>
       {!gruposCnt.length?<Empty icon="🔍">Ningún producto coincide con el filtro</Empty>:gruposCnt.map(g=>{
       const cerrado=!!colapsados[g.key];
       const ultimoGrupo=ultimoConteoDeGrupo(g.key);
@@ -3385,6 +3420,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
       {gruposCnt.length>0&&(
         <Btn bg="#2C1A0E" onClick={guardarConteo} disabled={busy||!tocados.length||!contadoPor}>{busy?"Guardando…":`Guardar conteo (${tocados.length} producto${tocados.length!==1?"s":""})`}</Btn>
       )}
+      </>)}
     </>)}
     {imprimible&&<ImprimibleModal titulo={imprimible.titulo} html={imprimible.html} onClose={()=>setImprimible(null)}/>}
   </>);
@@ -4655,11 +4691,13 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   };
 
   const eliminar=async()=>{
-    const m=confElim;setConfElim(null);
+    const m=confElim;
+    if(m._cat==="gasto"&&esRetiroSueldos(m)&&!confirmarBorrarRetiro(m,gastos,sueldos))return;
+    setConfElim(null);
     if(m._cat==="pago")   await savePagos(pagos.filter(p=>p.id!==m.id));
     if(m._cat==="sueldo") await saveSueldos(sueldos.filter(s=>s.id!==m.id));
     if(m._cat==="gasto")  await saveGastos(gastos.filter(g=>g.id!==m.id));
-    toast("Eliminado ✓ (los cierres se editan desde su sección)");
+    toast(m._cat==="gasto"&&esRetiroSueldos(m)?`Retiro eliminado ✓ · ${fmt(m.monto)} volvió a Caja Disponible`:"Eliminado ✓ (los cierres se editan desde su sección)");
   };
 
   // Retiro de efectivo para pagar sueldos: se carga como Gasto (categoría "Retiro para sueldos", forma
@@ -4798,7 +4836,7 @@ function TabCajaEfectivo({cierres,cierresCaja,cajaInicial,pagos,savePagos,sueldo
   </>);
 
   return(<>
-    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague: un pago a Proveedor, un Sueldo o un Gasto — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Gastos. Por defecto la forma de pago es Efectivo (ya que estás en Caja Disponible), pero también podés elegir Transferencia, Amex o Retiro si hace falta — es el mismo botón que hay en Caja Digital, nada más que acá arranca en Efectivo. Si el monto supera lo que tenés disponible en caja, te avisa y te deja confirmar igual (la caja queda en negativo) — el mismo criterio se aplica ahora en Pagos y Sueldos, para que no cambie según por dónde cargues el pago.\n• Si el pago es tipo Sueldo con concepto 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período en Liquidación de sueldos, el pago se enlaza solo a esa liquidación — así queda marcada como pagada ahí sin que tengas que ir a hacer nada aparte.\n• 🧮 Contar caja: cuando hacés un arqueo físico, escribí acá lo que contaste — la app calcula sola la diferencia contra el sistema y la deja guardada como ajuste (con motivo y fecha), sin que tengas que restarlo vos a mano. Es lo mismo que 'Actualizar saldo banco' en Caja Digital, pero para el efectivo.\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro (y quién lo hizo) y cada sueldo (o gasto DIGITAL) pagado con esa plata — tocá 'Ver historial' para abrirlo en una pantalla aparte. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento, y ahora pide quién retira.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo.\n• El gasto categoría 'DIGITAL' (retiros de ganancia) normalmente se paga por Transferencia, pero si esa vez la sacaste de la caja retiro para sueldos en vez de la Caja Digital, elegí forma 'Retiro' al cargarlo — no te deja cargar más de lo que realmente queda disponible en esa caja aparte."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
+    <ST help={"Acá ves todos los ingresos y egresos en efectivo del negocio (cierres, pagos, sueldos, gastos y ajustes), sin límite de fecha.\n\n• Con + Registrar pago podés cargar, todo desde acá, cualquier cosa que se pague: un pago a Proveedor, un Sueldo o un Gasto — elegí el tipo arriba del formulario. Queda guardado exactamente igual que si lo cargaras en Pagos, Sueldos o Gastos. Por defecto la forma de pago es Efectivo (ya que estás en Caja Disponible), pero también podés elegir Transferencia, Amex o Retiro si hace falta — es el mismo botón que hay en Caja Digital, nada más que acá arranca en Efectivo. Si el monto supera lo que tenés disponible en caja, te avisa y te deja confirmar igual (la caja queda en negativo) — el mismo criterio se aplica ahora en Pagos y Sueldos, para que no cambie según por dónde cargues el pago.\n• Si el pago es tipo Sueldo con concepto 'Sueldo' y ese empleado tiene una liquidación confirmada de ese período en Liquidación de sueldos, el pago se enlaza solo a esa liquidación — así queda marcada como pagada ahí sin que tengas que ir a hacer nada aparte.\n• 🧮 Contar caja: cuando hacés un arqueo físico, escribí acá lo que contaste — la app calcula sola la diferencia contra el sistema y la deja guardada como ajuste (con motivo y fecha), sin que tengas que restarlo vos a mano. Es lo mismo que 'Actualizar saldo banco' en Caja Digital, pero para el efectivo.\n• La sección '💰 Caja retiro para sueldos' es aparte: mostrás cuánto sacaste de la Caja Disponible para juntar y pagar sueldos después, con el historial completo de cada retiro (y quién lo hizo) y cada sueldo (o gasto DIGITAL) pagado con esa plata — tocá 'Ver historial' para abrirlo en una pantalla aparte. Podés registrar un retiro nuevo desde acá o desde Pagos — es el mismo movimiento, y ahora pide quién retira.\n• Cada retiro se carga como Gasto (categoría 'Retiro para sueldos') y descuenta la Caja Disponible una sola vez. Después, cada sueldo pagado con esa plata se registra en Sueldos con forma 'Retiro' y no descuenta la caja de nuevo. Si cargaste un retiro por error, borralo con el ✕ (acá o dentro de 'Ver historial') — la plata vuelve sola a Caja Disponible, no hace falta ningún paso extra. Si ese retiro ya tenía sueldos pagados con esa plata, te avisa antes de borrar para que no pierdas el rastro de con qué se pagaron.\n• El gasto categoría 'DIGITAL' (retiros de ganancia) normalmente se paga por Transferencia, pero si esa vez la sacaste de la caja retiro para sueldos en vez de la Caja Digital, elegí forma 'Retiro' al cargarlo — no te deja cargar más de lo que realmente queda disponible en esa caja aparte."}>Caja Disponible</ST><SS>Todos los ingresos y egresos en efectivo, sin límite de fecha.</SS>
 
     <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap",alignItems:"stretch"}}>
       <div style={{flex:"2 1 220px",background:"#2D6A4F",borderRadius:14,padding:"18px 20px"}}>
@@ -5352,11 +5390,13 @@ function TabCajaDigital({calcDigital,cajaDigitalSaldo,saveCajaDigitalSaldo,cajaD
   };
 
   const eliminar=async()=>{
-    const m=confElim;setConfElim(null);
+    const m=confElim;
+    if(m._cat==="gasto"&&esRetiroSueldos(m)&&!confirmarBorrarRetiro(m,gastos,sueldos))return;
+    setConfElim(null);
     if(m._cat==="pago")   await savePagos(pagos.filter(p=>p.id!==m.id));
     if(m._cat==="sueldo") await saveSueldos(sueldos.filter(s=>s.id!==m.id));
     if(m._cat==="gasto")  await saveGastos(gastos.filter(g=>g.id!==m.id));
-    toast("Eliminado ✓");
+    toast(m._cat==="gasto"&&esRetiroSueldos(m)?`Retiro eliminado ✓ · ${fmt(m.monto)} volvió a Caja Disponible`:"Eliminado ✓");
   };
 
   return(<>
@@ -5782,6 +5822,7 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
   const pedirEliminar=item=>setConfirmarElim(item);
   const confirmarEliminar=async()=>{
     const item=confirmarElim;
+    if(item.tipo==="gasto"&&esRetiroSueldos(item)&&!confirmarBorrarRetiro(item,gastos,sueldos))return;
     setConfirmarElim(null);
     if(item.tipo==="boleta"){
       if(item.productos&&item.productos.length>0&&stock&&saveStock){
@@ -5800,7 +5841,7 @@ function TabGerencia({calcDigital,saldo,ini,tot,eg,cajaDigitalSaldo,actualizarSa
     if(item.tipo==="sueldo")     await saveSueldos(sueldos.filter(s=>s.id!==item.id));
     if(item.tipo==="gasto")      await saveGastos(gastos.filter(g=>g.id!==item.id));
     if(item.tipo==="ajuste"&&saveAjustesCajaEfectivo) await saveAjustesCajaEfectivo((ajustesCajaEfectivo||[]).filter(a=>a.id!==item.id));
-    toast("Registro eliminado ✓");
+    toast(item.tipo==="gasto"&&esRetiroSueldos(item)?`Retiro eliminado ✓ · ${fmt(item.monto)} volvió a Caja Disponible`:"Registro eliminado ✓");
   };
 
   const exportCSV=()=>{
@@ -8804,13 +8845,4 @@ function AdminBoletas({boletas,saveBoletas,proveedores,empleados,stock,saveStock
               <button onClick={eliminar} disabled={busy} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#C0392B",color:"#fff",fontWeight:600,cursor:"pointer"}}>{busy?"Eliminando…":"Eliminar"}</button>
             </div>
           </div>
-        </div>
-      )}
-    </Card>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
-</script>
-</body>
-</html>
+ 
