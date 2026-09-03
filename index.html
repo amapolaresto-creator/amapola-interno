@@ -750,7 +750,7 @@ function App({role="full",cerrarSesion}){
         {tab==="sueldos"&&<LiquidacionSueldos empleados={empleados} saveEmpleados={saveEmpleados} liquidaciones={liquidaciones} saveLiquidaciones={saveLiquidaciones} sueldos={sueldos} saveSueldos={saveSueldos} saldo={saldo} gastos={gastos} penalidades={penalidades} savePenalidades={savePenalidades} horasExtras={horasExtras} saveHorasExtras={saveHorasExtras} adminUnlocked={adminUnlocked}/>}
         {tab==="gastos"&&adminUnlocked&&<TabGastos gastos={gastos} saveGastos={saveGastos} saldo={saldo} cajaInicial={cajaInicial} proveedores={proveedores} calcDigital={calcDigital} sueldos={sueldos}/>}
         {tab==="fichajes"&&<TabFichajes/>}
-        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial="inventario" desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":frontOnly?"Front":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados} soloLectura={cocinaOnly||frontOnly}/>}
+        {tab==="stock"&&<TabStock stock={stock} saveStock={saveStock} catalogo={catalogoStock} saveCatalogo={saveCatalogoStock} pedidos={pedidosStock} savePedidos={savePedidosStock} subInicial={cocinaOnly?"conteo":"inventario"} subsPermitidos={cocinaOnly?["conteo","produccion"]:undefined} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} conteos={conteosStock} saveConteos={saveConteosStock} registradoPor={cocinaOnly?"Cocina":frontOnly?"Front":"Administración"} proveedores={proveedores} saveProveedores={saveProveedores} empleados={empleados} soloLectura={cocinaOnly||frontOnly} sinEliminarCatalogo={cocinaOnly||frontOnly}/>}
         {tab==="cierres"&&<TabCierresCaja cierresCaja={cierresCaja} saveCierresCaja={saveCierresCaja} empleados={empleados} saveEmpleados={saveEmpleados} soloUltimoDia={frontOnly}/>}
       </div>
       {passModal&&<PassModal onConfirm={()=>{setPassModal(null);passModal.resolve(true);}} onCancel={()=>{setPassModal(null);passModal.resolve(false);}}/>}
@@ -2346,11 +2346,12 @@ function ManualStockModal({onClose}){
   );
 }
 
-function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor,proveedores,saveProveedores,empleados,soloLectura}){
+function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,subInicial,subsPermitidos,desperdicios,saveDesperdicios,conteos,saveConteos,registradoPor,proveedores,saveProveedores,empleados,soloLectura,sinEliminarCatalogo}){
   const[sub,setSub]=useState(subInicial||"inventario");
   const[verManual,setVerManual]=useState(false);
   const[conteoDirty,setConteoDirty]=useState(false);
-  const SUBS=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
+  const SUBS_ALL=[{id:"inventario",label:"📋 Control de stock"},{id:"conteo",label:"🧮 Conteo"},{id:"produccion",label:"🍳 Producción"},{id:"desperdicios",label:"🗑️ Desperdicios"},{id:"catalogo",label:"🗂️ Catálogo"},{id:"pedidos",label:"🧾 Pedidos"}];
+  const SUBS=subsPermitidos?SUBS_ALL.filter(s=>subsPermitidos.includes(s.id)):SUBS_ALL;
   const cambiarSub=nuevo=>{
     if(sub==="conteo"&&nuevo!=="conteo"&&conteoDirty&&!confirm("Tenés valores de conteo sin guardar. ¿Salir igual? Se van a perder."))return;
     setSub(nuevo);
@@ -2366,7 +2367,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     </p>
     <SS>Control de inventario, catálogo de insumos y pedidos a proveedores.</SS>
     {registradoPor&&<div style={{fontSize:".72rem",color:"#7B7063",marginTop:-12,marginBottom:16}}>Cargando como <strong>{registradoPor}</strong></div>}
-    {stockBajo.length>0&&sub!=="inventario"&&(
+    {stockBajo.length>0&&sub!=="inventario"&&(!subsPermitidos||subsPermitidos.includes("inventario"))&&(
       <div onClick={()=>cambiarSub("inventario")} style={{background:"#FFF0EF",border:"1px solid #f5b7b1",borderRadius:12,padding:"10px 14px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:"1rem"}}>⚠️</span>
         <span style={{fontSize:".8rem",color:"#C0392B",fontWeight:600}}>{stockBajo.length} producto{stockBajo.length!==1?"s":""} con stock bajo · Ver inventario</span>
@@ -2381,7 +2382,7 @@ function TabStock({stock,saveStock,catalogo,saveCatalogo,pedidos,savePedidos,sub
     {sub==="conteo"&&<StockConteo stock={stock} saveStock={saveStock} catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} conteos={conteos} saveConteos={saveConteos} registradoPor={registradoPor} onDirtyChange={setConteoDirty} empleados={empleados}/>}
     {sub==="produccion"&&<StockProduccion stock={stock} saveStock={saveStock} catalogo={catalogo} registradoPor={registradoPor} empleados={empleados}/>}
     {sub==="desperdicios"&&<StockDesperdicios stock={stock} saveStock={saveStock} catalogo={catalogo} desperdicios={desperdicios} saveDesperdicios={saveDesperdicios} registradoPor={registradoPor}/>}
-    {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores} stock={stock} saveStock={saveStock}/>}
+    {sub==="catalogo"&&<StockCatalogo catalogo={catalogo} saveCatalogo={saveCatalogo} proveedoresCat={proveedoresCat} proveedores={proveedores} saveProveedores={saveProveedores} stock={stock} saveStock={saveStock} sinEliminar={sinEliminarCatalogo}/>}
     {sub==="pedidos"&&<StockPedidos catalogo={catalogo} proveedoresCat={proveedoresCat} pedidos={pedidos} savePedidos={savePedidos} registradoPor={registradoPor}/>}
   </>);
 }
@@ -3394,7 +3395,7 @@ function StockConteo({stock,saveStock,catalogo,saveCatalogo,proveedoresCat,conte
           </thead>
           <tbody>
             {g.items.map((s,i)=>{
-              const val=valorDe(s);
+              const val=valores[s.id]!==undefined?valores[s.id]:"";
               const fechaTeo=fechaTeoricoDe(s);
               const tocado=valores[s.id]!==undefined&&valores[s.id]!==""&&!isNaN(Number(valores[s.id]));
               return(
@@ -3692,7 +3693,7 @@ function StockProduccion({stock,saveStock,catalogo,registradoPor,empleados}){
   </>);
 }
 
-function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,saveProveedores,stock,saveStock}){
+function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,saveProveedores,stock,saveStock,sinEliminar}){
   const[provSel,setProvSel]=useState("");
   const[provNuevo,setProvNuevo]=useState("");
   const[mostrarNuevoProv,setMostrarNuevoProv]=useState(false);
@@ -3922,7 +3923,7 @@ function StockCatalogo({catalogo,saveCatalogo,proveedoresCat,proveedores,savePro
                   <td style={{...tdS,textAlign:"right",whiteSpace:"nowrap"}}>
                     <button onClick={()=>abrirEditar(c)} style={{background:"#F2EAE0",color:"#2C1A0E",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>Editar</button>
                     <button onClick={()=>toggleActivo(c.id,activo)} style={{background:"#F2EAE0",color:"#7B7063",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer",marginRight:4}}>{activo?"Desactivar":"Reactivar"}</button>
-                    <button onClick={()=>eliminar(c.id)} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>Eliminar</button>
+                    {!sinEliminar&&<button onClick={()=>eliminar(c.id)} style={{background:"#FFF0EF",color:"#C0392B",border:"none",borderRadius:6,padding:"4px 10px",fontSize:".68rem",fontWeight:600,cursor:"pointer"}}>Eliminar</button>}
                   </td>
                 </tr>
                 );
