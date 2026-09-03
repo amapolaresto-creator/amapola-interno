@@ -4055,9 +4055,11 @@ function StockPedidos({catalogo,proveedoresCat,pedidos,savePedidos,registradoPor
     await savePedidos(pedidos.filter(p=>p.id!==id));toast("Eliminado");
   };
 
+  // Antes se abria en una pestana nueva del navegador (window.open) -- en el celu eso saca de la
+  // app y el boton "atras" no vuelve al pedido (queda una pestana suelta sin historial propio).
+  // Ahora se muestra en el mismo modal in-app que ya usa el boton "Imprimir" de esta pantalla.
   const verNota=p=>{
-    const w=window.open("","_blank");
-    if(w){w.document.write(notaPedidoHTML(p));w.document.close();}
+    setImprimible({titulo:"Nota de pedido — "+p.proveedor,html:notaPedidoHTML(p)});
   };
 
   const colorEstado={pendiente:"#B7860B",enviado:"#2980B9",recibido:"#2D6A4F"};
@@ -7953,6 +7955,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
   const[verAdelantosAdmin,setVerAdelantosAdmin]=useState(false);
   const[verHsExtrasAdmin,setVerHsExtrasAdmin]=useState(false);
   const[verManual,setVerManual]=useState(false);
+  const[reciboAbierto,setReciboAbierto]=useState(null);
 
   // --- Libro diario de pagos de sueldos (visualización con filtros, debajo de los botones) ---
   const hoyLD2=new Date();
@@ -8191,21 +8194,23 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
     return registro;
   };
 
+  // Antes se abria en una pestana nueva del navegador (window.open) -- en el celu eso saca de la
+  // app y el boton "atras" no vuelve a la liquidacion (queda una pestana suelta sin historial propio,
+  // ademas de depender de que el navegador no bloquee popups). Ahora se muestra en el mismo modal
+  // in-app (ImprimibleModal) que ya usan Nota de conteo y Nota de pedido.
+  const verReciboModal=(liq,emp)=>{
+    setReciboAbierto({titulo:"Recibo — "+emp.nombre+" "+(emp.apellido||""),html:reciboHTML(liq,emp,(sueldos||[]).filter(s=>s.liquidacionId===liq.id))});
+  };
   const confirmarYRecibo=async()=>{
-    const w=window.open("","_blank");
     const reg=await guardar(true);
-    if(!reg){if(w)w.close();return;}
-    if(w){w.document.write(reciboHTML(reg,editando,(sueldos||[]).filter(s=>s.liquidacionId===reg.id)));w.document.close();}
-    else toast("Habilitá las ventanas emergentes para ver el recibo");
+    if(!reg)return;
+    verReciboModal(reg,editando);
   };
   const verRecibo=()=>{
-    const w=window.open("","_blank");
-    if(w){w.document.write(reciboHTML(form,editando,(sueldos||[]).filter(s=>s.liquidacionId===form.id)));w.document.close();}
+    verReciboModal(form,editando);
   };
   const verReciboDe=(liq,emp)=>{
-    const w=window.open("","_blank");
-    if(w){w.document.write(reciboHTML(liq,emp,(sueldos||[]).filter(s=>s.liquidacionId===liq.id)));w.document.close();}
-    else toast("Habilitá las ventanas emergentes para ver el recibo");
+    verReciboModal(liq,emp);
   };
 
   if(editando&&form){
@@ -8313,6 +8318,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
       <Btn bg="#7B7063" onClick={()=>guardar(false)} disabled={busy}>{busy?"Guardando…":"Guardar borrador"}</Btn>
       <Btn bg="#2C1A0E" onClick={confirmarYRecibo} disabled={busy}>Confirmar y generar recibo</Btn>
       {form.estado==="confirmada"&&<Btn bg="#B7860B" onClick={verRecibo}>Ver recibo</Btn>}
+      {reciboAbierto&&<ImprimibleModal titulo={reciboAbierto.titulo} html={reciboAbierto.html} onClose={()=>setReciboAbierto(null)}/>}
     </>);
   }
 
@@ -8710,6 +8716,7 @@ function LiquidacionSueldos({empleados,saveEmpleados,liquidaciones,saveLiquidaci
         <Empty icon="👷">No hay empleados activos cargados.</Empty>
       )}
     </Card>
+    {reciboAbierto&&<ImprimibleModal titulo={reciboAbierto.titulo} html={reciboAbierto.html} onClose={()=>setReciboAbierto(null)}/>}
   </>);
 }
 
