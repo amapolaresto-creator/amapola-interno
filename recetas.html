@@ -41,6 +41,8 @@ input,button,textarea,select{font-family:inherit;}
 .pr-pasos ol{padding-left:18px;font-size:11pt;line-height:1.5;}
 .pr-pasos li{margin-bottom:6px;}
 .pr-notas{margin-top:12px;border:1px solid #E8DCC8;border-left:4px solid #C9A227;padding:8px 10px;font-family:system-ui,sans-serif;font-size:10pt;white-space:pre-wrap;}
+.pr-box{margin-top:12px;border:1px solid #E8DCC8;padding:8px 10px;font-family:system-ui,sans-serif;font-size:10pt;line-height:1.5;}
+.pr-box .pr-h{margin-bottom:4px;}
 .pr-pie{margin-top:14px;font-family:system-ui,sans-serif;font-size:8pt;color:#9a8a78;}
 .pr-portada{font-family:Georgia,serif;text-align:center;padding-top:60mm;}
 .pr-portada h1{font-size:30pt;font-style:italic;margin-bottom:6px;}
@@ -129,6 +131,8 @@ function fichaHTML(r,foto){
       ${ing.length?`<div class="pr-ing pr-nobreak"><div class="pr-h">Ingredientes</div><table>${ing.map(i=>`<tr><td class="c">${esc([i.cant,i.unidad].filter(Boolean).join(" "))}</td><td>${esc(i.nombre)}</td></tr>`).join("")}</table></div>`:""}
       ${pasos.length?`<div class="pr-pasos"><div class="pr-h">Pasos</div><ol>${pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol></div>`:""}
     </div>
+    ${(r.porcion||r.vajilla||r.guarnicion||r.presentacion)?`<div class="pr-box pr-nobreak"><div class="pr-h">Porción y emplatado</div>${r.porcion?`<div>Porción: <b>${esc(r.porcion)}</b></div>`:""}${r.vajilla?`<div>Vajilla: <b>${esc(r.vajilla)}</b></div>`:""}${r.guarnicion?`<div>Guarnición: <b>${esc(r.guarnicion)}</b></div>`:""}${r.presentacion?`<div style="margin-top:4px;white-space:pre-wrap">${esc(r.presentacion)}</div>`:""}</div>`:""}
+    ${(r.conservacion||r.vidaUtil||r.rotulado)?`<div class="pr-box pr-nobreak"><div class="pr-h">Conservación</div>${r.conservacion?`<div>Dónde: <b>${esc(r.conservacion)}</b></div>`:""}${r.vidaUtil?`<div>Vida útil: <b>${esc(r.vidaUtil)}</b></div>`:""}${r.rotulado?`<div style="margin-top:4px;white-space:pre-wrap">${esc(r.rotulado)}</div>`:""}</div>`:""}
     ${(r.notas||"").trim()?`<div class="pr-notas pr-nobreak"><b>Importante:</b> ${esc(r.notas)}</div>`:""}
     <div class="pr-pie">Actualizada ${esc(r.actualizado||"")}${r.autor?" por "+esc(r.autor):""}</div>
   </div>`;
@@ -149,7 +153,7 @@ const btnS={padding:"10px 14px",borderRadius:10,border:"1px solid #E8DCC8",backg
 const lbl={display:"block",fontSize:".72rem",color:"#7B7063",marginBottom:5,fontWeight:600};
 
 // Recetas de arranque (lo que se definió con Adrian el 25/09/2026). Solo se ofrecen si el recetario está vacío.
-const SEMILLA=[{"id": "rec_jugonaranja", "nombre": "Jugo de naranja exprimido", "categoria": "Bebidas", "rinde": "1 vaso de 300 ml", "tiempo": "3 min", "ingredientes": [{"cant": "3 a 4", "unidad": "u", "nombre": "Naranjas (según tamaño)"}, {"cant": "2 a 3", "unidad": "u", "nombre": "Cubos de hielo (solo si el cliente lo pide)"}], "pasos": ["Lavar las naranjas antes de cortarlas. Conviene dejar varias lavadas al empezar el turno.", "Cortar al medio en el momento del pedido, no antes.", "Exprimir con el exprimidor sin apretar contra la parte blanca de la cáscara.", "Colar si el cliente lo quiere sin pulpa.", "Preguntar si lo quiere con o sin hielo. Con hielo: 2 o 3 cubos, sin llenar el vaso.", "Servir en el momento."], "notas": "No usar la licuadora para exprimir: la cáscara y la parte blanca amargan el jugo. No exprimir de antemano: a los 20-30 minutos se pone amargo.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian"}, {"id": "rec_bananacongelada", "nombre": "Banana congelada en porciones", "categoria": "Preparaciones previas", "rinde": "1 porción por banana (1 licuado)", "tiempo": "10 min + freezer", "ingredientes": [{"cant": "", "unidad": "", "nombre": "Bananas maduras (con pintitas negras)"}, {"cant": "", "unidad": "", "nombre": "Bolsitas o recipientes para freezer"}], "pasos": ["Pelar las bananas (congeladas con cáscara son muy difíciles de pelar).", "Cortar en rodajas o trozos.", "Armar una bolsita por banana (100 a 120 g). Una bolsita es un licuado.", "Rotular cada bolsita con la fecha.", "Guardar en el freezer y usar dentro de 1 a 2 meses."], "notas": "La banana que se descongeló no se vuelve a congelar.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian"}, {"id": "rec_licuadobanana", "nombre": "Licuado de banana", "categoria": "Bebidas", "rinde": "1 vaso de 300 a 350 ml", "tiempo": "2 min", "ingredientes": [{"cant": "250", "unidad": "ml", "nombre": "Leche fría"}, {"cant": "1", "unidad": "u", "nombre": "Porción de banana congelada"}, {"cant": "", "unidad": "a gusto", "nombre": "Azúcar o miel (solo si el cliente lo pide)"}], "pasos": ["Poner primero la leche fría en la licuadora.", "Agregar la porción de banana congelada.", "Licuar hasta que quede cremoso.", "Si queda muy espeso, sumar un chorrito más de leche.", "Servir en el momento, sin hielo."], "notas": "Primero la leche, después la banana: si va la banana primero, queda un bloque abajo y la licuadora sufre. No lleva hielo porque lo agua.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian"}];
+const SEMILLA=[{"id": "rec_jugonaranja", "nombre": "Jugo de naranja exprimido", "categoria": "Bebidas", "rinde": "1 vaso (300 ml de jugo)", "tiempo": "3 min", "ingredientes": [{"cant": "300", "unidad": "ml", "nombre": "Jugo de naranja recién exprimido (aprox. 3 a 4 naranjas lavadas)"}, {"cant": "2 a 3", "unidad": "u", "nombre": "Cubos de hielo (solo si el cliente lo pide)"}], "pasos": ["Lavar las naranjas antes de cortarlas. Conviene dejar varias lavadas al empezar el turno.", "Cortar al medio en el momento del pedido, no antes.", "Exprimir con el exprimidor sin apretar contra la parte blanca de la cáscara, hasta llegar a 300 ml medidos en jarra.", "Colar si el cliente lo quiere sin pulpa.", "Preguntar si lo quiere con o sin hielo. Con hielo: 2 o 3 cubos, sin llenar el vaso.", "Servir en el momento."], "notas": "No usar la licuadora para exprimir: la cáscara y la parte blanca amargan el jugo. No exprimir de antemano: a los 20-30 minutos se pone amargo.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian", "porcion": "300 ml", "conservacion": "No se guarda: se hace en el momento", "vidaUtil": "20 a 30 minutos (después se amarga)"}, {"id": "rec_bananacongelada", "nombre": "Banana congelada en porciones", "categoria": "Preparaciones previas", "rinde": "1 porción por banana (1 licuado)", "tiempo": "10 min + freezer", "ingredientes": [{"cant": "110", "unidad": "g", "nombre": "Banana madura pelada, por bolsita (con pintitas negras)"}, {"cant": "", "unidad": "", "nombre": "Bolsitas o recipientes para freezer"}], "pasos": ["Pelar las bananas (congeladas con cáscara son muy difíciles de pelar).", "Cortar en rodajas o trozos.", "Armar una bolsita de 110 g pesada en balanza. Una bolsita es un licuado.", "Rotular cada bolsita con la fecha.", "Guardar en el freezer y usar dentro de 1 a 2 meses."], "notas": "La banana que se descongeló no se vuelve a congelar.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian", "porcion": "110 g por bolsita", "conservacion": "Freezer (−18 °C)", "vidaUtil": "60 días", "rotulado": "Rotular cada bolsita con la fecha de elaboración. Lo más viejo se usa primero. Lo que se descongeló no se vuelve a congelar."}, {"id": "rec_licuadobanana", "nombre": "Licuado de banana", "categoria": "Bebidas", "rinde": "1 vaso de 300 a 350 ml", "tiempo": "2 min", "ingredientes": [{"cant": "250", "unidad": "ml", "nombre": "Leche fría"}, {"cant": "110", "unidad": "g", "nombre": "Banana congelada (1 bolsita)"}, {"cant": "", "unidad": "a gusto", "nombre": "Azúcar o miel (solo si el cliente lo pide)"}], "pasos": ["Poner primero la leche fría en la licuadora.", "Agregar la porción de banana congelada.", "Licuar hasta que quede cremoso.", "Si queda muy espeso, sumar un chorrito más de leche.", "Servir en el momento, sin hielo."], "notas": "Primero la leche, después la banana: si va la banana primero, queda un bloque abajo y la licuadora sufre. No lleva hielo porque lo agua.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian", "porcion": "300 a 350 ml", "conservacion": "No se guarda: se hace en el momento"}];
 
 const PIN_CODE="716";
 const VACIA=()=>({id:uid(),nombre:"",categoria:"",rinde:"",tiempo:"",ingredientes:[{cant:"",unidad:"",nombre:""}],pasos:[""],notas:"",thumb:"",tieneFoto:false});
@@ -409,6 +413,20 @@ function App(){
             </div>
           </div>
 
+          <div style={{borderTop:"1px solid #E8DCC8",paddingTop:14,fontWeight:700,fontSize:".9rem"}}>🍽️ Porción y emplatado</div>
+          <div style={{display:"flex",gap:10}}>
+            <div style={{flex:1}}><label style={lbl}>Porción exacta</label><input style={iS} value={form.porcion||""} onChange={e=>setF("porcion",e.target.value)} placeholder="Ej: 300 ml / 250 g"/></div>
+            <div style={{flex:1}}><label style={lbl}>Vajilla</label><input style={iS} value={form.vajilla||""} onChange={e=>setF("vajilla",e.target.value)} placeholder="Ej: Vaso alto de vidrio"/></div>
+          </div>
+          <div><label style={lbl}>Guarnición / acompañamiento</label><input style={iS} value={form.guarnicion||""} onChange={e=>setF("guarnicion",e.target.value)} placeholder="Ej: Rodaja de naranja en el borde"/></div>
+          <div><label style={lbl}>Cómo se presenta</label><textarea style={{...iS,minHeight:58,resize:"vertical"}} value={form.presentacion||""} onChange={e=>setF("presentacion",e.target.value)} placeholder="Ej: Con sorbete, servir apenas se exprime"/></div>
+          <div style={{borderTop:"1px solid #E8DCC8",paddingTop:14,fontWeight:700,fontSize:".9rem"}}>❄️ Conservación</div>
+          <div style={{display:"flex",gap:10}}>
+            <div style={{flex:1}}><label style={lbl}>Dónde se guarda</label><input style={iS} list="conserv" value={form.conservacion||""} onChange={e=>setF("conservacion",e.target.value)} placeholder="Elegí o escribí"/>
+              <datalist id="conserv">{["Heladera (0 a 5 °C)","Freezer (−18 °C)","Ambiente seco y fresco","No se guarda: se hace en el momento"].map(c=><option key={c} value={c}/>)}</datalist></div>
+            <div style={{flex:1}}><label style={lbl}>Vida útil</label><input style={iS} value={form.vidaUtil||""} onChange={e=>setF("vidaUtil",e.target.value)} placeholder="Ej: 3 días / 60 días"/></div>
+          </div>
+          <div><label style={lbl}>Rotulado y cuidados</label><textarea style={{...iS,minHeight:58,resize:"vertical"}} value={form.rotulado||""} onChange={e=>setF("rotulado",e.target.value)} placeholder="Ej: Rotular con fecha de elaboración. Lo más viejo se usa primero."/></div>
           <div><label style={lbl}>Importante / errores a evitar</label>
             <textarea style={{...iS,minHeight:80,resize:"vertical"}} value={form.notas} onChange={e=>setF("notas",e.target.value)} placeholder="Ej: No usar la licuadora para exprimir, amarga el jugo."/>
           </div>
@@ -456,6 +474,19 @@ function App(){
           ))}
         </div>}
 
+        {(sel.porcion||sel.vajilla||sel.guarnicion||sel.presentacion)&&<div style={{background:"#fff",border:"1px solid #E8DCC8",borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+          <div style={{fontWeight:700,marginBottom:8}}>🍽️ Porción y emplatado</div>
+          {sel.porcion&&<div style={{marginBottom:4}}>Porción: <b>{sel.porcion}</b></div>}
+          {sel.vajilla&&<div style={{marginBottom:4}}>Vajilla: <b>{sel.vajilla}</b></div>}
+          {sel.guarnicion&&<div style={{marginBottom:4}}>Guarnición: <b>{sel.guarnicion}</b></div>}
+          {sel.presentacion&&<div style={{marginTop:6,whiteSpace:"pre-wrap",color:"#5a4a3a"}}>{sel.presentacion}</div>}
+        </div>}
+        {(sel.conservacion||sel.vidaUtil||sel.rotulado)&&<div style={{background:"#EEF4FA",border:"1px solid #D6E4F0",borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+          <div style={{fontWeight:700,marginBottom:8}}>❄️ Conservación</div>
+          {sel.conservacion&&<div style={{marginBottom:4}}>Dónde: <b>{sel.conservacion}</b></div>}
+          {sel.vidaUtil&&<div style={{marginBottom:4}}>Vida útil: <b>{sel.vidaUtil}</b></div>}
+          {sel.rotulado&&<div style={{marginTop:6,whiteSpace:"pre-wrap",color:"#3a4a5a"}}>{sel.rotulado}</div>}
+        </div>}
         {(sel.notas||"").trim()&&<div style={{background:"#FFF8E1",borderLeft:"4px solid #C9A227",borderRadius:10,padding:"12px 14px",marginBottom:16,whiteSpace:"pre-wrap",fontSize:".95rem"}}><b>Importante:</b> {sel.notas}</div>}
         <div style={{fontSize:".75rem",color:"#9a8a78",marginBottom:20}}>Actualizada {sel.actualizado||"—"}{sel.autor?" por "+sel.autor:""}</div>
 
