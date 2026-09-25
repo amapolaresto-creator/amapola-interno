@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2C1A0E">
+<title>Amapola · Recetario</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,sans-serif;background:#F9F6F1;color:#2C1A0E;}
+input,button,textarea,select{font-family:inherit;}
+#print-area{display:none;}
+@media print{
+  @page{size:A4;margin:14mm;}
+  body{background:#fff;}
+  #root{display:none !important;}
+  #print-area{display:block !important;}
+  .pr-ficha{page-break-after:always;break-after:page;}
+  .pr-ficha:last-child{page-break-after:auto;break-after:auto;}
+  .pr-nobreak{break-inside:avoid;page-break-inside:avoid;}
+}
+.pr-ficha{font-family:Georgia,serif;color:#2C1A0E;padding:0 2mm;}
+.pr-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2C1A0E;padding-bottom:6px;margin-bottom:12px;}
+.pr-marca{font-style:italic;font-size:11pt;color:#7B7063;}
+.pr-cat{font-family:system-ui,sans-serif;font-size:9pt;color:#7B7063;}
+.pr-titulo{font-size:22pt;margin:4px 0 6px;}
+.pr-meta{font-family:system-ui,sans-serif;font-size:10pt;color:#5a4a3a;margin-bottom:12px;}
+.pr-foto{width:100%;max-height:85mm;object-fit:cover;border-radius:4px;margin-bottom:12px;}
+.pr-cols{display:flex;gap:18px;align-items:flex-start;}
+.pr-ing{flex:0 0 38%;}
+.pr-pasos{flex:1;}
+.pr-h{font-family:system-ui,sans-serif;font-size:10pt;font-weight:700;border-bottom:1px solid #E8DCC8;padding-bottom:3px;margin-bottom:6px;}
+.pr-ing table{width:100%;border-collapse:collapse;font-family:system-ui,sans-serif;font-size:10pt;}
+.pr-ing td{padding:3px 2px;border-bottom:1px dotted #E8DCC8;vertical-align:top;}
+.pr-ing td.c{white-space:nowrap;font-weight:700;padding-right:10px;width:1%;}
+.pr-pasos ol{padding-left:18px;font-size:11pt;line-height:1.5;}
+.pr-pasos li{margin-bottom:6px;}
+.pr-notas{margin-top:12px;border:1px solid #E8DCC8;border-left:4px solid #C9A227;padding:8px 10px;font-family:system-ui,sans-serif;font-size:10pt;white-space:pre-wrap;}
+.pr-pie{margin-top:14px;font-family:system-ui,sans-serif;font-size:8pt;color:#9a8a78;}
+.pr-portada{font-family:Georgia,serif;text-align:center;padding-top:60mm;}
+.pr-portada h1{font-size:30pt;font-style:italic;margin-bottom:6px;}
+.pr-portada p{font-family:system-ui,sans-serif;color:#7B7063;font-size:11pt;}
+.pr-indice{margin:30px auto 0;max-width:120mm;text-align:left;font-family:system-ui,sans-serif;font-size:10.5pt;}
+.pr-indice h3{font-size:10pt;margin:12px 0 4px;color:#7B7063;}
+@media (max-width:640px){.pr-cols{flex-direction:column;}.pr-ing{flex:auto;width:100%;}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="print-area"></div>
+<script type="text/babel">
+const{useState,useEffect,useRef}=React;
+
+const SB_URL="https://qupcqcbvjxxsghwatxgq.supabase.co/rest/v1";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1cGNxY2J2anh4c2dod2F0eGdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTI3OTcsImV4cCI6MjA5NzkyODc5N30.odc_ywGklknD1hpkX3PSnADXfuNm9Ci4hd550_J-awA";
+const SBH={"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json"};
+const KEY_LISTA="recetario";
+const keyFoto=id=>"recetarioFoto_"+id;
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const hoyTxt=()=>new Date().toLocaleDateString("es-AR");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const CATS_BASE=["Bebidas","Cafetería","Cocina caliente","Minutas","Pastelería","Salsas y bases","Preparaciones previas","Procedimientos"];
+
+async function sbGetLista(){
+  const r=await fetch(`${SB_URL}/amapola?select=value&key=eq.${KEY_LISTA}`,{headers:SBH});
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const rows=await r.json();
+  if(!rows.length)return[];
+  try{const v=JSON.parse(rows[0].value);return Array.isArray(v)?v:[];}catch{return[];}
+}
+async function sbSet(key,value){
+  const body=JSON.stringify({key,value:JSON.stringify(value),updated_at:new Date().toISOString()});
+  const r=await fetch(`${SB_URL}/amapola`,{method:"POST",headers:{...SBH,"Prefer":"resolution=merge-duplicates"},body});
+  if(!r.ok){const t=await r.text().catch(()=>"");throw new Error(`HTTP ${r.status}: ${t.slice(0,80)}`);}
+}
+async function sbDel(key){
+  await fetch(`${SB_URL}/amapola?key=eq.${encodeURIComponent(key)}`,{method:"DELETE",headers:SBH}).catch(()=>{});
+}
+async function sbGetFotos(ids){
+  if(!ids.length)return{};
+  const keys=ids.map(keyFoto).join(",");
+  const r=await fetch(`${SB_URL}/amapola?select=key,value&key=in.(${keys})`,{headers:SBH});
+  if(!r.ok)return{};
+  const rows=await r.json();
+  const m={};
+  rows.forEach(x=>{try{m[x.key.replace("recetarioFoto_","")]=JSON.parse(x.value);}catch{}});
+  return m;
+}
+
+// Achica la foto en el celular antes de subirla (para que no pese megas)
+function comprimir(file,max,calidad){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const esc=Math.min(1,max/Math.max(img.width,img.height));
+        const c=document.createElement("canvas");
+        c.width=Math.round(img.width*esc);c.height=Math.round(img.height*esc);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        res(c.toDataURL("image/jpeg",calidad));
+      };
+      img.onerror=rej;
+      img.src=fr.result;
+    };
+    fr.onerror=rej;
+    fr.readAsDataURL(file);
+  });
+}
+
+// ---------- Impresión (sin abrir pestañas nuevas: se arma un área oculta y se llama a window.print) ----------
+function fichaHTML(r,foto){
+  const ing=(r.ingredientes||[]).filter(i=>(i.nombre||"").trim());
+  const pasos=(r.pasos||[]).filter(p=>(p||"").trim());
+  const meta=[r.rinde&&("Rinde: "+esc(r.rinde)),r.tiempo&&("Tiempo: "+esc(r.tiempo))].filter(Boolean).join("   ·   ");
+  return `<div class="pr-ficha">
+    <div class="pr-head"><span class="pr-marca">Amapola · Recetario</span><span class="pr-cat">${esc(r.categoria||"")}</span></div>
+    <div class="pr-titulo">${esc(r.nombre)}</div>
+    ${meta?`<div class="pr-meta">${meta}</div>`:""}
+    ${foto?`<img class="pr-foto" src="${foto}">`:""}
+    <div class="pr-cols">
+      ${ing.length?`<div class="pr-ing pr-nobreak"><div class="pr-h">Ingredientes</div><table>${ing.map(i=>`<tr><td class="c">${esc([i.cant,i.unidad].filter(Boolean).join(" "))}</td><td>${esc(i.nombre)}</td></tr>`).join("")}</table></div>`:""}
+      ${pasos.length?`<div class="pr-pasos"><div class="pr-h">Pasos</div><ol>${pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol></div>`:""}
+    </div>
+    ${(r.notas||"").trim()?`<div class="pr-notas pr-nobreak"><b>Importante:</b> ${esc(r.notas)}</div>`:""}
+    <div class="pr-pie">Actualizada ${esc(r.actualizado||"")}${r.autor?" por "+esc(r.autor):""}</div>
+  </div>`;
+}
+function imprimirHTML(html){
+  const area=document.getElementById("print-area");
+  area.innerHTML=html;
+  const imgs=Array.from(area.querySelectorAll("img"));
+  Promise.all(imgs.map(i=>i.complete?1:new Promise(ok=>{i.onload=i.onerror=ok;}))).then(()=>{
+    setTimeout(()=>{window.print();},150);
+  });
+}
+
+// ---------- Estilos compartidos ----------
+const iS={width:"100%",border:"1px solid #E8DCC8",borderRadius:10,padding:"10px 12px",fontSize:".95rem",background:"#fff",color:"#2C1A0E",outline:"none"};
+const btnP={padding:"12px 16px",borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:".95rem"};
+const btnS={padding:"10px 14px",borderRadius:10,border:"1px solid #E8DCC8",background:"#fff",color:"#2C1A0E",fontWeight:600,cursor:"pointer",fontSize:".85rem"};
+const lbl={display:"block",fontSize:".72rem",color:"#7B7063",marginBottom:5,fontWeight:600};
+
+// Recetas de arranque (lo que se definió con Adrian el 25/09/2026). Solo se ofrecen si el recetario está vacío.
+const SEMILLA=[{"id": "rec_jugonaranja", "nombre": "Jugo de naranja exprimido", "categoria": "Bebidas", "rinde": "1 vaso de 300 ml", "tiempo": "3 min", "ingredientes": [{"cant": "3 a 4", "unidad": "u", "nombre": "Naranjas (según tamaño)"}, {"cant": "2 a 3", "unidad": "u", "nombre": "Cubos de hielo (solo si el cliente lo pide)"}], "pasos": ["Lavar las naranjas antes de cortarlas. Conviene dejar varias lavadas al empezar el turno.", "Cortar al medio en el momento del pedido, no antes.", "Exprimir con el exprimidor sin apretar contra la parte blanca de la cáscara.", "Colar si el cliente lo quiere sin pulpa.", "Preguntar si lo quiere con o sin hielo. Con hielo: 2 o 3 cubos, sin llenar el vaso.", "Servir en el momento."], "notas": "No usar la licuadora para exprimir: la cáscara y la parte blanca amargan el jugo. No exprimir de antemano: a los 20-30 minutos se pone amargo.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian"}, {"id": "rec_bananacongelada", "nombre": "Banana congelada en porciones", "categoria": "Preparaciones previas", "rinde": "1 porción por banana (1 licuado)", "tiempo": "10 min + freezer", "ingredientes": [{"cant": "", "unidad": "", "nombre": "Bananas maduras (con pintitas negras)"}, {"cant": "", "unidad": "", "nombre": "Bolsitas o recipientes para freezer"}], "pasos": ["Pelar las bananas (congeladas con cáscara son muy difíciles de pelar).", "Cortar en rodajas o trozos.", "Armar una bolsita por banana (100 a 120 g). Una bolsita es un licuado.", "Rotular cada bolsita con la fecha.", "Guardar en el freezer y usar dentro de 1 a 2 meses."], "notas": "La banana que se descongeló no se vuelve a congelar.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian"}, {"id": "rec_licuadobanana", "nombre": "Licuado de banana", "categoria": "Bebidas", "rinde": "1 vaso de 300 a 350 ml", "tiempo": "2 min", "ingredientes": [{"cant": "250", "unidad": "ml", "nombre": "Leche fría"}, {"cant": "1", "unidad": "u", "nombre": "Porción de banana congelada"}, {"cant": "", "unidad": "a gusto", "nombre": "Azúcar o miel (solo si el cliente lo pide)"}], "pasos": ["Poner primero la leche fría en la licuadora.", "Agregar la porción de banana congelada.", "Licuar hasta que quede cremoso.", "Si queda muy espeso, sumar un chorrito más de leche.", "Servir en el momento, sin hielo."], "notas": "Primero la leche, después la banana: si va la banana primero, queda un bloque abajo y la licuadora sufre. No lleva hielo porque lo agua.", "thumb": "", "tieneFoto": false, "actualizado": "25/9/2026", "autor": "Adrian"}];
+
+const PIN_CODE="716";
+const VACIA=()=>({id:uid(),nombre:"",categoria:"",rinde:"",tiempo:"",ingredientes:[{cant:"",unidad:"",nombre:""}],pasos:[""],notas:"",thumb:"",tieneFoto:false});
+
+function App(){
+  const[pinOk,setPinOk]=useState(()=>{try{return localStorage.getItem("amapola_recetas_pin")==="1";}catch{return false;}});
+  const[pinInput,setPinInput]=useState("");
+  const[pinErr,setPinErr]=useState(false);
+  const[fase,setFase]=useState("cargando");
+  const[lista,setLista]=useState([]);
+  const[q,setQ]=useState("");
+  const[cat,setCat]=useState("");
+  const[vista,setVista]=useState("lista"); // lista | ficha | form | recetario
+  const[selId,setSelId]=useState(null);
+  const[fotoFull,setFotoFull]=useState({}); // id -> dataURL
+  const[form,setForm]=useState(null);
+  const[fotoNueva,setFotoNueva]=useState(null); // {full,thumb} | "borrar" | null
+  const[busy,setBusy]=useState(false);
+  const[toastMsg,setToastMsg]=useState("");
+  const[selImp,setSelImp]=useState({});
+  const[autor,setAutor]=useState(()=>{try{return localStorage.getItem("amapola_recetas_autor")||"";}catch{return"";}});
+  const fileRef=useRef(null);
+
+  const toast=m=>{setToastMsg(m);setTimeout(()=>setToastMsg(""),2600);};
+
+  const cargar=async()=>{
+    try{setLista(await sbGetLista());setFase("listo");}catch{setFase("error");}
+  };
+  useEffect(()=>{if(pinOk)cargar();},[pinOk]);
+  useEffect(()=>{window.scrollTo(0,0);},[vista,selId]);
+
+  const checkPin=()=>{
+    if(pinInput.trim()===PIN_CODE){try{localStorage.setItem("amapola_recetas_pin","1");}catch{}setPinOk(true);}
+    else{setPinErr(true);setPinInput("");}
+  };
+
+  const cats=Array.from(new Set([...CATS_BASE,...lista.map(r=>r.categoria).filter(Boolean)]));
+  const catsUsadas=cats.filter(c=>lista.some(r=>r.categoria===c));
+  const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const filtrada=lista
+    .filter(r=>!cat||r.categoria===cat)
+    .filter(r=>!q.trim()||norm(r.nombre+" "+(r.ingredientes||[]).map(i=>i.nombre).join(" ")).includes(norm(q.trim())))
+    .slice().sort((a,b)=>(a.categoria||"").localeCompare(b.categoria||"")||a.nombre.localeCompare(b.nombre));
+
+  const sel=lista.find(r=>r.id===selId);
+
+  const abrirFicha=async r=>{
+    setSelId(r.id);setVista("ficha");
+    if(r.tieneFoto&&!fotoFull[r.id]){
+      const m=await sbGetFotos([r.id]);
+      if(m[r.id])setFotoFull(f=>({...f,[r.id]:m[r.id]}));
+    }
+  };
+
+  const nueva=()=>{setForm({...VACIA(),categoria:cat||""});setFotoNueva(null);setVista("form");};
+  const editar=r=>{
+    setForm(JSON.parse(JSON.stringify({...r,ingredientes:(r.ingredientes&&r.ingredientes.length)?r.ingredientes:[{cant:"",unidad:"",nombre:""}],pasos:(r.pasos&&r.pasos.length)?r.pasos:[""]})));
+    setFotoNueva(null);setVista("form");
+  };
+
+  const elegirFoto=async ev=>{
+    const f=ev.target.files&&ev.target.files[0];
+    ev.target.value="";
+    if(!f)return;
+    try{
+      const full=await comprimir(f,1100,0.74);
+      const thumb=await comprimir(f,260,0.7);
+      setFotoNueva({full,thumb});
+    }catch{toast("⚠️ No se pudo leer esa imagen");}
+  };
+
+  const guardar=async()=>{
+    if(!form.nombre.trim()){toast("Poné el nombre de la receta");return;}
+    setBusy(true);
+    try{
+      const r={...form,
+        nombre:form.nombre.trim(),
+        categoria:(form.categoria||"").trim(),
+        ingredientes:form.ingredientes.filter(i=>(i.nombre||"").trim()),
+        pasos:form.pasos.map(p=>p.trim()).filter(Boolean),
+        actualizado:hoyTxt(),
+        autor:autor.trim()};
+      if(fotoNueva&&fotoNueva!=="borrar"){
+        await sbSet(keyFoto(r.id),fotoNueva.full);
+        r.thumb=fotoNueva.thumb;r.tieneFoto=true;
+        setFotoFull(f=>({...f,[r.id]:fotoNueva.full}));
+      }else if(fotoNueva==="borrar"){
+        await sbDel(keyFoto(r.id));
+        r.thumb="";r.tieneFoto=false;
+        setFotoFull(f=>{const n={...f};delete n[r.id];return n;});
+      }
+      // Se relee la lista justo antes de guardar, así no se pisan cargas de otro celular
+      const actual=await sbGetLista();
+      const existe=actual.some(x=>x.id===r.id);
+      const nuevaLista=existe?actual.map(x=>x.id===r.id?r:x):[r,...actual];
+      await sbSet(KEY_LISTA,nuevaLista);
+      setLista(nuevaLista);
+      try{localStorage.setItem("amapola_recetas_autor",autor.trim());}catch{}
+      toast("Receta guardada ✓");
+      setSelId(r.id);setVista("ficha");setForm(null);setFotoNueva(null);
+    }catch(e){toast("⚠️ No se pudo guardar, revisá la conexión");}
+    setBusy(false);
+  };
+
+  const eliminar=async r=>{
+    if(!window.confirm(`¿Eliminar "${r.nombre}"? No se puede deshacer.`))return;
+    setBusy(true);
+    try{
+      const actual=await sbGetLista();
+      const nuevaLista=actual.filter(x=>x.id!==r.id);
+      await sbSet(KEY_LISTA,nuevaLista);
+      if(r.tieneFoto)await sbDel(keyFoto(r.id));
+      setLista(nuevaLista);setVista("lista");setSelId(null);
+      toast("Receta eliminada");
+    }catch{toast("⚠️ No se pudo eliminar, revisá la conexión");}
+    setBusy(false);
+  };
+
+  const cargarSemilla=async()=>{
+    setBusy(true);
+    try{
+      const actual=await sbGetLista();
+      const nuevaLista=[...actual,...SEMILLA.filter(x=>!actual.some(a=>a.id===x.id))];
+      await sbSet(KEY_LISTA,nuevaLista);setLista(nuevaLista);toast("Recetas cargadas ✓");
+    }catch{toast("⚠️ No se pudo guardar, revisá la conexión");}
+    setBusy(false);
+  };
+
+  const imprimirFicha=async r=>{
+    let foto=fotoFull[r.id];
+    if(r.tieneFoto&&!foto){const m=await sbGetFotos([r.id]);foto=m[r.id];}
+    imprimirHTML(fichaHTML(r,foto));
+  };
+
+  const imprimirRecetario=async()=>{
+    const elegidas=filtradaImp().filter(r=>selImp[r.id]);
+    if(!elegidas.length){toast("Marcá al menos una receta");return;}
+    setBusy(true);
+    const faltan=elegidas.filter(r=>r.tieneFoto&&!fotoFull[r.id]).map(r=>r.id);
+    let fotos={...fotoFull};
+    try{if(faltan.length)fotos={...fotos,...(await sbGetFotos(faltan))};}catch{}
+    setFotoFull(fotos);
+    const porCat={};
+    elegidas.forEach(r=>{const c=r.categoria||"Sin categoría";(porCat[c]=porCat[c]||[]).push(r);});
+    const portada=`<div class="pr-ficha"><div class="pr-portada"><h1>Amapola</h1><p>Recetario y procedimientos · ${hoyTxt()}</p>
+      <div class="pr-indice">${Object.keys(porCat).map(c=>`<h3>${esc(c)}</h3>${porCat[c].map(r=>`<div>${esc(r.nombre)}</div>`).join("")}`).join("")}</div></div></div>`;
+    const cuerpo=Object.keys(porCat).map(c=>porCat[c].map(r=>fichaHTML(r,fotos[r.id])).join("")).join("");
+    setBusy(false);
+    imprimirHTML(portada+cuerpo);
+  };
+  const filtradaImp=()=>lista.slice().sort((a,b)=>(a.categoria||"").localeCompare(b.categoria||"")||a.nombre.localeCompare(b.nombre));
+
+  // ---------- PIN ----------
+  if(!pinOk){
+    return(
+      <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{width:"100%",maxWidth:320,textAlign:"center"}}>
+          <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.3rem",marginBottom:18}}>Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Recetario</div>
+          <input type="password" inputMode="numeric" placeholder="PIN" value={pinInput} autoFocus
+            onChange={ev=>{setPinInput(ev.target.value);setPinErr(false);}}
+            onKeyDown={ev=>ev.key==="Enter"&&checkPin()}
+            style={{...iS,border:`1.5px solid ${pinErr?"#E74C3C":"#E8DCC8"}`,padding:"14px 16px",fontSize:"1.1rem",textAlign:"center",letterSpacing:"4px",marginBottom:10}}/>
+          {pinErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:10}}>PIN incorrecto</p>}
+          <button onClick={checkPin} style={{...btnP,width:"100%",padding:14,fontSize:"1rem"}}>Ingresar</button>
+        </div>
+      </div>
+    );
+  }
+  if(fase==="cargando")return <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#7B7063"}}>Cargando recetas…</p></div>;
+  if(fase==="error")return(
+    <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:20,textAlign:"center"}}>
+      <p style={{color:"#C0392B",fontWeight:600}}>No se pudo conectar. Revisá el wifi o los datos del celular.</p>
+      <button onClick={cargar} style={btnP}>Reintentar</button>
+    </div>
+  );
+
+  const Titulo=({children,volver})=>(
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+      {volver&&<button onClick={volver} style={{...btnS,padding:"8px 12px"}}>←</button>}
+      <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.35rem"}}>{children}</div>
+    </div>
+  );
+
+  const toastEl=toastMsg&&<div style={{position:"fixed",left:"50%",bottom:20,transform:"translateX(-50%)",background:"#2C1A0E",color:"#fff",borderRadius:30,padding:"10px 18px",fontSize:".85rem",zIndex:1100,boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>{toastMsg}</div>;
+  const wrap={minHeight:"100dvh",maxWidth:720,margin:"0 auto",padding:"24px 16px 80px"};
+
+  // ---------- FORMULARIO ----------
+  if(vista==="form"&&form){
+    const setF=(k,v)=>setForm(f=>({...f,[k]:v}));
+    const setIng=(i,k,v)=>setForm(f=>({...f,ingredientes:f.ingredientes.map((x,j)=>j===i?{...x,[k]:v}:x)}));
+    const setPaso=(i,v)=>setForm(f=>({...f,pasos:f.pasos.map((x,j)=>j===i?v:x)}));
+    const moverPaso=(i,d)=>setForm(f=>{const p=[...f.pasos];const j=i+d;if(j<0||j>=p.length)return f;[p[i],p[j]]=[p[j],p[i]];return{...f,pasos:p};});
+    const thumbVista=fotoNueva==="borrar"?"":(fotoNueva?fotoNueva.thumb:form.thumb);
+    const esNueva=!lista.some(r=>r.id===form.id);
+    return(
+      <div style={wrap}>
+        <Titulo volver={()=>{setVista(esNueva?"lista":"ficha");setForm(null);}}>{esNueva?"Nueva receta":"Editar receta"}</Titulo>
+
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <div><label style={lbl}>Nombre</label><input style={iS} value={form.nombre} onChange={e=>setF("nombre",e.target.value)} placeholder="Ej: Jugo de naranja exprimido"/></div>
+          <div><label style={lbl}>Categoría</label>
+            <input style={iS} list="cats" value={form.categoria} onChange={e=>setF("categoria",e.target.value)} placeholder="Elegí o escribí una nueva"/>
+            <datalist id="cats">{cats.map(c=><option key={c} value={c}/>)}</datalist>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <div style={{flex:1}}><label style={lbl}>Rinde</label><input style={iS} value={form.rinde} onChange={e=>setF("rinde",e.target.value)} placeholder="Ej: 1 vaso de 300 ml"/></div>
+            <div style={{flex:1}}><label style={lbl}>Tiempo</label><input style={iS} value={form.tiempo} onChange={e=>setF("tiempo",e.target.value)} placeholder="Ej: 3 min"/></div>
+          </div>
+
+          <div>
+            <label style={lbl}>Foto del plato</label>
+            <input ref={fileRef} type="file" accept="image/*" onChange={elegirFoto} style={{display:"none"}}/>
+            {thumbVista?(
+              <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                <img src={thumbVista} style={{width:96,height:96,objectFit:"cover",borderRadius:10,border:"1px solid #E8DCC8"}}/>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  <button style={btnS} onClick={()=>fileRef.current.click()}>Cambiar foto</button>
+                  <button style={{...btnS,color:"#C0392B"}} onClick={()=>setFotoNueva("borrar")}>Quitar foto</button>
+                </div>
+              </div>
+            ):(
+              <button style={{...btnS,width:"100%",padding:"18px",borderStyle:"dashed"}} onClick={()=>fileRef.current.click()}>📷 Sacar o elegir foto</button>
+            )}
+          </div>
+
+          <div>
+            <label style={lbl}>Ingredientes</label>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {form.ingredientes.map((ing,i)=>(
+                <div key={i} style={{display:"flex",gap:6}}>
+                  <input style={{...iS,width:70,flex:"0 0 70px"}} value={ing.cant} onChange={e=>setIng(i,"cant",e.target.value)} placeholder="Cant." inputMode="decimal"/>
+                  <input style={{...iS,width:80,flex:"0 0 80px"}} value={ing.unidad} onChange={e=>setIng(i,"unidad",e.target.value)} placeholder="Unidad" list="unidades"/>
+                  <input style={{...iS,flex:1,minWidth:0}} value={ing.nombre} onChange={e=>setIng(i,"nombre",e.target.value)} placeholder="Ingrediente"/>
+                  <button onClick={()=>setForm(f=>({...f,ingredientes:f.ingredientes.filter((_,j)=>j!==i)}))} style={{...btnS,padding:"0 12px",color:"#C0392B"}} aria-label="Quitar ingrediente">✕</button>
+                </div>
+              ))}
+              <datalist id="unidades">{["g","kg","ml","l","u","cda","cdta","taza","pizca","a gusto"].map(u=><option key={u} value={u}/>)}</datalist>
+              <button style={{...btnS,alignSelf:"flex-start"}} onClick={()=>setForm(f=>({...f,ingredientes:[...f.ingredientes,{cant:"",unidad:"",nombre:""}]}))}>+ Ingrediente</button>
+            </div>
+          </div>
+
+          <div>
+            <label style={lbl}>Pasos</label>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {form.pasos.map((p,i)=>(
+                <div key={i} style={{display:"flex",gap:6,alignItems:"flex-start"}}>
+                  <div style={{flex:"0 0 26px",height:26,borderRadius:13,background:"#2C1A0E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",fontWeight:700,marginTop:8}}>{i+1}</div>
+                  <textarea style={{...iS,flex:1,minHeight:58,resize:"vertical"}} value={p} onChange={e=>setPaso(i,e.target.value)} placeholder="Qué hay que hacer en este paso"/>
+                  <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                    <button onClick={()=>moverPaso(i,-1)} style={{...btnS,padding:"4px 10px"}} aria-label="Subir paso">↑</button>
+                    <button onClick={()=>moverPaso(i,1)} style={{...btnS,padding:"4px 10px"}} aria-label="Bajar paso">↓</button>
+                    <button onClick={()=>setForm(f=>({...f,pasos:f.pasos.filter((_,j)=>j!==i)}))} style={{...btnS,padding:"4px 10px",color:"#C0392B"}} aria-label="Quitar paso">✕</button>
+                  </div>
+                </div>
+              ))}
+              <button style={{...btnS,alignSelf:"flex-start"}} onClick={()=>setForm(f=>({...f,pasos:[...f.pasos,""]}))}>+ Paso</button>
+            </div>
+          </div>
+
+          <div><label style={lbl}>Importante / errores a evitar</label>
+            <textarea style={{...iS,minHeight:80,resize:"vertical"}} value={form.notas} onChange={e=>setF("notas",e.target.value)} placeholder="Ej: No usar la licuadora para exprimir, amarga el jugo."/>
+          </div>
+          <div><label style={lbl}>Cargado por</label><input style={iS} value={autor} onChange={e=>setAutor(e.target.value)} placeholder="Tu nombre"/></div>
+
+          <button disabled={busy} onClick={guardar} style={{...btnP,padding:14,fontSize:"1rem",opacity:busy?.6:1}}>{busy?"Guardando…":"Guardar receta"}</button>
+        </div>
+        {toastEl}
+      </div>
+    );
+  }
+
+  // ---------- FICHA ----------
+  if(vista==="ficha"&&sel){
+    const foto=fotoFull[sel.id]||sel.thumb;
+    return(
+      <div style={wrap}>
+        <Titulo volver={()=>setVista("lista")}>Recetario</Titulo>
+        {foto&&<img src={foto} alt={sel.nombre} style={{width:"100%",maxHeight:340,objectFit:"cover",borderRadius:14,marginBottom:16,background:"#E8DCC8"}}/>}
+        {sel.categoria&&<div style={{fontSize:".8rem",color:"#7B7063",marginBottom:4}}>{sel.categoria}</div>}
+        <h1 style={{fontFamily:"Georgia,serif",fontSize:"1.8rem",lineHeight:1.15,marginBottom:8}}>{sel.nombre}</h1>
+        {(sel.rinde||sel.tiempo)&&<div style={{display:"flex",gap:16,fontSize:".9rem",color:"#5a4a3a",marginBottom:18,flexWrap:"wrap"}}>
+          {sel.rinde&&<span>Rinde: <b>{sel.rinde}</b></span>}{sel.tiempo&&<span>Tiempo: <b>{sel.tiempo}</b></span>}
+        </div>}
+
+        {(sel.ingredientes||[]).length>0&&<div style={{background:"#fff",border:"1px solid #E8DCC8",borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+          <div style={{fontWeight:700,marginBottom:8}}>Ingredientes</div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:"1rem"}}><tbody>
+            {sel.ingredientes.map((i,k)=>(
+              <tr key={k} style={{borderBottom:k<sel.ingredientes.length-1?"1px dotted #E8DCC8":"none"}}>
+                <td style={{padding:"7px 14px 7px 0",fontWeight:700,whiteSpace:"nowrap",verticalAlign:"top",width:"1%"}}>{[i.cant,i.unidad].filter(Boolean).join(" ")}</td>
+                <td style={{padding:"7px 0"}}>{i.nombre}</td>
+              </tr>
+            ))}
+          </tbody></table>
+        </div>}
+
+        {(sel.pasos||[]).length>0&&<div style={{marginBottom:16}}>
+          <div style={{fontWeight:700,marginBottom:10}}>Pasos</div>
+          {sel.pasos.map((p,k)=>(
+            <div key={k} style={{display:"flex",gap:12,marginBottom:14}}>
+              <div style={{flex:"0 0 30px",height:30,borderRadius:15,background:"#2C1A0E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>{k+1}</div>
+              <div style={{fontSize:"1.05rem",lineHeight:1.5,paddingTop:3}}>{p}</div>
+            </div>
+          ))}
+        </div>}
+
+        {(sel.notas||"").trim()&&<div style={{background:"#FFF8E1",borderLeft:"4px solid #C9A227",borderRadius:10,padding:"12px 14px",marginBottom:16,whiteSpace:"pre-wrap",fontSize:".95rem"}}><b>Importante:</b> {sel.notas}</div>}
+        <div style={{fontSize:".75rem",color:"#9a8a78",marginBottom:20}}>Actualizada {sel.actualizado||"—"}{sel.autor?" por "+sel.autor:""}</div>
+
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          <button style={{...btnP,flex:"1 1 100%"}} onClick={()=>imprimirFicha(sel)}>🖨️ Imprimir ficha</button>
+          <button style={{...btnS,flex:1}} onClick={()=>editar(sel)}>✏️ Editar</button>
+          <button disabled={busy} style={{...btnS,color:"#C0392B"}} onClick={()=>eliminar(sel)}>Eliminar</button>
+        </div>
+        {toastEl}
+      </div>
+    );
+  }
+
+  // ---------- ARMAR RECETARIO PARA IMPRIMIR ----------
+  if(vista==="recetario"){
+    const todas=filtradaImp();
+    const porCat={};todas.forEach(r=>{const c=r.categoria||"Sin categoría";(porCat[c]=porCat[c]||[]).push(r);});
+    const cant=todas.filter(r=>selImp[r.id]).length;
+    const marcarCat=(c,v)=>setSelImp(s=>{const n={...s};porCat[c].forEach(r=>{n[r.id]=v;});return n;});
+    return(
+      <div style={wrap}>
+        <Titulo volver={()=>setVista("lista")}>Imprimir recetario</Titulo>
+        <p style={{fontSize:".85rem",color:"#7B7063",marginBottom:14}}>Marcá las recetas o categorías completas. Sale una portada con índice y una ficha por hoja.</p>
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          <button style={btnS} onClick={()=>setSelImp(Object.fromEntries(todas.map(r=>[r.id,true])))}>Marcar todas</button>
+          <button style={btnS} onClick={()=>setSelImp({})}>Desmarcar</button>
+        </div>
+        {Object.keys(porCat).map(c=>{
+          const todasCat=porCat[c].every(r=>selImp[r.id]);
+          return(
+            <div key={c} style={{background:"#fff",border:"1px solid #E8DCC8",borderRadius:14,padding:"10px 14px",marginBottom:12}}>
+              <label style={{display:"flex",alignItems:"center",gap:10,fontWeight:700,padding:"6px 0",cursor:"pointer"}}>
+                <input type="checkbox" checked={todasCat} onChange={e=>marcarCat(c,e.target.checked)} style={{width:18,height:18}}/>{c} <span style={{fontWeight:400,color:"#9a8a78",fontSize:".8rem"}}>({porCat[c].length})</span>
+              </label>
+              {porCat[c].map(r=>(
+                <label key={r.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0 7px 26px",borderTop:"1px dotted #E8DCC8",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!selImp[r.id]} onChange={e=>setSelImp(s=>({...s,[r.id]:e.target.checked}))} style={{width:18,height:18}}/>{r.nombre}
+                </label>
+              ))}
+            </div>
+          );
+        })}
+        <button disabled={busy||!cant} onClick={imprimirRecetario} style={{...btnP,width:"100%",padding:14,opacity:(busy||!cant)?.5:1,position:"sticky",bottom:16}}>
+          {busy?"Preparando…":`🖨️ Imprimir ${cant} receta${cant===1?"":"s"}`}
+        </button>
+        {toastEl}
+      </div>
+    );
+  }
+
+  // ---------- LISTA ----------
+  return(
+    <div style={wrap}>
+      <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.45rem",marginBottom:2}}>Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Recetario</div>
+      <p style={{fontSize:".82rem",color:"#7B7063",marginBottom:16}}>Recetas y procedimientos de la casa. Si algo se hace distinto, corregilo acá para que todos lo hagan igual.</p>
+
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <button onClick={nueva} style={{...btnP,flex:1}}>+ Nueva receta</button>
+        <button onClick={()=>{setSelImp({});setVista("recetario");}} disabled={!lista.length} style={{...btnS,opacity:lista.length?1:.5}}>🖨️ Recetario</button>
+      </div>
+      <input style={{...iS,marginBottom:10}} value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar por nombre o ingrediente"/>
+      {catsUsadas.length>0&&<div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:6,marginBottom:12}}>
+        {["",...catsUsadas].map(c=>(
+          <button key={c||"todas"} onClick={()=>setCat(c)} style={{flex:"0 0 auto",padding:"7px 13px",borderRadius:20,border:"1px solid "+(cat===c?"#2C1A0E":"#E8DCC8"),background:cat===c?"#2C1A0E":"#fff",color:cat===c?"#fff":"#2C1A0E",fontSize:".8rem",cursor:"pointer",fontWeight:600}}>{c||"Todas"}</button>
+        ))}
+      </div>}
+
+      {lista.length===0&&<div style={{textAlign:"center",padding:"40px 10px",color:"#7B7063"}}>
+        <div style={{fontSize:"2rem",marginBottom:8}}>📖</div>
+        Todavía no hay recetas. Cargá la primera con “+ Nueva receta”.
+        <div style={{marginTop:16}}><button disabled={busy} onClick={cargarSemilla} style={btnS}>Cargar jugo de naranja, licuado y banana congelada</button></div>
+      </div>}
+      {lista.length>0&&filtrada.length===0&&<p style={{color:"#7B7063",fontSize:".9rem",padding:"20px 0"}}>No hay recetas que coincidan con la búsqueda.</p>}
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {filtrada.map(r=>(
+          <button key={r.id} onClick={()=>abrirFicha(r)} style={{display:"flex",gap:12,alignItems:"center",width:"100%",padding:10,borderRadius:14,border:"1px solid #E8DCC8",background:"#fff",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 3px rgba(44,26,14,.06)"}}>
+            {r.thumb?<img src={r.thumb} style={{width:64,height:64,objectFit:"cover",borderRadius:10,flex:"0 0 64px"}}/>
+              :<div style={{width:64,height:64,borderRadius:10,flex:"0 0 64px",background:"#F3ECE1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{r.categoria==="Procedimientos"?"📋":"🍽️"}</div>}
+            <div style={{minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:"1rem",color:"#2C1A0E"}}>{r.nombre}</div>
+              <div style={{fontSize:".78rem",color:"#7B7063",marginTop:2}}>{[r.categoria,r.rinde].filter(Boolean).join(" · ")}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+      {toastEl}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
