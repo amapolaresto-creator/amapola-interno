@@ -18,10 +18,12 @@ input,button,select{font-family:inherit;}
 <body>
 <div id="root"></div>
 <script type="text/babel">
-// Página pública de SOLO LECTURA de los horarios (Cocina y Front) — creada 2026-09-25.
+// Página pública de SOLO LECTURA de los horarios (Cocina y Front) — creada 2026-09-25, mejorada 2026-09-27.
 // Sin login del sitio: PIN de fricción mínima (mismo que penalidades.html), guardado en localStorage.
 // Lee solo las keys horariosCocina y horariosFront de Supabase (no trae empleados ni sueldos).
-// Se edita desde Amapola Interno → 🗓️ Horarios (solo admin). Mantener colores/roles en sync con HOR_ROLES/HOR_ROLES_FRONT.
+// Muestra SOLO planillas con fechas que están vigentes o por venir (las propuestas sin fechas y las viejas no).
+// Aplica los cambios puntuales (excepciones) de cada día. Se edita desde Amapola Interno → 🗓️ Horarios (solo admin).
+// Mantener helpers/colores en sync con la sección HORARIOS de _fuente_no_subir.html.
 const{useState,useEffect}=React;
 const SB_URL="https://qupcqcbvjxxsghwatxgq.supabase.co/rest/v1";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1cGNxY2J2anh4c2dod2F0eGdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTI3OTcsImV4cCI6MjA5NzkyODc5N30.odc_ywGklknD1hpkX3PSnADXfuNm9Ci4hd550_J-awA";
@@ -42,6 +44,7 @@ const ROLES={
 const HEL="#D6337A";
 const DIAS=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 const DIAS_L=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const AREAS=[["cocina","🍳 Cocina","cocina"],["front","🛎️ Front","front"]];
 const hoyLocal=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
 const D=iso=>new Date(iso+"T12:00:00");
 const ISO=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -49,9 +52,13 @@ const sumar=(iso,n)=>{const d=D(iso);d.setDate(d.getDate()+n);return ISO(d);};
 const lunes=iso=>{const d=D(iso);d.setDate(d.getDate()-((d.getDay()+6)%7));return ISO(d);};
 const corto=iso=>{const d=D(iso);return `${d.getDate()}/${d.getMonth()+1}`;};
 const vigente=p=>{const h=hoyLocal();return !!(p&&p.desde&&p.hasta&&h>=p.desde&&h<=p.hasta);};
-const semanaDe=p=>p&&p.desde?(vigente(p)?lunes(hoyLocal()):lunes(p.desde)):null;
-const trabaja=t=>!!(t&&!t.franco&&t.h);
+const visible=p=>!!(p&&p.desde&&p.hasta&&p.hasta>=hoyLocal());
 const rango=p=>p&&p.desde?`${corto(p.desde)}${p.hasta?" al "+corto(p.hasta):" en adelante"}`:"";
+const seg=x=>{const m=String(x||"").trim().match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(?:-|–|a)\s*(\d{1,2})(?:[:.](\d{2}))?$/i);if(!m)return null;const i=Number(m[1])+Number(m[2]||0)/60;let f=Number(m[3])+Number(m[4]||0)/60;if(f<=i)f+=24;return{ini:i,fin:f};};
+const durH=h=>{const ps=String(h||"").split(/\s*(?:\by\b|\/|,)\s*/i).filter(Boolean).map(seg);if(!ps.length||ps.some(x=>!x))return 0;return ps.reduce((s,g)=>s+g.fin-g.ini,0);};
+const excDe=(p,perId,fecha)=>(p.excepciones||[]).find(e=>e.personaId===perId&&e.fecha===fecha)||null;
+const turnoEf=(p,per,di,fecha)=>{const e=fecha?excDe(p,per.id,fecha):null;return e?e.turno:((per.turnos||[])[di]||null);};
+const trabaja=t=>!!(t&&!t.franco&&!t.falta&&t.h);
 
 function App(){
   const[pinOk,setPinOk]=useState(()=>{try{return localStorage.getItem("amapola_horarios_pin")==="1";}catch{return false;}});
@@ -60,6 +67,7 @@ function App(){
   const[data,setData]=useState({cocina:[],front:[]});
   const[area,setArea]=useState(()=>{try{return localStorage.getItem("amapola_horarios_pub_area")||"cocina";}catch{return "cocina";}});
   const[selId,setSelId]=useState(null);
+  const[semSel,setSemSel]=useState(null);
   const[yo,setYo]=useState(()=>{try{return localStorage.getItem("amapola_horarios_pub_yo")||"";}catch{return "";}});
   const cargar=async()=>{
     try{
@@ -71,8 +79,12 @@ function App(){
     }catch{setFase("error");}
   };
   useEffect(()=>{if(pinOk){cargar();const t=setInterval(cargar,120000);return()=>clearInterval(t);}},[pinOk]);
-  const setA=a=>{setArea(a);setSelId(null);try{localStorage.setItem("amapola_horarios_pub_area",a);}catch{}};
-  const setY=n=>{setYo(n);try{localStorage.setItem("amapola_horarios_pub_yo",n);}catch{}};
+  const setA=a=>{setArea(a);setSelId(null);setSemSel(null);try{localStorage.setItem("amapola_horarios_pub_area",a);}catch{}};
+  const lista=a=>(data[a]||[]).filter(visible).sort((x,y)=>x.desde.localeCompare(y.desde));
+  const setY=n=>{
+    setYo(n);try{localStorage.setItem("amapola_horarios_pub_yo",n);}catch{}
+    if(n&&!lista(area).some(p=>(p.personas||[]).some(x=>x.nombre===n))){const otra=AREAS.map(a=>a[0]).find(a=>lista(a).some(p=>(p.personas||[]).some(x=>x.nombre===n)));if(otra)setA(otra);}
+  };
 
   if(!pinOk)return(
     <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",padding:20,background:"#2C1A0E"}}>
@@ -89,22 +101,42 @@ function App(){
     </div>
   );
 
-  const planillas=data[area]||[];
+  const planillas=lista(area);
   const p=planillas.find(x=>x.id===selId)||planillas.find(vigente)||planillas[0]||null;
-  const sem=semanaDe(p);
-  const hoyDi=sem&&vigente(p)?Math.round((D(hoyLocal())-D(sem))/86400000):-1;
-  const nombres=[...new Set(Object.values(data).flat().flatMap(x=>(x.personas||[]).map(y=>y.nombre)))].sort();
+  const semBase=p?(vigente(p)?lunes(hoyLocal()):lunes(p.desde)):null;
+  const sem=semSel||semBase;
+  const semMin=p?lunes(p.desde):null,semMax=p?lunes(p.hasta):null;
+  const hoy=hoyLocal();
+  const hoyDi=sem&&sem===lunes(hoy)?Math.round((D(hoy)-D(sem))/86400000):-1;
+  const nombres=[...new Set(AREAS.flatMap(([a])=>lista(a)).flatMap(x=>(x.personas||[]).map(y=>y.nombre)))].sort();
   const mia=p&&yo?(p.personas||[]).find(x=>x.nombre===yo):null;
+  // próximo turno de "yo" (desde ahora, en cualquier planilla visible de cualquier área)
+  let proximo=null;
+  if(yo){
+    const ahora=new Date();
+    for(let i=0;i<21&&!proximo;i++){const f=sumar(hoy,i);const di=(D(f).getDay()+6)%7;
+      for(const [a] of AREAS){const pl=lista(a).find(x=>f>=x.desde&&f<=x.hasta);if(!pl)continue;const per=(pl.personas||[]).find(x=>x.nombre===yo);if(!per)continue;
+        const t=turnoEf(pl,per,di,f);if(!trabaja(t))continue;const s=seg(String(t.h).split(/\s*y\s*/)[0]);
+        const fin=new Date(f+"T00:00:00").getTime()+(s?Math.max(...String(t.h).split(/\s*y\s*/).map(seg).filter(Boolean).map(g=>g.fin)):0)*3600000;
+        if(fin>ahora.getTime()){proximo={f,di,t};break;}}}
+  }
+  const horasMia=mia?DIAS.reduce((s,_,di)=>{const t=turnoEf(p,mia,di,sem?sumar(sem,di):null);return s+(trabaja(t)?durH(t.h):0);},0):0;
   const pill=on=>({flex:1,padding:"10px",border:"none",borderRadius:10,background:on?"#2C1A0E":"transparent",color:on?"#fff":"#7B7063",fontWeight:700,fontSize:".85rem"});
-  const Turno=({t,grande})=>{
-    if(!trabaja(t))return <div style={{background:t&&t.franco?"repeating-linear-gradient(135deg,#F3EEE6 0 6px,#fff 6px 12px)":"transparent",border:t&&t.franco?"none":"1px dashed #E8DCC8",borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,fontSize:".72rem",color:"#B8A88E"}}>{t&&t.franco?"franco":grande?"no trabaja":""}</div>;
+  const Turno=({t,grande,cambio})=>{
+    if(t&&t.falta)return <div style={{background:"#FBE7E4",borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,fontSize:".72rem",color:"#C0392B",fontWeight:700,outline:"2px dashed #5B4BC4"}}>falta</div>;
+    if(!trabaja(t))return <div style={{background:t&&t.franco?"repeating-linear-gradient(135deg,#F3EEE6 0 6px,#fff 6px 12px)":"transparent",border:t&&t.franco?"none":"1px dashed #E8DCC8",borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,fontSize:".72rem",color:"#B8A88E",outline:cambio?"2px dashed #5B4BC4":"none"}}>{t&&t.franco?"franco":grande?"no trabaja":""}</div>;
     const r=ROLES[t.rol]||ROLES.general;
-    return <div style={{background:r.bg,borderLeft:`4px solid ${r.c}`,borderRadius:8,padding:"6px 8px",minHeight:grande?0:42}}>
-      <div style={{fontWeight:800,fontSize:grande?"1.05rem":".9rem"}}>{t.h}</div>
+    return <div style={{background:r.bg,borderLeft:`4px solid ${r.c}`,borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,outline:cambio?"2px dashed #5B4BC4":"none"}}>
+      <div style={{fontWeight:800,fontSize:grande?"1.05rem":".9rem"}}>{t.h}{cambio&&<span style={{fontSize:".6rem",color:"#5B4BC4",fontWeight:700}}> ✎ cambio</span>}</div>
       <div style={{fontSize:".66rem",color:"#7B7063",lineHeight:1.3}}>{t.det}{t.hel&&<>{t.det?" · ":""}<b style={{color:HEL}}>heladería</b></>}</div>
     </div>;
   };
   const usados=p?[...new Set((p.personas||[]).flatMap(x=>(x.turnos||[]).filter(trabaja).map(t=>t.rol)))]:[];
+  const compartir=()=>{
+    const lineas=DIAS_L.map((dl,di)=>{const f=sem?sumar(sem,di):null;const t=turnoEf(p,mia,di,f);return `${dl}${f?" "+corto(f):""}: ${trabaja(t)?t.h+(t.det?` (${t.det})`:""):t&&t.falta?"falta":t&&t.franco?"FRANCO":"no trabaja"}`;});
+    const txt=`Mis horarios${sem?` — semana del ${corto(sem)} al ${corto(sumar(sem,6))}`:""}:\n\n${lineas.join("\n")}\n\nTotal: ${Math.round(horasMia*10)/10} hs`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,"_blank");
+  };
 
   return(
     <div style={{minHeight:"100dvh"}}>
@@ -113,35 +145,50 @@ function App(){
         <button onClick={cargar} style={{background:"rgba(255,255,255,.1)",border:"none",color:"#E8DCC8",borderRadius:8,padding:"6px 10px",fontSize:".75rem"}}>↻ Actualizar</button>
       </div>
       <div style={{maxWidth:1200,margin:"0 auto",padding:"16px 14px 60px"}}>
+        <div style={{background:"#fff",borderRadius:14,padding:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:14}}>
+          <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:8}}>👤 ¿Quién sos?</div>
+          <select value={yo} onChange={e=>setY(e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:".9rem"}}>
+            <option value="">— Elegí tu nombre —</option>
+            {nombres.map(n=><option key={n} value={n}>{n}</option>)}
+          </select>
+          {yo&&proximo&&<div style={{marginTop:10,background:"#EAF5F0",borderRadius:8,padding:"8px 10px",fontSize:".85rem"}}>⏰ Tu próximo turno: <b>{proximo.f===hoy?"hoy":proximo.f===sumar(hoy,1)?"mañana":DIAS_L[proximo.di]} {corto(proximo.f)} · {proximo.t.h}</b>{proximo.t.det?` (${proximo.t.det})`:""}</div>}
+          {yo&&!proximo&&<div style={{marginTop:10,fontSize:".8rem",color:"#7B7063"}}>No tenés turnos cargados en los próximos días.</div>}
+        </div>
+
         <div style={{display:"flex",gap:4,background:"#E8DCC8",borderRadius:12,padding:4,maxWidth:360,marginBottom:12}}>
-          <button onClick={()=>setA("cocina")} style={pill(area==="cocina")}>🍳 Cocina</button>
-          <button onClick={()=>setA("front")} style={pill(area==="front")}>🛎️ Front</button>
+          {AREAS.map(([a,l])=><button key={a} onClick={()=>setA(a)} style={pill(area===a)}>{l}</button>)}
         </div>
         {fase==="cargando"&&<div style={{color:"#7B7063",padding:20}}>Cargando…</div>}
         {fase==="error"&&<div style={{color:"#C0392B",padding:20}}>No se pudieron cargar los horarios. Revisá la conexión y tocá ↻.</div>}
-        {fase==="ok"&&!p&&<div style={{color:"#7B7063",padding:20}}>Todavía no hay horarios cargados.</div>}
+        {fase==="ok"&&!p&&<div style={{color:"#7B7063",padding:20}}>Todavía no hay horarios cargados para esta área.</div>}
         {fase==="ok"&&p&&<>
           {planillas.length>1&&<div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:6,marginBottom:10}}>
-            {planillas.map(x=><button key={x.id} onClick={()=>setSelId(x.id)} style={{padding:"8px 14px",borderRadius:20,border:x.id===p.id?"none":"1.5px solid #E8DCC8",background:x.id===p.id?"#2C1A0E":"#fff",color:x.id===p.id?"#fff":"#2C1A0E",fontSize:".78rem",fontWeight:600,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{vigente(x)&&<span style={{width:8,height:8,borderRadius:"50%",background:"#27AE60"}}/>}{x.titulo}</button>)}
+            {planillas.map(x=><button key={x.id} onClick={()=>{setSelId(x.id);setSemSel(null);}} style={{padding:"8px 14px",borderRadius:20,border:x.id===p.id?"none":"1.5px solid #E8DCC8",background:x.id===p.id?"#2C1A0E":"#fff",color:x.id===p.id?"#fff":"#2C1A0E",fontSize:".78rem",fontWeight:600,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{vigente(x)&&<span style={{width:8,height:8,borderRadius:"50%",background:"#27AE60"}}/>}{x.titulo}</button>)}
           </div>}
           <div style={{fontFamily:"Georgia,serif",fontSize:"1.25rem"}}>{p.titulo}</div>
-          <div style={{fontSize:".8rem",color:"#7B7063",marginBottom:10}}>{p.desde?`📅 ${rango(p)}`:""}{vigente(p)?<b style={{color:"#27AE60"}}> · vigente</b>:""}</div>
+          <div style={{fontSize:".8rem",color:"#7B7063",marginBottom:10,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <span>📅 {rango(p)}{vigente(p)?<b style={{color:"#27AE60"}}> · vigente</b>:" · próxima"}</span>
+            {semMin!==semMax&&<span style={{display:"flex",gap:6,alignItems:"center"}}>
+              <button disabled={sem<=semMin} onClick={()=>setSemSel(sumar(sem,-7))} style={{padding:"3px 10px",border:"none",borderRadius:6,background:"#E8DCC8",fontWeight:700,opacity:sem<=semMin?.4:1}}>‹</button>
+              <b style={{color:"#2C1A0E"}}>Semana {corto(sem)} al {corto(sumar(sem,6))}</b>
+              <button disabled={sem>=semMax} onClick={()=>setSemSel(sumar(sem,7))} style={{padding:"3px 10px",border:"none",borderRadius:6,background:"#E8DCC8",fontWeight:700,opacity:sem>=semMax?.4:1}}>›</button>
+            </span>}
+          </div>
           {p.nota&&<div style={{background:"#fff",borderLeft:"4px solid #5B4BC4",borderRadius:"0 10px 10px 0",padding:"10px 14px",fontSize:".82rem",marginBottom:12}}>{p.nota}</div>}
 
-          <div style={{background:"#fff",borderRadius:14,padding:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:14}}>
-            <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:8}}>👤 Mi semana</div>
-            <select value={yo} onChange={e=>setY(e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1.5px solid #E8DCC8",borderRadius:8,background:"#F9F6F1",fontSize:".9rem"}}>
-              <option value="">— Elegí tu nombre —</option>
-              {nombres.map(n=><option key={n} value={n}>{n}</option>)}
-            </select>
-            {yo&&!mia&&<div style={{fontSize:".8rem",color:"#7B7063",marginTop:10}}>No estás en esta planilla. Probá con la otra área o la otra planilla.</div>}
-            {mia&&<div style={{display:"flex",flexDirection:"column",gap:6,marginTop:12}}>
-              {DIAS_L.map((dl,di)=><div key={di} style={{display:"flex",gap:10,alignItems:"center",background:di===hoyDi?"#FFF1D6":"transparent",borderRadius:8,padding:di===hoyDi?"4px":0}}>
-                <div style={{width:82,fontSize:".8rem",fontWeight:700}}>{dl}{sem&&<div style={{fontWeight:400,color:"#7B7063",fontSize:".7rem"}}>{corto(sumar(sem,di))}{di===hoyDi?" · hoy":""}</div>}</div>
-                <div style={{flex:1}}><Turno t={(mia.turnos||[])[di]} grande/></div>
-              </div>)}
-            </div>}
-          </div>
+          {mia&&<div style={{background:"#fff",borderRadius:14,padding:14,boxShadow:"0 2px 12px rgba(44,26,14,.08)",marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063"}}>📋 Mi semana · {Math.round(horasMia*10)/10} hs</div>
+              <button onClick={compartir} style={{padding:"6px 10px",border:"none",borderRadius:8,background:"#25D366",color:"#fff",fontWeight:700,fontSize:".72rem"}}>📲 Compartir</button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {DIAS_L.map((dl,di)=>{const f=sem?sumar(sem,di):null;const cambio=!!(f&&excDe(p,mia.id,f));return <div key={di} style={{display:"flex",gap:10,alignItems:"center",background:di===hoyDi?"#FFF1D6":"transparent",borderRadius:8,padding:di===hoyDi?"4px":0}}>
+                <div style={{width:82,fontSize:".8rem",fontWeight:700}}>{dl}{f&&<div style={{fontWeight:400,color:"#7B7063",fontSize:".7rem"}}>{corto(f)}{di===hoyDi?" · hoy":""}</div>}</div>
+                <div style={{flex:1}}><Turno t={turnoEf(p,mia,di,f)} grande cambio={cambio}/></div>
+              </div>;})}
+            </div>
+          </div>}
+          {yo&&!mia&&<div style={{fontSize:".8rem",color:"#7B7063",marginBottom:10}}>No estás en esta planilla.</div>}
 
           <div style={{display:"flex",flexWrap:"wrap",gap:"4px 14px",fontSize:".72rem",color:"#7B7063",marginBottom:10}}>
             {usados.filter(k=>ROLES[k]).map(k=><span key={k} style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:ROLES[k].c}}/>{ROLES[k].label}</span>)}
@@ -160,14 +207,14 @@ function App(){
                 <td style={{padding:"6px 8px",position:"sticky",left:0,background:per.nombre===yo?"#FFF8EC":pi%2===0?"#fff":"#FDFBF8",zIndex:1,borderBottom:"1px solid #F0E8DA",verticalAlign:"top"}}>
                   <div style={{fontWeight:700,fontSize:".85rem"}}>{per.nombre}</div><div style={{fontSize:".66rem",color:"#7B7063"}}>{per.puesto}</div>
                 </td>
-                {DIAS.map((_,di)=><td key={di} style={{padding:4,borderBottom:"1px solid #F0E8DA",verticalAlign:"top",background:di===hoyDi?"#FFFBF2":undefined}}><Turno t={(per.turnos||[])[di]}/></td>)}
+                {DIAS.map((_,di)=>{const f=sem?sumar(sem,di):null;return <td key={di} style={{padding:4,borderBottom:"1px solid #F0E8DA",verticalAlign:"top",background:di===hoyDi?"#FFFBF2":undefined}}><Turno t={turnoEf(p,per,di,f)} cambio={!!(f&&excDe(p,per.id,f))}/></td>;})}
               </tr>)}</tbody>
             </table>
           </div>
-          {["descansos","pendientes"].filter(k=>k==="descansos"&&(p[k]||[]).length).map(k=><div key={k} style={{background:"#fff",borderRadius:14,padding:16,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
+          {(p.descansos||[]).length>0&&<div style={{background:"#fff",borderRadius:14,padding:16,boxShadow:"0 2px 12px rgba(44,26,14,.08)"}}>
             <div style={{fontSize:".68rem",fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:"#7B7063",marginBottom:8}}>Descansos</div>
-            <ul style={{paddingLeft:18,fontSize:".82rem",lineHeight:1.6}}>{p[k].map((x,i)=><li key={i}>{x}</li>)}</ul>
-          </div>)}
+            <ul style={{paddingLeft:18,fontSize:".82rem",lineHeight:1.6}}>{p.descansos.map((x,i)=><li key={i}>{x}</li>)}</ul>
+          </div>}
         </>}
       </div>
     </div>
