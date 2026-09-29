@@ -57,7 +57,12 @@ const rango=p=>p&&p.desde?`${corto(p.desde)}${p.hasta?" al "+corto(p.hasta):" en
 const seg=x=>{const m=String(x||"").trim().match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(?:-|–|a)\s*(\d{1,2})(?:[:.](\d{2}))?$/i);if(!m)return null;const i=Number(m[1])+Number(m[2]||0)/60;let f=Number(m[3])+Number(m[4]||0)/60;if(f<=i)f+=24;return{ini:i,fin:f};};
 const durH=h=>{const ps=String(h||"").split(/\s*(?:\by\b|\/|,)\s*/i).filter(Boolean).map(seg);if(!ps.length||ps.some(x=>!x))return 0;return ps.reduce((s,g)=>s+g.fin-g.ini,0);};
 const excDe=(p,perId,fecha)=>(p.excepciones||[]).find(e=>e.personaId===perId&&e.fecha===fecha)||null;
-const turnoEf=(p,per,di,fecha)=>{const e=fecha?excDe(p,per.id,fecha):null;return e?e.turno:((per.turnos||[])[di]||null);};
+// Vacaciones y licencias (key "rrhhHorarios", se cargan en Amapola Interno → Horarios → 👥 Equipo). 2026-09-29
+let AUSENCIAS=[];
+const AUS_TXT={vacaciones:"🌴 vacaciones",licencia:"📄 licencia",enfermedad:"🩺 licencia médica",estudio:"📚 examen",otro:"ausente"};
+const turnoEf=(p,per,di,fecha)=>{const e=fecha?excDe(p,per.id,fecha):null;if(e)return e.turno;
+  const a=fecha&&per.empleadoId?AUSENCIAS.find(x=>x.empleadoId===per.empleadoId&&fecha>=x.desde&&fecha<=x.hasta):null;
+  if(a)return{franco:true,aus:a.tipo||"vacaciones"};return (per.turnos||[])[di]||null;};
 const trabaja=t=>!!(t&&!t.franco&&!t.falta&&t.h);
 
 function App(){
@@ -71,9 +76,10 @@ function App(){
   const[yo,setYo]=useState(()=>{try{return localStorage.getItem("amapola_horarios_pub_yo")||"";}catch{return "";}});
   const cargar=async()=>{
     try{
-      const r=await fetch(`${SB_URL}/amapola?select=key,value&key=in.(horariosCocina,horariosFront)`,{headers:SBH});
+      const r=await fetch(`${SB_URL}/amapola?select=key,value&key=in.(horariosCocina,horariosFront,rrhhHorarios)`,{headers:SBH});
       if(!r.ok)throw new Error();
       const m={};(await r.json()).forEach(x=>{try{m[x.key]=JSON.parse(x.value);}catch{}});
+      AUSENCIAS=Array.isArray(m.rrhhHorarios&&m.rrhhHorarios.ausencias)?m.rrhhHorarios.ausencias:[];
       setData({cocina:Array.isArray(m.horariosCocina)?m.horariosCocina:[],front:Array.isArray(m.horariosFront)?m.horariosFront:[]});
       setFase("ok");
     }catch{setFase("error");}
@@ -124,7 +130,7 @@ function App(){
   const pill=on=>({flex:1,padding:"10px",border:"none",borderRadius:10,background:on?"#2C1A0E":"transparent",color:on?"#fff":"#7B7063",fontWeight:700,fontSize:".85rem"});
   const Turno=({t,grande,cambio})=>{
     if(t&&t.falta)return <div style={{background:"#FBE7E4",borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,fontSize:".72rem",color:"#C0392B",fontWeight:700,outline:"2px dashed #5B4BC4"}}>falta</div>;
-    if(!trabaja(t))return <div style={{background:t&&t.franco?"repeating-linear-gradient(135deg,#F3EEE6 0 6px,#fff 6px 12px)":"transparent",border:t&&t.franco?"none":"1px dashed #E8DCC8",borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,fontSize:".72rem",color:"#B8A88E",outline:cambio?"2px dashed #5B4BC4":"none"}}>{t&&t.franco?"franco":grande?"no trabaja":""}</div>;
+    if(!trabaja(t))return <div style={{background:t&&t.franco?"repeating-linear-gradient(135deg,#F3EEE6 0 6px,#fff 6px 12px)":"transparent",border:t&&t.franco?"none":"1px dashed #E8DCC8",borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,fontSize:".72rem",color:"#B8A88E",outline:cambio?"2px dashed #5B4BC4":"none"}}>{t&&t.aus?(AUS_TXT[t.aus]||"ausente"):t&&t.franco?"franco":grande?"no trabaja":""}</div>;
     const r=ROLES[t.rol]||ROLES.general;
     return <div style={{background:r.bg,borderLeft:`4px solid ${r.c}`,borderRadius:8,padding:"6px 8px",minHeight:grande?0:42,outline:cambio?"2px dashed #5B4BC4":"none"}}>
       <div style={{fontWeight:800,fontSize:grande?"1.05rem":".9rem"}}>{t.h}{cambio&&<span style={{fontSize:".6rem",color:"#5B4BC4",fontWeight:700}}> ✎ cambio</span>}</div>
@@ -133,7 +139,7 @@ function App(){
   };
   const usados=p?[...new Set((p.personas||[]).flatMap(x=>(x.turnos||[]).filter(trabaja).map(t=>t.rol)))]:[];
   const compartir=()=>{
-    const lineas=DIAS_L.map((dl,di)=>{const f=sem?sumar(sem,di):null;const t=turnoEf(p,mia,di,f);return `${dl}${f?" "+corto(f):""}: ${trabaja(t)?t.h+(t.det?` (${t.det})`:""):t&&t.falta?"falta":t&&t.franco?"FRANCO":"no trabaja"}`;});
+    const lineas=DIAS_L.map((dl,di)=>{const f=sem?sumar(sem,di):null;const t=turnoEf(p,mia,di,f);return `${dl}${f?" "+corto(f):""}: ${trabaja(t)?t.h+(t.det?` (${t.det})`:""):t&&t.falta?"falta":t&&t.aus?(AUS_TXT[t.aus]||"ausente").toUpperCase():t&&t.franco?"FRANCO":"no trabaja"}`;});
     const txt=`Mis horarios${sem?` — semana del ${corto(sem)} al ${corto(sumar(sem,6))}`:""}:\n\n${lineas.join("\n")}\n\nTotal: ${Math.round(horasMia*10)/10} hs`;
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,"_blank");
   };
