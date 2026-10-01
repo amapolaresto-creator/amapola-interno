@@ -25,6 +25,88 @@ const{useState,useEffect}=React;
 const SB_URL="https://qupcqcbvjxxsghwatxgq.supabase.co/rest/v1";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1cGNxY2J2anh4c2dod2F0eGdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTI3OTcsImV4cCI6MjA5NzkyODc5N30.odc_ywGklknD1hpkX3PSnADXfuNm9Ci4hd550_J-awA";
 const SBH={"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json"};
+// ===== Login real con Supabase Auth (2026-10-01, auditoría) =====
+// La llave pública (SB_KEY) ya NO alcanza para leer ni escribir datos: cada pedido a Supabase sale con el
+// token del usuario logueado y la base decide qué puede hacer cada rol. Usuarios (uno por perfil):
+// "amapolaresto@gmail.com" (rol full), "cocina" y "front" (se completan como cocina@amapolaresto.app, etc.).
+// Las claves viven SOLO en Supabase (Authentication > Users), nunca en este archivo.
+// La sesión se comparte entre la app y las páginas sueltas (misma key de localStorage, mismo sitio) y
+// queda abierta hasta "Cerrar sesión": el token dura 1 h y se renueva solo antes de vencer.
+const SB_AUTH=SB_URL.replace("/rest/v1","/auth/v1");
+const SES_KEY="amapola_sesion";
+const emailDeUsuario=u=>{u=String(u||"").trim().toLowerCase();return u.includes("@")?u:u+"@amapolaresto.app";};
+const sesionLeer=()=>{try{return JSON.parse(localStorage.getItem(SES_KEY)||"null");}catch{return null;}};
+const sesionGuardar=d=>{
+  const meta=(d.user&&d.user.app_metadata)||{};
+  const s={access_token:d.access_token,refresh_token:d.refresh_token,expires_at:d.expires_at||Math.floor(Date.now()/1000)+(d.expires_in||3600),rol:meta.rol||"",email:(d.user&&d.user.email)||""};
+  try{localStorage.setItem(SES_KEY,JSON.stringify(s));}catch{}
+  return s;
+};
+const sesionBorrar=()=>{try{localStorage.removeItem(SES_KEY);}catch{}};
+const _fetchOrig=window.fetch.bind(window);
+async function sbAuthPedir(grant,body){
+  const r=await _fetchOrig(`${SB_AUTH}/token?grant_type=${grant}`,{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){const e=new Error(d.error_description||d.msg||("HTTP "+r.status));e.status=r.status;throw e;}
+  return d;
+}
+async function sbLogin(usuario,pass){
+  const d=await sbAuthPedir("password",{email:emailDeUsuario(usuario),password:pass});
+  if(!(d.user&&d.user.app_metadata&&d.user.app_metadata.rol)){const e=new Error("Usuario sin permisos");e.status=403;throw e;}
+  return sesionGuardar(d);
+}
+let _refrescando=null;
+function sbRefrescar(){
+  if(_refrescando)return _refrescando;
+  const s=sesionLeer();
+  if(!s||!s.refresh_token)return Promise.reject(new Error("sin sesión"));
+  _refrescando=sbAuthPedir("refresh_token",{refresh_token:s.refresh_token}).then(sesionGuardar).catch(e=>{
+    // 4xx = la sesión ya no es válida (cambiaron la clave o dieron de baja el usuario): vuelve al login.
+    // Sin conexión no se borra nada: se reintenta en el próximo pedido.
+    if(e.status>=400&&e.status<500){sesionBorrar();location.reload();}
+    throw e;
+  }).finally(()=>{_refrescando=null;});
+  return _refrescando;
+}
+// Todo fetch a Supabase pasa por acá: renueva el token si vence en menos de 2 min y reintenta una vez si da 401.
+window.fetch=async(url,opts)=>{
+  const u=String((url&&url.url)||url);
+  if(!u.startsWith(SB_URL))return _fetchOrig(url,opts);
+  const s=sesionLeer();
+  if(s&&s.expires_at*1000-Date.now()<120000){try{await sbRefrescar();}catch{}}
+  const armar=()=>{const t=(sesionLeer()||{}).access_token;const o={...(opts||{})};o.headers={...(o.headers||{})};if(t)o.headers.Authorization="Bearer "+t;return o;};
+  let r=await _fetchOrig(url,armar());
+  if(r.status===401&&sesionLeer()){try{await sbRefrescar();r=await _fetchOrig(url,armar());}catch{}}
+  return r;
+};
+// Pantalla de ingreso de las páginas sueltas (reemplaza al PIN desde 2026-10-01). Mismo usuario y clave que la app;
+// si ya entraste a la app en este celular, no la pide.
+function LoginSuelto({titulo,onOk}){
+  const[u,setU]=useState("");const[p,setP]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);
+  const entrar=async()=>{
+    if(busy)return;setBusy(true);setErr("");
+    try{await sbLogin(u,p);setBusy(false);onOk();return;}
+    catch(e){setErr(e.status===400||e.status===403?"Usuario o contraseña incorrectos":"No se pudo conectar, revisá internet");setP("");}
+    setBusy(false);
+  };
+  const st={width:"100%",border:"1.5px solid "+(err?"#E74C3C":"#E8DCC8"),borderRadius:10,padding:"13px 14px",fontSize:"16px",boxSizing:"border-box",marginBottom:10,outline:"none"};
+  return(
+    <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{width:"100%",maxWidth:320,textAlign:"center"}}>
+        <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.3rem",color:"#2C1A0E",marginBottom:6}}>
+          Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> {titulo}
+        </div>
+        <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:16}}>Ingresá con el usuario del local (el mismo de la app)</p>
+        <input placeholder="Usuario" value={u} autoFocus autoCapitalize="none" autoCorrect="off"
+          onChange={e=>{setU(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&entrar()} style={st}/>
+        <input type="password" placeholder="Contraseña" value={p}
+          onChange={e=>{setP(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&entrar()} style={st}/>
+        {err&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:10}}>{err}</p>}
+        <button onClick={entrar} disabled={busy} style={{width:"100%",padding:14,borderRadius:10,border:"none",background:busy?"#bbb":"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:"1rem"}}>{busy?"Ingresando…":"Ingresar"}</button>
+      </div>
+    </div>
+  );
+}
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const hoyLocal=()=>{const d=new Date();const off=d.getTimezoneOffset();const local=new Date(d.getTime()-off*60000);return local.toISOString().slice(0,10);};
@@ -63,7 +145,7 @@ async function sbSetHorasExtras(fn){
 
 const PIN_CODE="716";
 function App(){
-  const[pinOk,setPinOk]=useState(()=>{try{return localStorage.getItem("amapola_hsextras_pin")==="1";}catch{return false;}});
+  const[pinOk,setPinOk]=useState(()=>!!(sesionLeer()||{}).rol);// "pinOk" = hay sesión iniciada (antes era el PIN)
   const[pinInput,setPinInput]=useState("");
   const[pinErr,setPinErr]=useState(false);
   const[fase,setFase]=useState("cargando");
@@ -137,23 +219,7 @@ function App(){
     setLastAdded(null);
   };
 
-  if(!pinOk){
-    return(
-      <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-        <div style={{width:"100%",maxWidth:320,textAlign:"center"}}>
-          <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.3rem",color:"#2C1A0E",marginBottom:18}}>
-            Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> HS Extras
-          </div>
-          <input type="password" inputMode="numeric" placeholder="PIN" value={pinInput} autoFocus
-            onChange={ev=>{setPinInput(ev.target.value);setPinErr(false);}}
-            onKeyDown={ev=>ev.key==="Enter"&&checkPin()}
-            style={{width:"100%",border:`1.5px solid ${pinErr?"#E74C3C":"#E8DCC8"}`,borderRadius:10,padding:"14px 16px",fontSize:"1.1rem",textAlign:"center",letterSpacing:"4px",boxSizing:"border-box",marginBottom:10,outline:"none"}}/>
-          {pinErr&&<p style={{color:"#E74C3C",fontSize:".8rem",marginBottom:10}}>PIN incorrecto</p>}
-          <button onClick={checkPin} style={{width:"100%",padding:14,borderRadius:10,border:"none",background:"#2C1A0E",color:"#fff",fontWeight:600,cursor:"pointer",fontSize:"1rem"}}>Ingresar</button>
-        </div>
-      </div>
-    );
-  }
+  if(!pinOk)return <LoginSuelto titulo="HS Extras" onOk={()=>setPinOk(true)}/>;
 
   if(fase==="cargando"){
     return(
