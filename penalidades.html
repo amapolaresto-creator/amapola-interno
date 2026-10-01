@@ -39,10 +39,27 @@ async function sbGetDos(){
   rows.forEach(x=>{try{m[x.key]=JSON.parse(x.value);}catch{}});
   return{empleados:Array.isArray(m.empleados)?m.empleados:[],penalidades:Array.isArray(m.penalidades)?m.penalidades:[]};
 }
-async function sbSetPenalidades(value){
-  const body=JSON.stringify({key:"penalidades",value:JSON.stringify(value),updated_at:new Date().toISOString()});
-  const r=await fetch(`${SB_URL}/amapola`,{method:"POST",headers:{...SBH,"Prefer":"resolution=merge-duplicates"},body});
-  if(!r.ok){const t=await r.text().catch(()=>"");throw new Error(`HTTP ${r.status}: ${t.slice(0,80)}`);}
+// Guardado sin pisar (2026-10-01): relee la versión más nueva, le aplica SOLO este cambio (fn) y escribe
+// con control de versión (updated_at). Si otro celular o la app guardó en el medio, reintenta sobre lo nuevo.
+async function sbSetPenalidades(fn){
+  for(let i=0;i<6;i++){
+    const r=await fetch(`${SB_URL}/amapola?select=value,updated_at&key=eq.penalidades`,{headers:SBH});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const rows=await r.json();
+    let actual=[];try{actual=rows.length?JSON.parse(rows[0].value):[];}catch{}
+    const nuevas=fn(Array.isArray(actual)?actual:[]);
+    const ahora=new Date().toISOString();
+    if(!rows.length){
+      const w=await fetch(`${SB_URL}/amapola`,{method:"POST",headers:{...SBH,"Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key:"penalidades",value:JSON.stringify(nuevas),updated_at:ahora})});
+      if(!w.ok)throw new Error(`HTTP ${w.status}`);
+      return nuevas;
+    }
+    const w=await fetch(`${SB_URL}/amapola?key=eq.penalidades&updated_at=eq.${encodeURIComponent(rows[0].updated_at)}&select=updated_at`,{method:"PATCH",headers:{...SBH,"Prefer":"return=representation"},body:JSON.stringify({value:JSON.stringify(nuevas),updated_at:ahora})});
+    if(!w.ok)throw new Error(`HTTP ${w.status}`);
+    if((await w.json()).length===1)return nuevas;
+    await new Promise(r=>setTimeout(r,200+Math.random()*400));// otro guardó en el medio: espera un toque y reintenta
+  }
+  throw new Error("Conflicto, reintentá");
 }
 
 const PIN_CODE="0716";
@@ -99,8 +116,7 @@ function App(){
       const fecha=fechaInput?fechaLocalISO(fechaInput):new Date().toISOString();
       const periodo=(fechaInput||hoyLocal()).slice(0,7);
       const registro={id:uid(),empleadoId:emp.id,periodo,motivo:motivo.trim(),fecha};
-      const nuevas=[registro,...(penalidades||[])];
-      await sbSetPenalidades(nuevas);
+      const nuevas=await sbSetPenalidades(arr=>[registro,...arr.filter(x=>x.id!==registro.id)]);
       setPenalidades(nuevas);
       setLastAdded({id:registro.id,nombre:emp.nombre});
       toast("X registrada para "+emp.nombre+" ✓");
@@ -113,9 +129,8 @@ function App(){
 
   const deshacerUltimo=async()=>{
     if(!lastAdded)return;
-    const nuevas=(penalidades||[]).filter(p=>p.id!==lastAdded.id);
     try{
-      await sbSetPenalidades(nuevas);
+      const nuevas=await sbSetPenalidades(arr=>arr.filter(x=>x.id!==lastAdded.id));
       setPenalidades(nuevas);
       toast("X deshecha");
     }catch{toast("⚠️ No se pudo deshacer, revisá la conexión");}
