@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#2C1A0E">
-<title>Amapola · Penalidades</title>
+<title>Amapola · Incumplimientos</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -201,7 +201,7 @@ function App(){
       const nuevas=await sbSetPenalidades(arr=>[registro,...arr.filter(x=>x.id!==registro.id)]);
       setPenalidades(nuevas);
       setLastAdded({id:registro.id,nombre:emp.nombre});
-      toast("X registrada para "+emp.nombre+" ✓");
+      toast("Registrado para "+emp.nombre+" ✓");
       cerrar();
     }catch(e){
       toast("⚠️ No se pudo guardar, revisá la conexión");
@@ -214,12 +214,12 @@ function App(){
     try{
       const nuevas=await sbSetPenalidades(arr=>arr.filter(x=>x.id!==lastAdded.id));
       setPenalidades(nuevas);
-      toast("X deshecha");
+      toast("Deshecho");
     }catch{toast("⚠️ No se pudo deshacer, revisá la conexión");}
     setLastAdded(null);
   };
 
-  if(!pinOk)return <LoginSuelto titulo="Penalidades" onOk={()=>setPinOk(true)}/>;
+  if(!pinOk)return <LoginSuelto titulo="Incumplimientos" onOk={()=>setPinOk(true)}/>;
 
   if(fase==="cargando"){
     return(
@@ -243,9 +243,9 @@ function App(){
   return(
     <div style={{minHeight:"100dvh",maxWidth:520,margin:"0 auto",padding:"28px 18px 60px"}}>
       <div style={{fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:"1.35rem",color:"#2C1A0E",marginBottom:2}}>
-        Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Penalidades
+        Amapola <span style={{color:"#E74C3C",fontStyle:"normal"}}>·</span> Incumplimientos
       </div>
-      <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:22}}>Tocá el nombre del empleado y cargale una X. Rápido, sin contraseña.</p>
+      <p style={{fontSize:".8rem",color:"#7B7063",marginBottom:22}}>Tocá el nombre del empleado y registrá el incumplimiento (llegada tarde, celular, salió sin avisar…). Es solo registro: no descuenta del sueldo.</p>
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {empleadosActivos.map(e=>{
@@ -253,7 +253,7 @@ function App(){
           return(
             <button key={e.id} onClick={()=>abrir(e.id)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"16px 18px",borderRadius:14,border:"1px solid #E8DCC8",background:c>0?"#FBEAEA":"#fff",cursor:"pointer",fontFamily:"inherit",boxShadow:"0 1px 3px rgba(44,26,14,.06)"}}>
               <span style={{fontWeight:600,fontSize:"1rem",color:"#2C1A0E"}}>{e.nombre}</span>
-              <span style={{fontSize:"1rem",fontWeight:700,color:c>0?"#C0392B":"#B8A88E"}}>{c>0?(c+" X"):"—"}</span>
+              <span style={{fontSize:"1rem",fontWeight:700,color:c>0?"#C0392B":"#B8A88E"}}>{c>0?c:"—"}</span>
             </button>
           );
         })}
@@ -263,7 +263,7 @@ function App(){
       {emp&&(
         <div style={{position:"fixed",inset:0,background:"rgba(44,26,14,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}} onClick={cerrar}>
           <div style={{background:"#fff",borderRadius:14,padding:22,width:"100%",maxWidth:380}} onClick={ev=>ev.stopPropagation()}>
-            <h3 style={{margin:"0 0 4px",fontSize:"1.1rem",color:"#2C1A0E"}}>Nueva X — {emp.nombre}</h3>
+            <h3 style={{margin:"0 0 4px",fontSize:"1.1rem",color:"#2C1A0E"}}>Incumplimiento — {emp.nombre}</h3>
             <p style={{margin:"0 0 14px",fontSize:".82rem",color:"#7B7063"}}>¿Motivo?</p>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
               {MOTIVOS.map(m=>(
@@ -283,7 +283,7 @@ function App(){
 
       {lastAdded&&(
         <div style={{position:"fixed",left:"50%",bottom:20,transform:"translateX(-50%)",background:"#2C1A0E",color:"#fff",borderRadius:30,padding:"12px 20px",display:"flex",alignItems:"center",gap:14,fontSize:".85rem",zIndex:1100,boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>
-          <span>X registrada para {lastAdded.nombre}</span>
+          <span>Registrado para {lastAdded.nombre}</span>
           <button onClick={deshacerUltimo} style={{background:"none",border:"none",color:"#F2C94C",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Deshacer</button>
         </div>
       )}
