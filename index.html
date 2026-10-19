@@ -3502,9 +3502,9 @@ function UltimosPagos({ pagos, cierres, cajaInicial, cierresCaja, sueldos, gasto
 // Proveedores (✏️) y se muestra en su estado de cuenta y al registrar un pago.
 // Descargado vs pagado por mes (2026-10-19): cuánto se recibió en boletas vs cuánto se pagó a proveedores en un mes,
 // por proveedor. "Pagado" = Pagos + Pagos Digitales con proveedor asignado (mismo criterio que calcDeuda).
-function DescargadoVsPagado({ proveedores, boletas, pagos, gastos }) {
+function DescargadoVsPagado({ proveedores, boletas, pagos, gastos, sinCard, mesFijo }) {
   const mesAnt = (() => {const d = new Date();d.setDate(1);d.setMonth(d.getMonth() - 1);return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;})();
-  const [mes, setMes] = useState(mesAnt);
+  const [mesSel, setMes] = useState(mesAnt);const mes = mesFijo || mesSel;
   const [orden, setOrden] = useState("desc");
   const enMes = (x) => String(x.fecha || "").slice(0, 7) === mes;
   const filas = {};const fila = (n) => {const k = norm(n || "(sin proveedor)");if (!filas[k]) filas[k] = { nombre: (proveedores.find((p) => norm(p.nombre) === k) || {}).nombre || n || "(sin proveedor)", desc: 0, nb: 0, pag: 0, np: 0 };return filas[k];};
@@ -3518,8 +3518,8 @@ function DescargadoVsPagado({ proveedores, boletas, pagos, gastos }) {
   const td = { padding: "6px 8px", textAlign: "right", whiteSpace: "nowrap" };
   const colDif = (v) => Math.abs(v) < 1 ? "#7B7063" : v > 0 ? "#C0392B" : "#2E7D32";
   const nombreMes = (() => {const [a, m] = mes.split("-");return new Date(+a, +m - 1, 1).toLocaleDateString("es-AR", { month: "long", year: "numeric" });})();
-  return /*#__PURE__*/React.createElement(Card, { title: `📊 Descargado vs pagado · ${nombreMes}` }, /*#__PURE__*/
-  React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" } }, /*#__PURE__*/
+  const body = /*#__PURE__*/React.createElement(React.Fragment, null,
+  !mesFijo && /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" } }, /*#__PURE__*/
   React.createElement("span", { style: { fontSize: ".75rem", color: "#7B7063" } }, "Mes"), /*#__PURE__*/
   React.createElement("input", { type: "month", value: mes, onChange: (e) => e.target.value && setMes(e.target.value), style: { ...iS, width: "auto", padding: "6px 10px" } })
   ), /*#__PURE__*/
@@ -3548,6 +3548,65 @@ function DescargadoVsPagado({ proveedores, boletas, pagos, gastos }) {
   ))), /*#__PURE__*/
   React.createElement("div", { style: { fontSize: ".68rem", color: "#7B7063", marginTop: 8 } }, "Diferencia en rojo (+) = se descargó más de lo que se pagó ese mes (sumó deuda). En verde (−) = se pagó más de lo descargado (se cancelaron boletas de meses anteriores). Tocá el título de una columna para ordenar.")
   );
+  return sinCard ? /*#__PURE__*/React.createElement("div", { style: { marginTop: 10 } }, body) : /*#__PURE__*/React.createElement(Card, { title: `📊 Descargado vs pagado · ${nombreMes}` }, body);
+}
+
+// Resumen de egresos del mes en Gerencia (2026-10-19): proveedores (descargado vs pagado), sueldos, retiros de
+// ganancia, alquiler, impuestos, contadora, abogada y gastos varios (el resto de categorías fijas + Pagos Digitales
+// sin proveedor). Todo calculado en vivo por fecha del registro, mes elegible.
+function ResumenEgresosMes({ proveedores, boletas, pagos, gastos, sueldos, retirosGanancia, fijos }) {
+  const mesAnt = (() => {const d = new Date();d.setDate(1);d.setMonth(d.getMonth() - 1);return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;})();
+  const [mes, setMes] = useState(mesAnt);
+  const [abierto, setAbierto] = useState("");
+  const enMes = (x) => String(x.fecha || "").slice(0, 7) === mes;
+  const sum = (arr) => (arr || []).filter(enMes).reduce((s, x) => s + (Number(x.monto) || 0), 0);
+  const cnt = (arr) => (arr || []).filter(enMes).length;
+  const desc = sum(boletas);
+  const pagProv = sum(pagos) + (gastos || []).filter((g) => g.proveedor && enMes(g)).reduce((s, g) => s + (Number(g.monto) || 0), 0);
+  const F = (n) => (fijos.find((f) => f[0] === n) || [n, []])[1];
+  const PROPIOS = ["Alquiler", "Impuestos", "Contadora", "Abogada"];
+  const variosDet = [...fijos.filter((f) => !PROPIOS.includes(f[0])).map(([n, arr]) => [n, sum(arr), cnt(arr)]),
+  ...Object.entries((gastos || []).filter((g) => !g.proveedor && enMes(g)).reduce((o, g) => {const k = "Pagos Digitales · " + (g.categoria || "sin categoría");o[k] = o[k] || [0, 0];o[k][0] += Number(g.monto) || 0;o[k][1]++;return o;}, {})).map(([n, [m, c]]) => [n, m, c])].
+  filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]);
+  const sueldosDet = Object.entries((sueldos || []).filter(enMes).reduce((o, x) => {const k = `${x.concepto || "Sueldo"} · ${x.forma || "-"}`;o[k] = o[k] || [0, 0];o[k][0] += Number(x.monto) || 0;o[k][1]++;return o;}, {})).map(([n, [m, c]]) => [n, m, c]).sort((a, b) => b[1] - a[1]);
+  const retDet = Object.entries((retirosGanancia || []).filter(enMes).reduce((o, x) => {const k = x.empleado || x.categoria || "Retiro";o[k] = o[k] || [0, 0];o[k][0] += Number(x.monto) || 0;o[k][1]++;return o;}, {})).map(([n, [m, c]]) => [n, m, c]).sort((a, b) => b[1] - a[1]);
+  const filas = [
+  { id: "prov", l: "🚚 Proveedores (pagado)", m: pagProv, sub: `Descargado ${fmt(desc)} · ${pagProv >= desc ? "se pagó" : "quedó debiendo"} ${fmt(Math.abs(desc - pagProv))}${pagProv >= desc ? " de más" : ""}` },
+  { id: "sue", l: "👥 Sueldos", m: sum(sueldos), sub: `${cnt(sueldos)} pagos`, det: sueldosDet },
+  { id: "ret", l: "💰 Retiros de ganancia", m: sum(retirosGanancia), sub: `${cnt(retirosGanancia)} retiro${cnt(retirosGanancia) !== 1 ? "s" : ""}`, det: retDet },
+  { id: "alq", l: "🏠 Alquiler", m: sum(F("Alquiler")), sub: `${cnt(F("Alquiler"))} pagos` },
+  { id: "imp", l: "🧾 Impuestos", m: sum(F("Impuestos")), sub: `${cnt(F("Impuestos"))} pagos` },
+  { id: "con", l: "📒 Contadora", m: sum(F("Contadora")), sub: `${cnt(F("Contadora"))} pagos` },
+  { id: "abo", l: "⚖️ Abogada", m: sum(F("Abogada")), sub: `${cnt(F("Abogada"))} pagos` },
+  { id: "var", l: "📦 Gastos varios", m: variosDet.reduce((s, x) => s + x[1], 0), sub: `${variosDet.length} categorías`, det: variosDet }];
+
+  const total = filas.reduce((s, f) => s + f.m, 0);
+  const nombreMes = (() => {const [a, m] = mes.split("-");return new Date(+a, +m - 1, 1).toLocaleDateString("es-AR", { month: "long", year: "numeric" });})();
+  return /*#__PURE__*/React.createElement("div", { style: { marginTop: 14 } }, /*#__PURE__*/
+  React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" } }, /*#__PURE__*/
+  React.createElement("span", { style: { fontSize: ".75rem", color: "#7B7063" } }, "Mes"), /*#__PURE__*/
+  React.createElement("input", { type: "month", value: mes, onChange: (e) => e.target.value && setMes(e.target.value), style: { ...iS, width: "auto", padding: "6px 10px" } }), /*#__PURE__*/
+  React.createElement("span", { style: { marginLeft: "auto", fontSize: ".75rem", color: "#7B7063" } }, "Total egresos ", nombreMes, ": ", /*#__PURE__*/React.createElement("b", { style: { color: "#2C1A0E", fontSize: ".95rem" } }, fmt(total)))
+  ),
+  filas.map((f) => {const ab = abierto === f.id;const puede = f.id === "prov" || f.det && f.det.length;return (/*#__PURE__*/
+      React.createElement("div", { key: f.id, style: { borderBottom: "1px solid #F0E8DA" } }, /*#__PURE__*/
+      React.createElement("div", { onClick: () => puede && setAbierto(ab ? "" : f.id), style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: puede ? "pointer" : "default" } }, /*#__PURE__*/
+      React.createElement("div", { style: { flex: 1 } }, /*#__PURE__*/
+      React.createElement("div", { style: { fontSize: ".82rem", fontWeight: 700, color: "#2C1A0E" } }, f.l), /*#__PURE__*/
+      React.createElement("div", { style: { fontSize: ".66rem", color: "#7B7063" } }, f.sub)
+      ), /*#__PURE__*/
+      React.createElement("div", { style: { textAlign: "right" } }, /*#__PURE__*/
+      React.createElement("div", { style: { fontSize: ".95rem", fontWeight: 800, color: f.m ? "#2C1A0E" : "#B8AC9C" } }, fmt(f.m)), /*#__PURE__*/
+      React.createElement("div", { style: { fontSize: ".62rem", color: "#7B7063" } }, total ? Math.round(f.m / total * 100) : 0, "%")
+      ), /*#__PURE__*/
+      React.createElement("span", { style: { width: 14, fontSize: ".8rem", color: "#7B7063" } }, puede ? ab ? "▲" : "▼" : "")
+      ),
+      ab && f.id === "prov" && /*#__PURE__*/React.createElement(DescargadoVsPagado, { sinCard: true, mesFijo: mes, proveedores: proveedores, boletas: boletas, pagos: pagos, gastos: gastos }),
+      ab && f.det && /*#__PURE__*/React.createElement("div", { style: { padding: "0 0 10px 12px" } }, f.det.map(([n, m, c]) => /*#__PURE__*/
+      React.createElement("div", { key: n, style: { display: "flex", justifyContent: "space-between", fontSize: ".72rem", padding: "3px 0", color: "#2C1A0E" } }, /*#__PURE__*/React.createElement("span", null, n, " ", /*#__PURE__*/React.createElement("span", { style: { color: "#7B7063" } }, "(", c, ")")), /*#__PURE__*/React.createElement("b", null, fmt(m)))))
+      ));}), /*#__PURE__*/
+  React.createElement("div", { style: { fontSize: ".66rem", color: "#7B7063", marginTop: 8 } }, "Por fecha de cada registro. Proveedores = Pagos + Pagos Digitales con proveedor. Sueldos = todo lo cargado en Sueldos (incluye adelantos y lo pagado con efectivo retirado; el retiro para sueldos no se suma aparte para no contarlo dos veces). Gastos varios = el resto de las categorías fijas (Conciliaciones, Mantenimiento, Fudo, Aldy, etc.) + Pagos Digitales sin proveedor. Tocá una fila para ver el detalle.")
+  );
 }
 
 function AvisoProveedor({ p }) {
@@ -3571,7 +3630,6 @@ function TabProveedores({ proveedores, saveProveedores, calcDeuda, pagos, savePa
   const [fusionOrigen, setFusionOrigen] = useState("");
   const [fusionDestino, setFusionDestino] = useState("");
   const [fusionBusy, setFusionBusy] = useState(false);
-  const [verDvp, setVerDvp] = useState(false);
 
   const provEditando = nombre ? proveedores.find((p) => norm(p.nombre) === norm(nombre)) : null;
 
@@ -3699,9 +3757,7 @@ function TabProveedores({ proveedores, saveProveedores, calcDeuda, pagos, savePa
   };
 
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/
-  React.createElement(ST, { help: "Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo.\n• Si al crear un proveedor (acá o al cargar una boleta/producto) el nombre se parece mucho a uno que ya existe, la app te avisa para evitar duplicarlo por error.\n• 🔀 Fusionar: si dos proveedores quedaron cargados con nombres distintos siendo el mismo, usá este botón para unirlos — todas sus boletas, pagos y gastos pasan al que elijas como destino, la deuda inicial se suma, y el otro se elimina. No se puede deshacer.\n• Si editás la deuda inicial de un proveedor que ya tenía una cargada, queda un historial del cambio (fecha, valor anterior y nuevo) visible al editarlo.\n• Cuando un proveedor quedó con saldo a favor (le pagaste de más), se muestra en azul como \"💰 A favor\" en vez de plata pendiente.\n• La columna Última act. muestra la fecha del movimiento (boleta, pago o gasto) más reciente de cada proveedor.\n• Si eliminás un proveedor que tiene deuda pendiente, la app te avisa antes de confirmar.\n• 🚫 Activos e inactivos: los proveedores inactivos quedan ocultos de la lista (y no aparecen para elegir al cargar una boleta o un pago nuevo), pero su deuda sigue contando en el total y no se pierde nada de su historial. Tocá 👁️ Ver inactivos para volver a verlos, y ✅ en la fila para reactivarlos.\n\n• 📊 Descargado vs pagado: elegís un mes y ves cuánto entró en boletas vs cuánto se pagó (Pagos + Pagos Digitales con proveedor), en total y por proveedor, con lo pagado separado por forma de pago. Diferencia en rojo = ese mes sumó deuda; en verde = se pagó deuda de meses anteriores." }, "Proveedores"), /*#__PURE__*/React.createElement(SS, null, "Estado de cuenta y deuda por proveedor."), /*#__PURE__*/
-  React.createElement("div", { style: { marginBottom: 12 } }, /*#__PURE__*/React.createElement(Btn, { bg: verDvp ? "#7B7063" : "#2C1A0E", onClick: () => setVerDvp((v) => !v) }, verDvp ? "Ocultar descargado vs pagado" : "📊 Descargado vs pagado por mes")),
-  verDvp && /*#__PURE__*/React.createElement(DescargadoVsPagado, { proveedores: proveedores, boletas: boletas, pagos: pagos, gastos: gastos }),
+  React.createElement(ST, { help: "Muestra el estado de cuenta de cada proveedor: cuánto se le debe en total.\n\n• La deuda = suma de boletas − pagos. Los pagos incluyen tanto los cargados en 💸 Pagos como los pagos digitales de 🏠 Pagos Digitales que tengan este proveedor asignado (ej: le pagaste por transferencia desde ahí en vez de por Pagos).\n• Podés ver el detalle de movimientos de cada proveedor tocando su nombre — ahí aparecen boletas, pagos y pagos digitales mezclados en orden cronológico.\n• Usá el botón + Nuevo proveedor para agregar uno, o el ✏️ de cada fila para editarlo.\n• Si al crear un proveedor (acá o al cargar una boleta/producto) el nombre se parece mucho a uno que ya existe, la app te avisa para evitar duplicarlo por error.\n• 🔀 Fusionar: si dos proveedores quedaron cargados con nombres distintos siendo el mismo, usá este botón para unirlos — todas sus boletas, pagos y gastos pasan al que elijas como destino, la deuda inicial se suma, y el otro se elimina. No se puede deshacer.\n• Si editás la deuda inicial de un proveedor que ya tenía una cargada, queda un historial del cambio (fecha, valor anterior y nuevo) visible al editarlo.\n• Cuando un proveedor quedó con saldo a favor (le pagaste de más), se muestra en azul como \"💰 A favor\" en vez de plata pendiente.\n• La columna Última act. muestra la fecha del movimiento (boleta, pago o gasto) más reciente de cada proveedor.\n• Si eliminás un proveedor que tiene deuda pendiente, la app te avisa antes de confirmar.\n• 🚫 Activos e inactivos: los proveedores inactivos quedan ocultos de la lista (y no aparecen para elegir al cargar una boleta o un pago nuevo), pero su deuda sigue contando en el total y no se pierde nada de su historial. Tocá 👁️ Ver inactivos para volver a verlos, y ✅ en la fila para reactivarlos." }, "Proveedores"), /*#__PURE__*/React.createElement(SS, null, "Estado de cuenta y deuda por proveedor."),
 
   mostrarForm && /*#__PURE__*/
   React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(44,26,14,.65)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } }, /*#__PURE__*/
@@ -12395,6 +12451,7 @@ function TabGerencia({ calcDigital, saldo, ini, tot, eg, cajaDigitalSaldo, actua
   saveBoletas, saveCierres, saveCierresCaja, savePagos, saveSueldos, saveGastos,
   ajustesCajaEfectivo, saveAjustesCajaEfectivo, retirosSueldos, saveRetirosSueldos, retirosGanancia, saveRetirosGanancia, amexPagos, saveAmexPagos, pagosAlquiler, savePagosAlquiler, pagosContadora, savePagosContadora, pagosImpuestos, savePagosImpuestos, pagosAbogada, savePagosAbogada, pagosConciliaciones, savePagosConciliaciones, pagosAldy, savePagosAldy, pagosMantenimiento, savePagosMantenimiento, pagosFudo, savePagosFudo, pagosEscribano, savePagosEscribano, pagosMicaCM, savePagosMicaCM, pagosTelecentro, savePagosTelecentro, pagosDisney, savePagosDisney, pagosPela, savePagosPela, pagosFacturasVencidasML, savePagosFacturasVencidasML, pagosInformeContrato, savePagosInformeContrato, pagosMantCtaGalicia, savePagosMantCtaGalicia, pagosFumigador, savePagosFumigador, pagosRapiboy, savePagosRapiboy, pagosCartaDocumento, savePagosCartaDocumento, pagosMovistar, savePagosMovistar, stock, saveStock,
   pagarConExcedente, empleados, saveEmpleados, liquidaciones }) {
+  const [verDvp, setVerDvp] = useState(false);
   const { ingresos, egTransf, saldoReal, deducciones } = calcDigital();
 
   const totalDisponible = saldo + saldoReal;
@@ -12935,7 +12992,7 @@ function TabGerencia({ calcDigital, saldo, ini, tot, eg, cajaDigitalSaldo, actua
 
 
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/
-  React.createElement(ST, { help: "Vista de gerencia: el resumen del negocio y el libro diario completo, todo en un solo lugar.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia. Para actualizarlo, ingresá el valor real y el motivo (obligatorio) acá o desde Caja Digital — es el mismo ajuste, mismo historial.\n• Deuda total a proveedores: suma de lo pendiente con todos los proveedores (mismo dato que en Dashboard).\n• Amex en cuotas este mes: lo que corresponde pagar este mes sumando todas las compras, préstamos y débitos recurrentes de Amex vigentes (detalle completo en la pestaña Amex).\n\n📒 Libro Diario — más abajo, todos los movimientos del negocio (boletas, cierres, pagos, sueldos, gastos y ajustes) en formato debe/haber:\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento.\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital, incluida la parte digital de cada cierre de caja.\n• Las boletas y los pagos con Amex aparecen como referencia (sin Debe/Haber) porque todavía no mueven caja ni banco.\n• Los ajustes de caja no suman a Debe/Haber (no son venta ni pago) pero sí se reflejan en el Saldo Ef. corrido.\n• Podés filtrar por tipo, fecha y Debe/Haber, exportar a CSV, y eliminar registros con error (requiere confirmar, no se puede deshacer)." }, "Gerencia"), /*#__PURE__*/React.createElement(SS, null, "Resumen del negocio y libro diario completo — la vista de dueño."), /*#__PURE__*/
+  React.createElement(ST, { help: "Vista de gerencia: el resumen del negocio y el libro diario completo, todo en un solo lugar.\n\n• Total disponible: suma de Caja Disponible (efectivo) + Caja Digital (banco).\n• 📅 Egresos del mes: elegís un mes y ves cuánto se fue en proveedores (con descargado vs pagado por proveedor), sueldos, retiros de ganancia, alquiler, impuestos, contadora, abogada y gastos varios, con el total y el % de cada uno. Tocá una fila para ver el detalle.\n• Caja Disponible: saldo inicial + cierres de turno − pagos en efectivo.\n• Caja Digital: calculada desde el último saldo banco ingresado + ingresos digitales − egresos por transferencia. Para actualizarlo, ingresá el valor real y el motivo (obligatorio) acá o desde Caja Digital — es el mismo ajuste, mismo historial.\n• Deuda total a proveedores: suma de lo pendiente con todos los proveedores (mismo dato que en Dashboard).\n• Amex en cuotas este mes: lo que corresponde pagar este mes sumando todas las compras, préstamos y débitos recurrentes de Amex vigentes (detalle completo en la pestaña Amex).\n\n📒 Libro Diario — más abajo, todos los movimientos del negocio (boletas, cierres, pagos, sueldos, gastos y ajustes) en formato debe/haber:\n• Debe Ef. / Haber Ef. = salidas y entradas de efectivo. Saldo Ef. = plata en Caja Disponible en ese momento.\n• Debe Dig. / Haber Dig. = salidas y entradas por transferencia o digital, incluida la parte digital de cada cierre de caja.\n• Las boletas y los pagos con Amex aparecen como referencia (sin Debe/Haber) porque todavía no mueven caja ni banco.\n• Los ajustes de caja no suman a Debe/Haber (no son venta ni pago) pero sí se reflejan en el Saldo Ef. corrido.\n• Podés filtrar por tipo, fecha y Debe/Haber, exportar a CSV, y eliminar registros con error (requiere confirmar, no se puede deshacer)." }, "Gerencia"), /*#__PURE__*/React.createElement(SS, null, "Resumen del negocio y libro diario completo — la vista de dueño."), /*#__PURE__*/
 
 
   React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "stretch", marginBottom: 16 } }, /*#__PURE__*/
@@ -13075,6 +13132,18 @@ function TabGerencia({ calcDigital, saldo, ini, tot, eg, cajaDigitalSaldo, actua
   React.createElement("div", { style: { fontFamily: "Georgia,serif", fontSize: "1.5rem", color: "#B7860B", margin: "3px 0 1px" } }, fmt(amexCuotasMes)), /*#__PURE__*/
   React.createElement("div", { style: { fontSize: ".68rem", color: "#7B7063" } }, "Compras, préstamos y recurrentes activos")
   )
+  ), /*#__PURE__*/
+
+
+  React.createElement("div", { style: { background: "#fff", borderRadius: 14, padding: "14px 16px", marginBottom: 16, boxShadow: "0 2px 12px rgba(44,26,14,.08)" } }, /*#__PURE__*/
+  React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }, onClick: () => setVerDvp(!verDvp) }, /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/
+  React.createElement("div", { style: { fontSize: ".62rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#7B7063" } }, "📅 Egresos del mes"), /*#__PURE__*/
+  React.createElement("div", { style: { fontSize: ".75rem", color: "#2C1A0E", marginTop: 3 } }, "Proveedores (descargado vs pagado), sueldos, retiros, alquiler, impuestos, contadora, abogada y gastos varios")
+  ), /*#__PURE__*/
+  React.createElement("span", { style: { fontSize: "1.1rem", color: "#7B7063" } }, verDvp ? "▲" : "▼")
+  ),
+  verDvp && /*#__PURE__*/React.createElement(ResumenEgresosMes, { proveedores: proveedores, boletas: boletas, pagos: pagos, gastos: gastos, sueldos: sueldos, retirosGanancia: retirosGanancia, fijos: categoriasFijas })
   ), /*#__PURE__*/
 
 
