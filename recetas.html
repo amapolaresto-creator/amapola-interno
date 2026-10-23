@@ -160,6 +160,11 @@ async function sbGetLista(){
   if(!rows.length)return[];
   try{const v=JSON.parse(rows[0].value);return Array.isArray(v)?v:[];}catch{return[];}
 }
+// Recetas activas del Catálogo (🍳 Elaborados), para avisar cuáles no tienen ficha (23/10/2026). Si el perfil no las puede leer, queda vacío.
+async function sbGetRecetas(){
+  try{const r=await fetch(`${SB_URL}/amapola?select=value&key=eq.recetasProduccion`,{headers:SBH});if(!r.ok)return[];
+    const rows=await r.json();if(!rows.length)return[];const v=JSON.parse(rows[0].value);return Array.isArray(v)?v:[];}catch{return[];}
+}
 async function sbSet(key,value){
   const body=JSON.stringify({key,value:JSON.stringify(value),updated_at:new Date().toISOString()});
   const r=await fetch(`${SB_URL}/amapola`,{method:"POST",headers:{...SBH,"Prefer":"resolution=merge-duplicates"},body});
@@ -262,9 +267,17 @@ function App(){
 
   const toast=m=>{setToastMsg(m);setTimeout(()=>setToastMsg(""),2600);};
 
+  const[recetasP,setRecetasP]=useState([]);
   const cargar=async()=>{
-    try{setLista(await sbGetLista());setFase("listo");}catch{setFase("error");}
+    try{setLista(await sbGetLista());setRecetasP(await sbGetRecetas());setFase("listo");}catch{setFase("error");}
   };
+  // Toda receta activa del Catálogo tiene que estar en el Recetario: las que no tienen ficha se listan como "⏳ Falta el procedimiento",
+  // y la ficha de una receta activa no se borra desde acá (se borra la receta en el Catálogo).
+  const recActiva=id=>recetasP.some(x=>x&&String(x.id)===String(id)&&x.activa!==false);
+  const conFicha=new Set(lista.filter(r=>r.vinculo&&r.vinculo.tipo==="elaborado").map(r=>String(r.vinculo.id)));
+  const sinFicha=recetasP.filter(x=>x&&x.id&&x.activa!==false&&!conFicha.has(String(x.id))).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre)));
+  const sinPasos=r=>!(r.pasos||[]).some(p=>String(p||"").trim());
+  const fichaBloqueada=r=>!!(r&&r.vinculo&&r.vinculo.tipo==="elaborado"&&recActiva(r.vinculo.id));
   useEffect(()=>{if(pinOk)cargar();},[pinOk]);
   useEffect(()=>{window.scrollTo(0,0);},[vista,selId]);
 
@@ -292,6 +305,7 @@ function App(){
   };
 
   const nueva=()=>{setForm({...VACIA(),categoria:cat||""});setFotoNueva(null);setVista("form");};
+  const nuevaVinculada=x=>{setForm({...VACIA(),nombre:x.nombre||"",categoria:"Preparaciones previas",vinculo:{tipo:"elaborado",id:String(x.id),nombre:x.nombre||""}});setFotoNueva(null);setVista("form");};
   const editar=r=>{
     setForm(JSON.parse(JSON.stringify({...r,ingredientes:(r.ingredientes&&r.ingredientes.length)?r.ingredientes:[{cant:"",unidad:"",nombre:""}],pasos:(r.pasos&&r.pasos.length)?r.pasos:[""]})));
     setFotoNueva(null);setVista("form");
@@ -342,6 +356,7 @@ function App(){
   };
 
   const eliminar=async r=>{
+    if(fichaBloqueada(r)){toast("Es de una receta activa del Catálogo: se borra desde la app, en 🗂️ Catálogo → 🍳 Elaborados");return;}
     if(!window.confirm(`¿Eliminar "${r.nombre}"? No se puede deshacer.`))return;
     setBusy(true);
     try{
@@ -562,7 +577,8 @@ function App(){
         <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
           <button style={{...btnP,flex:"1 1 100%"}} onClick={()=>imprimirFicha(sel)}>🖨️ Imprimir ficha</button>
           <button style={{...btnS,flex:1}} onClick={()=>editar(sel)}>✏️ Editar</button>
-          <button disabled={busy} style={{...btnS,color:"#C0392B"}} onClick={()=>eliminar(sel)}>Eliminar</button>
+          {fichaBloqueada(sel)?<span style={{fontSize:".72rem",color:"#9a8a78",alignSelf:"center"}}>Es de una receta activa: se borra desde el Catálogo</span>
+            :<button disabled={busy} style={{...btnS,color:"#C0392B"}} onClick={()=>eliminar(sel)}>Eliminar</button>}
         </div>
         {toastEl}
       </div>
@@ -628,6 +644,11 @@ function App(){
         Todavía no hay recetas. Cargá la primera con “+ Nueva receta”.
         <div style={{marginTop:16}}><button disabled={busy} onClick={cargarSemilla} style={btnS}>Cargar jugo de naranja, licuado y banana congelada</button></div>
       </div>}
+      {sinFicha.length>0&&!cat&&<div style={{background:"#FFF6E5",border:"1.5px solid #F0C36D",borderRadius:14,padding:"10px 12px",marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:".86rem",color:"#8A5A00",marginBottom:2}}>⏳ Falta el procedimiento ({sinFicha.length})</div>
+        <div style={{fontSize:".72rem",color:"#4A3B2C",marginBottom:8}}>Recetas del Catálogo sin ficha. Tocá una para cargar pasos, foto y conservación (los ingredientes salen de la receta del Catálogo).</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>{sinFicha.map(x=><button key={x.id} onClick={()=>nuevaVinculada(x)} style={{textAlign:"left",padding:"9px 12px",borderRadius:10,border:"1px solid #F0C36D",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:600,color:"#2C1A0E"}}>🍳 {x.nombre} <span style={{fontWeight:400,color:"#B7860B",fontSize:".75rem"}}>· cargar procedimiento →</span></button>)}</div>
+      </div>}
       {lista.length>0&&filtrada.length===0&&<p style={{color:"#7B7063",fontSize:".9rem",padding:"20px 0"}}>No hay recetas que coincidan con la búsqueda.</p>}
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -638,6 +659,7 @@ function App(){
             <div style={{minWidth:0}}>
               <div style={{fontWeight:700,fontSize:"1rem",color:"#2C1A0E"}}>{r.nombre}</div>
               <div style={{fontSize:".78rem",color:"#7B7063",marginTop:2}}>{[r.categoria,r.rinde].filter(Boolean).join(" · ")}</div>
+              {sinPasos(r)&&<div style={{fontSize:".7rem",color:"#B7860B",fontWeight:700,marginTop:2}}>⏳ Falta el procedimiento (no tiene pasos)</div>}
             </div>
           </button>
         ))}
