@@ -651,16 +651,15 @@ function App(){
       </div>}
       {lista.length>0&&filtrada.length===0&&<p style={{color:"#7B7063",fontSize:".9rem",padding:"20px 0"}}>No hay recetas que coincidan con la búsqueda.</p>}
 
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {filtrada.map(r=>(
-          <button key={r.id} onClick={()=>abrirFicha(r)} style={{display:"flex",gap:12,alignItems:"center",width:"100%",padding:10,borderRadius:14,border:"1px solid #E8DCC8",background:"#fff",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 3px rgba(44,26,14,.06)"}}>
-            {r.thumb?<img src={r.thumb} style={{width:64,height:64,objectFit:"cover",borderRadius:10,flex:"0 0 64px"}}/>
-              :<div style={{width:64,height:64,borderRadius:10,flex:"0 0 64px",background:"#F3ECE1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{r.categoria==="Procedimientos"?"📋":"🍽️"}</div>}
-            <div style={{minWidth:0}}>
-              <div style={{fontWeight:700,fontSize:"1rem",color:"#2C1A0E"}}>{r.nombre}</div>
-              <div style={{fontSize:".78rem",color:"#7B7063",marginTop:2}}>{[r.categoria,r.rinde].filter(Boolean).join(" · ")}</div>
-              {sinPasos(r)&&<div style={{fontSize:".7rem",color:"#B7860B",fontWeight:700,marginTop:2}}>⏳ Falta el procedimiento (no tiene pasos)</div>}
-            </div>
+          <button key={r.id} onClick={()=>abrirFicha(r)} style={{display:"flex",gap:8,alignItems:"center",width:"100%",padding:"9px 12px",borderRadius:10,border:"1px solid #E8DCC8",background:"#fff",cursor:"pointer",textAlign:"left",fontFamily:"inherit",color:"#2C1A0E"}}>
+            {r.thumb?<img src={r.thumb} style={{width:26,height:26,objectFit:"cover",borderRadius:6,flex:"0 0 26px"}}/>
+              :<span style={{flex:"0 0 26px",textAlign:"center"}}>{r.categoria==="Procedimientos"?"📋":"🍽️"}</span>}
+            <span style={{minWidth:0,fontWeight:600}}>{r.nombre}
+              {[r.categoria,r.rinde].filter(Boolean).length>0&&<span style={{fontWeight:400,color:"#7B7063",fontSize:".75rem"}}> · {[r.categoria,r.rinde].filter(Boolean).join(" · ")}</span>}
+              {sinPasos(r)&&<span style={{fontWeight:600,color:"#B7860B",fontSize:".75rem"}}> · ⏳ falta el procedimiento</span>}
+            </span>
           </button>
         ))}
       </div>
