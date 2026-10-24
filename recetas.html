@@ -644,15 +644,20 @@ function App(){
         Todavía no hay recetas. Cargá la primera con “+ Nueva receta”.
         <div style={{marginTop:16}}><button disabled={busy} onClick={cargarSemilla} style={btnS}>Cargar jugo de naranja, licuado y banana congelada</button></div>
       </div>}
-      {sinFicha.length>0&&!cat&&<div style={{background:"#FFF6E5",border:"1.5px solid #F0C36D",borderRadius:14,padding:"10px 12px",marginBottom:12}}>
-        <div style={{fontWeight:700,fontSize:".86rem",color:"#8A5A00",marginBottom:2}}>⏳ Falta el procedimiento ({sinFicha.length})</div>
-        <div style={{fontSize:".72rem",color:"#4A3B2C",marginBottom:8}}>Recetas del Catálogo sin ficha. Tocá una para cargar pasos, foto y conservación (los ingredientes salen de la receta del Catálogo).</div>
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>{sinFicha.map(x=><button key={x.id} onClick={()=>nuevaVinculada(x)} style={{textAlign:"left",padding:"9px 12px",borderRadius:10,border:"1px solid #F0C36D",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:600,color:"#2C1A0E"}}>🍳 {x.nombre} <span style={{fontWeight:400,color:"#B7860B",fontSize:".75rem"}}>· cargar procedimiento →</span></button>)}</div>
-      </div>}
+      {(()=>{const pendP=cat?[]:filtrada.filter(sinPasos);const n=sinFicha.length+pendP.length;
+        const bS={textAlign:"left",padding:"9px 12px",borderRadius:10,border:"1px solid #F0C36D",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:600,color:"#2C1A0E"};
+        return n>0&&!cat&&<div style={{background:"#FFF6E5",border:"1.5px solid #F0C36D",borderRadius:14,padding:"10px 12px",marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:".86rem",color:"#8A5A00",marginBottom:2}}>⏳ Falta el procedimiento ({n})</div>
+        <div style={{fontSize:".72rem",color:"#4A3B2C",marginBottom:8}}>Tocá una para cargar pasos, foto y conservación (los ingredientes salen de la receta del Catálogo).</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {[...sinFicha.map(x=>({k:"n"+x.id,nombre:x.nombre,ir:()=>nuevaVinculada(x)})),...pendP.map(r=>({k:"f"+r.id,nombre:r.nombre,ir:()=>abrirFicha(r)}))]
+            .sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre))).map(x=><button key={x.k} onClick={x.ir} style={bS}>🍳 {x.nombre} <span style={{fontWeight:400,color:"#B7860B",fontSize:".75rem"}}>· cargar procedimiento →</span></button>)}
+        </div>
+      </div>;})()}
       {lista.length>0&&filtrada.length===0&&<p style={{color:"#7B7063",fontSize:".9rem",padding:"20px 0"}}>No hay recetas que coincidan con la búsqueda.</p>}
 
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {filtrada.map(r=>(
+        {filtrada.filter(r=>cat||!sinPasos(r)).map(r=>(
           <button key={r.id} onClick={()=>abrirFicha(r)} style={{display:"flex",gap:8,alignItems:"center",width:"100%",padding:"9px 12px",borderRadius:10,border:"1px solid #E8DCC8",background:"#fff",cursor:"pointer",textAlign:"left",fontFamily:"inherit",color:"#2C1A0E"}}>
             {r.thumb?<img src={r.thumb} style={{width:26,height:26,objectFit:"cover",borderRadius:6,flex:"0 0 26px"}}/>
               :<span style={{flex:"0 0 26px",textAlign:"center"}}>{r.categoria==="Procedimientos"?"📋":"🍽️"}</span>}
